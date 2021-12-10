@@ -4,6 +4,8 @@
 
 #import "UIWindow.h"
 
+@class CGContext;
+
 
 @interface UIWindow( Render)
 
@@ -17,10 +19,10 @@
 
 - (void) getFrameInfo:(struct CGFrameInfo *) info;
 
-- (CGContext *) activateWindowContext;
-- (void) deactivateWindowContext:(CGContext *) context;
-- (CGContext *) activateRenderContext;
-- (void) deactivateRenderContext:(CGContext *) context;
+- (id <UIOSGraphicsContext>) activateWindowGraphicsContext;
+- (void) deactivateWindowGraphicsContext:(id <UIOSGraphicsContext>) context;
+- (id <UIOSGraphicsContext>) activateRenderGraphicsContext;
+- (void) deactivateRenderGraphicsContext:(id <UIOSGraphicsContext>) context;
 
 - (void) swapBuffers;
 

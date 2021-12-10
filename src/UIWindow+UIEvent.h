@@ -1,6 +1,7 @@
 #import "UIWindow.h"
 
-@interface UIWindow( UIEvent)
+
+@interface UIWindow( UIEvent) <UIEventReceiver>
 
 - (id) _firstResponder;
 

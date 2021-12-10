@@ -5,9 +5,8 @@
 #import "import-private.h"
 
 #import "UIWindow+Render.h"
-#import "UIView+UIEvent.h"
-#import "UIView+CGGeometry.h"
-#import "mulle-pointerarray+ObjC.h"
+#import "UIWindow+UIResponder.h"
+#import "UIView+UIWindow.h"
 
 
 //#define CALLBACK_DEBUG
@@ -274,88 +273,6 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 }
 
 
-- (UIEvent *) handleEvent:(UIEvent *) event
-{
-   CGRect                                rect;
-   CGPoint                               point;
-   struct mulle_pointerarray             views;
-   struct mulle_pointerarray             remaining;
-   struct mulle_pointerarrayenumerator   rover;
-   UIView                                *view;
-   unsigned int                          n;
-   BOOL                                  isDrag;
-
-   assert( event);
-
-   if( _eventCallback)
-      event = (*_eventCallback)( self, event);
-
-   switch( [event eventType])
-   {
-   case UIEventTypePresses :
-#ifdef DEBUG
-      if( [event eventType] == UIEventTypePresses)
-      {
-         UIKeyboardEvent   *keyEvent;
-
-         keyEvent = (UIKeyboardEvent *) event;
-         if( [keyEvent action] == GLFW_PRESS)
-         {
-            // F12 key: 301
-            switch( [keyEvent key])
-            {
-            case 301 :
-               if( [self respondsToSelector:@selector( dump)])
-               {
-                  [self performSelector:@selector( dump)];
-                  return( nil);
-               }
-               break;
-
-            case 300:
-               if( [self respondsToSelector:@selector( dumpRenderQueue)])
-               {
-                  [self performSelector:@selector( dumpRenderQueue)
-                             withObject:(id) &_renderQueue];
-                  return( nil);
-               }
-               break;
-
-            case 299:
-               if( [self respondsToSelector:@selector( saveScreenshotToFileWithSystemRepresentation:)])
-               {
-                  if( [self performSelector:@selector( saveScreenshotToFileWithSystemRepresentation:)
-                             withObject:(id) "screenshot.png"])
-                     fprintf( stderr, "Saved \"screenshot.png\"\n");
-                  return( nil);
-               }
-               break;
-            }
-         }
-      }
-#endif
-      break;
-
-   case UIEventTypeMotion :
-      event = [self handleMouseMotionEvent:(UIMouseMotionEvent *) event];
-      break;
-
-   case UIEventTypeWindow :
-      event = [self handleWindowEvent:(UIWindowEvent *) event];
-
-   default:
-      break;
-   }
-
-
-   if( ! event)
-      return( event);
-
-//   if( [event isKindOfClass:[UIMouseScrollEvent class]])
-//      [self dump];
-   event = [super handleEvent:event];
-   return( event);
-}
 
 
 /*
@@ -540,6 +457,108 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    }
    return( mask);
 }
+
+
+- (UIEvent *) handleEvent:(UIEvent *) event
+{
+   CGRect                                rect;
+   CGPoint                               point;
+   struct mulle_pointerarray             views;
+   struct mulle_pointerarray             remaining;
+   struct mulle_pointerarrayenumerator   rover;
+   UIView                                *view;
+   unsigned int                          n;
+   BOOL                                  isDrag;
+   id <UIResponder>                      responder;
+
+   assert( event);
+
+   if( _eventCallback)
+      event = (*_eventCallback)( self, event);
+
+   switch( [event eventType])
+   {
+   case UIEventTypePresses :
+#ifdef DEBUG
+      if( [event eventType] == UIEventTypePresses)
+      {
+         UIKeyboardEvent   *keyEvent;
+
+         keyEvent = (UIKeyboardEvent *) event;
+         if( [keyEvent action] == GLFW_PRESS)
+         {
+            // F12 key: 301
+            switch( [keyEvent key])
+            {
+            case 301 :
+               if( [self respondsToSelector:@selector( dump)])
+               {
+                  [self performSelector:@selector( dump)];
+                  return( nil);
+               }
+               break;
+
+            case 300:
+               if( [self respondsToSelector:@selector( dumpRenderQueue)])
+               {
+                  [self performSelector:@selector( dumpRenderQueue)
+                             withObject:(id) &_renderQueue];
+                  return( nil);
+               }
+               break;
+
+            case 299:
+               if( [self respondsToSelector:@selector( saveScreenshotToFileWithSystemRepresentation:)])
+               {
+                  if( [self performSelector:@selector( saveScreenshotToFileWithSystemRepresentation:)
+                             withObject:(id) "screenshot.png"])
+                     fprintf( stderr, "Saved \"screenshot.png\"\n");
+                  return( nil);
+               }
+               break;
+            }
+         }
+      }
+#endif
+      break;
+
+   case UIEventTypeMotion :
+      event = [self handleMouseMotionEvent:(UIMouseMotionEvent *) event];
+      break;
+
+   case UIEventTypeWindow :
+      event = [self handleWindowEvent:(UIWindowEvent *) event];
+
+   default:
+      break;
+   }
+
+
+   if( ! event)
+      return( event);
+
+//   if( [event isKindOfClass:[UIMouseScrollEvent class]])
+//      [self dump];
+
+   responder = [self firstResponder];
+   if( responder)
+   {
+      event = [self responder:responder
+                  handleEvent:event];
+      if( ! event)
+      {
+#ifdef EVENT_DEBUG
+         fprintf( stderr, "First Responder handled event: %s\n",
+                        (char *) [responder UTF8String]);
+#endif
+         return( event);
+      }
+   }
+
+   event = [super handleEvent:event];
+   return( event);
+}
+
 
 
 @end

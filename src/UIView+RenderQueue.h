@@ -2,9 +2,6 @@
 // Copyright (c) 2020 Nat!, Mulle kybernetiK
 //
 // prefer a local UIView over one in import.h
-#import "UIWindow.h"
-
-// we want "import.h" always anyway
 #import "import.h"
 
 

@@ -43,6 +43,15 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 @end
 
 
+@interface NSObject( CAAnimation)
+
+- (void) animatePropertiesWithSnapshot:(id) snapshot
+                        animationGroup:(CAAnimationGroup *) group;
+
+@end
+
+
+
 @implementation UIView ( CAAnimation)
 
 //
@@ -96,7 +105,7 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 
 
 + (void) beginAnimations:(char *) animationID
-                 context:(void *) context
+                 context:(id) context
 {
    CATransaction   *transaction;
 

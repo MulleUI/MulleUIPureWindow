@@ -8,27 +8,11 @@
 #import "import-private.h"
 
 #import "UIWindow+UIEvent.h"
-#import "UIView+Layout.h"
 #import "UIView+RenderQueue.h"
 
 
 // #define LAYOUT_ANIMATIONS
 //#define SWAP_DEBUG
-
-
-//
-// This needs to be implemented by the context owner. This is not a bug.
-// setActive: is not supposed to be seen outside of the window setting this
-// context active. (Locking is done in GLFWWindow with the implicit context!)
-//
-@implementation CGContext( UIWindow)
-
-- (void) setActive:(BOOL) flag
-{
-   _isActive = flag;
-}
-
-@end
 
 
 @implementation UIWindow ( RenderingAddAllLayoutsToRenderQueue)
@@ -93,6 +77,17 @@
 }
 
 
+- (CGFloat) primaryMonitorRefreshRate
+{
+   CGFloat   rate;
+
+   rate = [_os_window os_primaryMonitorRefreshRate];
+   if( rate == 0.0)
+      return( 60.0);
+   return( rate);
+}
+
+
 - (NSUInteger) processEvents:(CAAbsoluteTime) now
                    frameRate:(CGFloat) frameRate
 {
@@ -112,7 +107,7 @@
            frameRate > 0.0);
 
    return( [self waitForEvents:frameRate == UIWindowFrameRateSynced
-                                 ? 1.0 / _primaryMonitorRefreshRate
+                                 ? 1.0 / [self primaryMonitorRefreshRate]
                                  : frameRate
                            now:now
                   returnsEarly:frameRate == UIWindowFrameRateUnsynced||
@@ -137,21 +132,25 @@
 }
 
 
-- (CGContext *) activateWindowContext
+- (id <UIOSGraphicsContext>) activateWindowGraphicsContext
 {
+   Class   osGraphicsContextClass;
+
    [_os_window os_activateContext];
 
    if( ! _context)
-      _context = [[CGContext alloc] initWithEdgeAntialiasing:(_styleMask & UIWindowStyleEdgeAntialias)
-                                           useStencilStrokes:(_styleMask & UIWindowStyleStencilStrokes)];
+   {
+      osGraphicsContextClass = [[self class] osGraphicsContextClass];
+      _context               = [[osGraphicsContextClass alloc] initWithEdgeAntialiasing:(_styleMask & UIWindowStyleEdgeAntialias)
+                                                                      useStencilStrokes:(_styleMask & UIWindowStyleStencilStrokes)];
+   }
    [_context setActive:YES];
-   [_context setBackgroundColor:_backgroundColor];
 
    return( _context);
 }
 
 
-- (void) deactivateWindowContext:(CGContext *) context
+- (void) deactivateWindowGraphicsContext:(id <UIOSGraphicsContext>) context
 {
    assert( context);
    assert( _context == context);
@@ -163,33 +162,34 @@
 
 
 // TODO: memo, maybe the context triggers os_activateContext ?
-- (CGContext *) activateRenderContext
+- (id <UIOSGraphicsContext>) activateRenderGraphicsContext
 {
-   CGContext   *context;
+   id <UIOSGraphicsContext>   context;
+   Class                      cls;
 
    // take renderlock here, relinquish later when wating for events
    // or when someone closes the window
 
    if( _backingStore == UIWindowBackingStoreNonRetained)
-      return( [self activateWindowContext]);
+      return( [self activateWindowGraphicsContext]);
 
    assert( _offscreen_os_window);
 
    [_offscreen_os_window os_activateContext];
    if( ! _offscreenContext)
    {
-      _offscreenContext = [[CGContext alloc] initWithEdgeAntialiasing:(_offscreenStyleMask & UIWindowStyleEdgeAntialias)
-                                                    useStencilStrokes:(_offscreenStyleMask & UIWindowStyleStencilStrokes)];
+      cls               = [[self class] osGraphicsContextClass];
+      _offscreenContext = [[cls alloc] initWithEdgeAntialiasing:(_offscreenStyleMask & UIWindowStyleEdgeAntialias)
+                                              useStencilStrokes:(_offscreenStyleMask & UIWindowStyleStencilStrokes)];
       [_offscreenContext setRendersOffScreen:YES];
    }
    [_offscreenContext setActive:YES];                        // just a flag
-   [_offscreenContext setBackgroundColor:_backgroundColor];  // just a value
 
    return( _offscreenContext);
 }
 
 
-- (void) deactivateRenderContext:(CGContext *) context
+- (void) deactivateRenderGraphicsContext:(id <UIOSGraphicsContext>) context
 {
    assert( context);
 
@@ -206,10 +206,10 @@
                             inFlight:(BOOL) inFlight
                            allocator:(struct mulle_allocator *) allocator
 {
-   CGContext                    *context;
+   id <UIOSGraphicsContext>     context;
    struct CGFramebufferBitmap   fb;
 
-   context = [self activateRenderContext];
+   context = [self activateRenderGraphicsContext];
    {
      // need to blit from offscreen window to onscreen here
      // get image of offscreen framebuffer
@@ -218,7 +218,7 @@
                                             inFlight:(BOOL) inFlight
                                            allocator:allocator];
    }
-   [self deactivateRenderContext:context];
+   [self deactivateRenderGraphicsContext:context];
 
    return( fb);
 }
@@ -236,10 +236,10 @@
    lastRenderedOffscreenFramebufferBitmapType:(enum CGFramebufferBitmapType) type
                                     allocator:(struct mulle_allocator *) allocator
 {
-   CGContext                    *context;
+   id <UIOSGraphicsContext>     context;
    struct CGFramebufferBitmap   fb;
 
-   context = [self activateRenderContext];
+   context = [self activateRenderGraphicsContext];
    {
      // need to blit from offscreen window to onscreen here
      // get image of offscreen framebuffer
@@ -247,7 +247,7 @@
      fb = [context lastRenderedOffscreenFramebufferBitmapType:type
                                                     allocator:allocator];
    }
-   [self deactivateRenderContext:context];
+   [self deactivateRenderGraphicsContext:context];
 
    return( fb);
 }
@@ -263,8 +263,8 @@
 - (void) copyBackingStore
 {
    struct CGFramebufferBitmap   fb;
-   CGContext                    *context;
    struct CGFrameInfo           info;
+   id <UIOSGraphicsContext>     context;
 
    fb = [self lastRenderedOffscreenFramebuffer];
    // if there has nothing been rendered yet, we decline the swap
@@ -276,19 +276,17 @@
    //
    // draw the image we got from the framebuffer into the window
    //
-   context = [self activateWindowContext];
+   context = [self activateWindowGraphicsContext];
    {
       [self syncFrameAndFramebufferSizeWithOSWindow];
       [self getFrameInfo:&info];
 
       [context beginRender:&info];
-      [context clearFramebuffer];  //?? useful
-
+      [context clearFramebufferMinimally]; // probably even not needed
       [context drawFramebufferBitmap:&fb];
-
       [context endRender];
    }
-   [self deactivateWindowContext:context];
+   [self deactivateWindowGraphicsContext:context];
 
    CGFramebufferBitmapDone( &fb);
 }
@@ -296,62 +294,48 @@
 
 - (void) renderBackingStore
 {
-   CGImage              *image;
-   CGImage              *framebufferImage;
-   CGDrawableOptions    options;
-   CGRect               rect;
-   NVGcontext           *vg;
-   CGContext            *context;
-   struct CGFrameInfo   info;
+   id                         framebufferImage;
+   id                         image;
+   CGRect                     rect;
+   id <UIOSGraphicsContext>   context;
+   id <UIOSGraphicsContext>   renderContext;
+   struct CGFrameInfo         info;
 
    // get size of framebuffer
-   context = [self activateRenderContext];
+   renderContext = [self activateRenderGraphicsContext];
    {
-     framebufferImage = [context framebufferImage];
+     framebufferImage = [renderContext framebufferImage];
    }
-   [self deactivateRenderContext:context];
+   [self deactivateRenderGraphicsContext:renderContext];
    if( ! framebufferImage)
       return;
 
-   context = [self activateWindowContext];
+   context = [self activateWindowGraphicsContext];
    {
       [self syncFrameAndFramebufferSizeWithOSWindow];
       [self getFrameInfo:&info];
 
       [context beginRender:&info];
-      [context clearFramebuffer];  //?? useful
+      [context clearFramebufferMinimally];
 
-      image = [framebufferImage shareWithContext:context];
+      image = [renderContext shareImage:framebufferImage
+                            withContext:context];
       assert( image);
 
       rect.origin = CGPointZero;
       rect.size   = info.size;
 
-      options = CGDrawableOptionsMake( 0.0, 1.0, 0.0, YES);
-      [image drawRect:rect
-              options:&options
-              context:context];
-
-      // just for debugging, draws a frame somewhere
-      {
-         struct NVGcontext   *vg;
-
-         vg = CGContextGetNVGContext( context);
-
-         // gray rectangle so we know something is drawn...
-         nvgBeginPath( vg);
-         {
-            rect = CGRectInset( rect, 20, 20);
-            nvgRect( vg, rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
-            nvgStrokeWidth( vg, 8);
-            nvgStrokeColor( vg, CGColorMakeWithUnsignedInteger( 0x20A080FF));
-         }
-         nvgStroke( vg);
-      }
-
+      [context drawRect:rect
+                  image:image
+                  scale:YES];
+#if DEBUG
+      [context strokeRect:CGRectInset( rect, 20, 20)
+                 hexColor:0x20A080FF
+                    width:8.0];
+#endif
       [context endRender];
    }
-   [self deactivateWindowContext:context];
+   [self deactivateWindowGraphicsContext:context];
 }
 
 
@@ -361,7 +345,7 @@
 //
 - (void) swapBuffers
 {
-   CGContext   *context;
+   id <UIOSGraphicsContext>   context;
 
    if( _backingStore == UIWindowBackingStoreBuffered)
    {
@@ -375,11 +359,11 @@
    // context needs to be set here
    if( _swapInterval != _oldSwapInterval)
    {
-      context = [self activateWindowContext];
+      context = [self activateWindowGraphicsContext];
       {
          [_os_window os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
       }
-      [self deactivateWindowContext:context];
+      [self deactivateWindowGraphicsContext:context];
 
       _oldSwapInterval = _swapInterval;
    }
@@ -454,7 +438,7 @@
 // Or should
 //
 - (void) layoutFrame:(struct CGFrameInfo *) info
-             context:(CGContext *) context
+             context:(id <UIOSGraphicsContext>) context
 {
    /*
     * Layout
@@ -490,7 +474,7 @@
 
 
 - (void) animateFrame:(struct CGFrameInfo *) info
-             context:(CGContext *) context
+             context:(id <UIOSGraphicsContext>) context
 {
    /*
     * Animate
@@ -521,7 +505,7 @@
 
 
 - (void) renderFrame:(struct CGFrameInfo *) info
-             context:(CGContext *) context
+             context:(id <UIOSGraphicsContext>) context
 {
    /*
     * Render
@@ -530,29 +514,25 @@
     // swap buffers
 
    [context beginRender:info];
-
-   if( _willRenderCallback)
-      (*_willRenderCallback)( self, context, info);
-
-   if( [self clearsFramebuffer])  // default yes
-      [context clearFramebuffer];
-
    {
+      if( _willRenderCallback)
+         (*_willRenderCallback)( self, context, info);
+
+      if( [self clearsFramebuffer])  // default yes
+         [context clearFramebufferWithHexColor:_backgroundHexColor];  //?? useful
       [context renderObjects:&_renderQueue];
+
+      [_renderDelegate windowWillEndRender:self
+                                    context:context];
+      if( _willEndRenderCallback)
+         (*_willEndRenderCallback)( self, context, info);
    }
-
-   [_renderDelegate windowWillEndRender:self
-                                 context:context];
-
-   if( _willEndRenderCallback)
-      (*_willEndRenderCallback)( self, context, info);
-
    [context suspendRender];
 
+   // context is still active though and framebuffer is bound
    if( _didRenderCallback)
       (*_didRenderCallback)( self, context, info);
 
-   [context _finishRender];
    [context _endRender];
    //
    // just don't want to keep dangling stuff here
@@ -565,22 +545,14 @@
 - (BOOL) renderUpToNumberOfFrames:(NSUInteger) maxFrames
 {
    struct CGFrameInfo          info;
-   struct timespec             diff;
-   struct timespec             start;
-   struct timespec             end;
-   struct timespec             sleep;
    CAAbsoluteTime              timestamp;
-   CGContext                   *context;
-   CGDrawableOptions           options;
+   id <UIOSGraphicsContext>    context;
    CGFloat                     frameRate;
-   CGImage                     *image;
    NSUInteger                  eventTypes;
    NSUInteger                  frames;
-   struct CGFramebufferBitmap  fb;
    BOOL                        rval;
 
    frames      = 0;
-   image       = nil;
    rval        = NO;
    context     = nil;
 
@@ -603,7 +575,7 @@
       // accumulate.
       @autoreleasepool
       {
-         context = [self activateRenderContext];
+         context = [self activateRenderGraphicsContext];
          {
             [self getFrameInfo:&info];  // retrieve newest geometry
 
@@ -619,7 +591,7 @@
 
             [_renderDelegate windowDidEndRender:self];
          }
-         [self deactivateRenderContext:context];
+         [self deactivateRenderGraphicsContext:context];
          context = nil;         // idiot protection
 
       /*
@@ -670,8 +642,6 @@
          _lastDidProcessEventsTimestamp = CAAbsoluteTimeNow();
       }
    }
-
-   [image release];
 
    return( rval);
 }

@@ -11,32 +11,19 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
-src/MulleKeyboardEventConsumer.m
-src/UIApplication+UIWindow.m
-src/UIColor.m
-src/UIEvent+UIView.m
 src/UIFont.m
 src/UIPasteboard.m
-src/UIResponder.m
-src/UITrackingArea.m
 src/UIView+CAAnimation.m
-src/UIView+CALayer.m
-src/UIView+CGGeometry.m
-src/UIView+CGLayer.m
-src/UIView+Layout.m
 src/UIView+RenderQueue.m
 src/UIView+Render.m
-src/UIView+UIEvent.m
 src/UIView+UIResponder.m
-src/UIView+UIViewEditing.m
-src/UIView.m
+src/UIView+UIWindow.m
 src/UIWindow+CGGeometry.m
 src/UIWindow+Render.m
 src/UIWindow+UIEvent.m
 src/UIWindow+UIPasteboard.m
 src/UIWindow+UIResponder.m
 src/UIWindow.m
-src/mulle-pointerarray+ObjC.m
 )
 
 #

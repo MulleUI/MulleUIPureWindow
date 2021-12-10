@@ -8,7 +8,7 @@ int   main( void)
    UIView          *view;
    NSUInteger      styleMask;
 
-   styleMask = UIWindowsDefaultStyleMask;
+   styleMask = UIWindowStyleMaskDefault;
    styleMask = UIWindowsStyleMaskBySetting( styleMask, UIWindowStyleRetained, NO);
    styleMask = UIWindowsStyleMaskBySetting( styleMask, UIWindowStyleOffscreen, YES);
 

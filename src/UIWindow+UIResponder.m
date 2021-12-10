@@ -3,7 +3,6 @@
 
 @implementation UIWindow( UIResponder)
 
-
 - (id <UIResponder>) firstResponder
 {
    return( _firstResponder);

@@ -3,10 +3,9 @@
 //
 #import "UIView+RenderQueue.h"
 
-#import "UIView+CGGeometry.h"
-#import "UIView+Layout.h"
-
 #import "import-private.h"
+
+#import "UIWindow.h"
 
 
 @implementation UIView ( RenderQueue)
@@ -20,7 +19,7 @@ struct RenderQueueContext
 
 
 static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
-                                   CALayer *layer,
+                                   id <UILayer> layer,
                                    struct RenderQueueContext *v)
 {
    [layer setTransform:v->xform];
@@ -44,7 +43,7 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
 - (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue
                     context:(struct RenderQueueContext *) ctx
 {
-   CALayer                               *layer;
+   id <UILayer>                          layer;
    CGAffineTransform                     projection;
    CGRect                                bounds;
    CGRect                                frame;
@@ -58,7 +57,9 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
       return;
 
    v.alpha = _alpha * ctx->alpha;
-   if( CGAlphaIsTransparent( v.alpha))
+   // TODO: this is same as CGAlphaIsTransparent. Could check actual bit
+   //       depth of context here though
+   if( v.alpha < 0.5 / 32767.0)  // assume rounding up and 16 bit color depth
       return;
 
    bounds     = [self bounds];
@@ -119,6 +120,7 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
    mulle_pointerarrayenumerator_done( &rover);
 }
 
+
 - (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue
 {
    abort(); // only UIWindow can do this currently
@@ -128,7 +130,7 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
 - (void) dumpRenderQueue:(struct mulle_pointerarray *) renderQueue
 {
    struct mulle_pointerarrayenumerator   rover;
-   CALayer                               *layer;
+   id <UILayer>                          layer;
 
    rover = mulle_pointerarray_enumerate( renderQueue);
    while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))

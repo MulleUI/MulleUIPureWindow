@@ -1,5 +1,7 @@
 
 #import "UIView+UIResponder.h"
+
+#import "UIView+UIWindow.h"
 #import "UIWindow+UIResponder.h"
 
 
@@ -9,6 +11,7 @@
 {
    return( [self superview]);
 }
+
 
 - (BOOL) becomeFirstResponder
 {
