@@ -53,34 +53,19 @@ src/include.h
 # contents selected with patternfile ??-header--public-headers
 #
 set( PUBLIC_HEADERS
-src/MulleKeyboardEventConsumer.h
 src/MulleObjCLoader+MulleUICore.h
 src/MulleUICore.h
-src/UIApplication+UIWindow.h
-src/UIColor.h
-src/UIEdgeInsets+UTF8String.h
-src/UIEdgeInsets.h
-src/UIEvent+UIView.h
 src/UIFont.h
 src/UIPasteboard.h
-src/UIResponder.h
-src/UITrackingArea.h
 src/UIView+CAAnimation.h
-src/UIView+CALayer.h
-src/UIView+CGGeometry.h
-src/UIView+CGLayer.h
-src/UIView+Layout.h
 src/UIView+RenderQueue.h
 src/UIView+Render.h
-src/UIView+UIEvent.h
 src/UIView+UIResponder.h
-src/UIView+UIViewEditing.h
-src/UIView.h
+src/UIView+UIWindow.h
 src/UIWindow+Render.h
 src/UIWindow+UIEvent.h
 src/UIWindow+UIPasteboard.h
 src/UIWindow+UIResponder.h
 src/UIWindow.h
-src/mulle-pointerarray+ObjC.h
 )
 

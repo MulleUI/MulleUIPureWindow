@@ -2,12 +2,6 @@
 // Copyright (c) 2021 Nat!, Mulle kybernetiK
 //
 // prefer a local UIView over one in import.h
-#ifdef __has_include
-# if __has_include( "UIView.h")
-#  import "UIView.h"
-# endif
-#endif
-
 // we want "import.h" always anyway
 #import "import.h"
 
@@ -19,6 +13,6 @@
 // The semantics are also quite different, as there are no animations
 // and it doesn't layout.
 //
-- (void) renderInContext:(CGContext *) context;
+- (void) renderInContext:(id <UIOSGraphicsContext>) context;
 
 @end

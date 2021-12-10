@@ -12,19 +12,31 @@
  */
 
 // You can tweak the following #import with these commands.
-// (Use EAEB2BA5-A5F9-467F-A4FA-5C6B7FD63AB4 instead of MulleGraphics if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark MulleGraphics no-header`
-//    rename:             `mulle-sde dependency|library set MulleGraphics include whatever.h`
-//    reorder:            `mulle-sde dependency move MulleGraphics <up|down>`
-//    toggle #import:     `mulle-sde dependency mark MulleGraphics [no-]import`
-//    toggle public:      `mulle-sde dependency mark MulleGraphics [no-]public`
-//    toggle optional:    `mulle-sde dependency mark MulleGraphics [no-]require`
-//    remove for platform:`mulle-sde dependency mark MulleGraphics no-platform-<uname>`
+// (Use 432508D4-21E7-4787-8C7E-726645522382 instead of MulleUIView if there are duplicate entries)
+//    remove:             `mulle-sde dependency mark MulleUIView no-header`
+//    rename:             `mulle-sde dependency|library set MulleUIView include whatever.h`
+//    reorder:            `mulle-sde dependency move MulleUIView <up|down>`
+//    toggle #import:     `mulle-sde dependency mark MulleUIView [no-]import`
+//    toggle public:      `mulle-sde dependency mark MulleUIView [no-]public`
+//    toggle optional:    `mulle-sde dependency mark MulleUIView [no-]require`
+//    remove for platform:`mulle-sde dependency mark MulleUIView no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
-#import <MulleGraphics/MulleGraphics.h>   // MulleGraphics
+#import <MulleUIView/MulleUIView.h>   // MulleUIView
 
 // You can tweak the following #import with these commands.
-// (Use 35644512-861A-4ED8-8962-20ADD32052E3 instead of MulleObjCLockFoundation if there are duplicate entries)
+// (Use 129AA2E7-CBAC-4C25-9860-B7E28AAAE3ED instead of MulleCA if there are duplicate entries)
+//    remove:             `mulle-sde dependency mark MulleCA no-header`
+//    rename:             `mulle-sde dependency|library set MulleCA include whatever.h`
+//    reorder:            `mulle-sde dependency move MulleCA <up|down>`
+//    toggle #import:     `mulle-sde dependency mark MulleCA [no-]import`
+//    toggle public:      `mulle-sde dependency mark MulleCA [no-]public`
+//    toggle optional:    `mulle-sde dependency mark MulleCA [no-]require`
+//    remove for platform:`mulle-sde dependency mark MulleCA no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
+#import <MulleCA/MulleCA.h>   // MulleCA
+
+// You can tweak the following #import with these commands.
+// (Use 5E0E2D05-248F-48B9-9189-4A9CB47F2535 instead of MulleObjCLockFoundation if there are duplicate entries)
 //    remove:             `mulle-sde dependency mark MulleObjCLockFoundation no-header`
 //    rename:             `mulle-sde dependency|library set MulleObjCLockFoundation include whatever.h`
 //    reorder:            `mulle-sde dependency move MulleObjCLockFoundation <up|down>`
@@ -34,18 +46,6 @@
 //    remove for platform:`mulle-sde dependency mark MulleObjCLockFoundation no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleObjCLockFoundation/MulleObjCLockFoundation.h>   // MulleObjCLockFoundation
-
-// You can tweak the following #import with these commands.
-// (Use B729D0E0-5F20-4504-9E62-4228E259A759 instead of MulleGLFW if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark MulleGLFW no-header`
-//    rename:             `mulle-sde dependency|library set MulleGLFW include whatever.h`
-//    reorder:            `mulle-sde dependency move MulleGLFW <up|down>`
-//    toggle #import:     `mulle-sde dependency mark MulleGLFW [no-]import`
-//    toggle public:      `mulle-sde dependency mark MulleGLFW [no-]public`
-//    toggle optional:    `mulle-sde dependency mark MulleGLFW [no-]require`
-//    remove for platform:`mulle-sde dependency mark MulleGLFW no-platform-<uname>`
-//        (use `mulle-sourcetree-to-c --unames` to list known values)
-#import <MulleGLFW/MulleGLFW.h>   // MulleGLFW
 
 #ifdef __has_include
 # if __has_include( "_MulleUICore-include.h")

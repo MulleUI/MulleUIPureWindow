@@ -1,5 +1,5 @@
-#import "UIView.h"
-#import "UIResponder.h"
+#import "import.h"
+
 
 @interface UIView (UIResponder) <UIResponder>
 @end

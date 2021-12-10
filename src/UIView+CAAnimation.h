@@ -1,4 +1,4 @@
-#import "UIView.h"
+#import "import.h"
 
 
 enum UIViewAnimationCurve
@@ -23,7 +23,7 @@ enum UIViewAnimationCurve
 @interface UIView ( CAAnimation) <CAImplicitlyAnimatableObject>
 
 + (void) beginAnimations:(char *) animationID
-                 context:(void *) context;
+                 context:(id) context;
 
 //
 // this is different to UIView, you get a CAAnimationGroup and have to
@@ -65,6 +65,8 @@ enum UIViewAnimationCurve
 + (float) animationRepeatCount;
 
 + (void) addAnimatableObject:(id <CAImplicitlyAnimatableObject>) object;
+
+- (void) willChange;
 
 @end
 

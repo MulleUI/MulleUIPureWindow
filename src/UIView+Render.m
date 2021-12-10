@@ -10,7 +10,7 @@
 
 @implementation UIView ( Render)
 
-- (void) renderInContext:(CGContext *) context
+- (void) renderInContext:(id <UIOSGraphicsContext>) context
 {
    struct mulle_pointerarray   renderQueue;
 

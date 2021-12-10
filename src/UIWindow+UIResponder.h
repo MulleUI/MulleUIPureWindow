@@ -1,5 +1,4 @@
 #import "UIWindow.h"
-#import "UIResponder.h"
 
 @interface UIWindow (UIResponder)
 

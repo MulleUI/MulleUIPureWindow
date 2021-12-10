@@ -7,13 +7,17 @@
 
 #import "import-private.h"
 
-#import "UIView+CGGeometry.h"
-#import "UIView+UIEvent.h"
-#import "UIView+Layout.h"
-#import "mulle-pointerarray+ObjC.h"
 
-@interface UIWindow( GLFWWindowEventReceiver) <GLFWWindowEventReceiver>
+
+@implementation NSObject ( UIWindow)
+
+- (BOOL) __isUIWindow
+{
+   return( NO);
+}
+
 @end
+
 
 
 @implementation UIWindow
@@ -21,27 +25,86 @@
 MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
 
-+ (CGFloat) primaryMonitorPPI
++ (instancetype) windowWithFrame:(CGRect) frame;
 {
-   return( [GLFWWindow os_primaryMonitorPPI]);
+   return( [[[self alloc] initWithFrame:frame] autorelease]);
 }
 
 
-- (void) requestClose
++ (instancetype) windowWithFrame:(CGRect) frame
+                 titleUTF8String:(char *) title
+                       styleMask:(NSUInteger) styleMask
 {
-   [_os_window os_requestClose];
+   return( [[[self alloc] initWithFrame:frame
+                        titleUTF8String:title
+                              styleMask:styleMask] autorelease]);
+}
+
+// conveniences for quick hacks
++ (instancetype) windowWithView:(UIView *) view
+                titleUTF8String:(char *) title
+{
+   NSUInteger   styleMask;
+   CGRect       rect;
+   BOOL         change;
+   NSUInteger   autoresizingMask;
+   UIWindow     *window;
+
+   styleMask = UIWindowStyleMaskDefault;
+   autoresizingMask = [view autoresizingMask];
+   if( autoresizingMask & UIViewAutoresizingFlexible)
+      styleMask |= UIWindowStyleResizable;
+
+   rect = UIEdgeInsetsExtrudeRect( [view frame], [view margins]);
+   if( rect.size.width < 32)
+      rect.size.width = 32;
+   if( rect.size.height < 32)
+      rect.size.height = 32;
+   if( ! (autoresizingMask & ~UIViewAutoresizingFlexible))
+      [view setAutoresizingMask:autoresizingMask|UIViewAutoresizingStickToCenter];
+
+   rect.origin = CGPointZero;
+   window      = [UIWindow windowWithFrame:rect
+                                  titleUTF8String:title ? title : "Demo"
+                                        styleMask:styleMask];
+   [[window contentPlane] addSubview:view];
+   return( window);
 }
 
 
-- (BOOL) shouldClose
+// conveniences for quick hacks
++ (instancetype) windowWithLayer:(id <UILayer>) layer
+                 titleUTF8String:(char *) title
 {
-   return( [_os_window os_windowShouldClose] ? YES : NO);
+   UIView          *view;
+   CGRect          frame;
+   UIEdgeInsets    margins;
+
+   // convenience
+   frame   = [layer frame];
+   margins = UIEdgeInsetsMake( frame.origin.x, frame.origin.y,
+                               frame.origin.x, frame.origin.y);
+   frame.origin = CGPointZero;
+   [layer setFrame:frame];
+
+   view = [UIView viewWithLayer:layer];
+   [view setMargins:margins];
+   [view setAutoresizingMask:UIViewAutoresizingFlexible|UIViewAutoresizingStickToCenter];
+   return( [self windowWithView:view
+               titleUTF8String:title]);
 }
 
 
-- (void) syncFrameWithWindow
++ (Class) osWindowClass
 {
-   _frame = [_os_window os_windowFrame];
+   abort();
+}
+
+
++ (Class) osGraphicsContextClass
+
+{
+   abort();
 }
 
 
@@ -62,8 +125,9 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
    // its kinda pointless to inherit clipRects down for views, that are full
    // window size
-   _clipsToBounds    = NO;
-   _clearFramebuffer = YES;
+   _clipsToBounds      = NO;
+   _clearsFramebuffer  = YES;
+   _backgroundHexColor = 0xFFFFFFFF;
 
    _contentPlane = [UIView viewWithFrame:frame];
    [_contentPlane setDebugNameUTF8String:"Window/ContentPlane"];
@@ -120,25 +184,24 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 }
 
 
-- (instancetype) initWithGLFWWindow:(GLFWWindow *) window
-                offscreenGLFWWindow:(GLFWWindow *) offscreenWindow
+- (instancetype) initWithOSWindow:(id <UIOSWindow>) window
+                offscreenOSWindow:(id <UIOSWindow>) offscreenWindow
 {
+//CGFloat    primaryMonitorPPI;
+
    if( ! window)
    {
       [self release];
       return( nil);
    }
 
-   _primaryMonitorPPI = [GLFWWindow os_primaryMonitorPPI];
-   if( _primaryMonitorPPI == 0.0)
-   {
-      // no monitor connected, so lets just bail
-      [self release];
-      return( nil);
-   }
-
-   // not super sure that this makes sense to cache
-   _primaryMonitorRefreshRate = [GLFWWindow os_primaryMonitorRefreshRate];
+//   primaryMonitorPPI = [window os_primaryMonitorPPI];
+//   if( primaryMonitorPPI == 0.0)
+//   {
+//      // no monitor connected, so lets just bail ? Why though ?
+//      [self release];
+//      return( nil);
+//   }
 
    _os_window = [window retain];
    if( offscreenWindow)
@@ -159,13 +222,15 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 // positioned byhind the renderloop.
 //
 - (instancetype) initWithFrame:(CGRect) frame
-                  titleUTF8String:(char *) title
+               titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask
 {
-   GLFWWindow               *window;
-   GLFWWindow               *offscreenWindow;
-   enum GLFWGraphicsHints   hints;
-   int                      core;
+   id <UIOSWindow>   window;
+   id <UIOSWindow>   offscreenWindow;
+   NSUInteger        hints;
+   int               core;
+   Class             osWindowClass;
+   Class             Self;
 
    assert( [NSThread mulleIsMainThread]);
 
@@ -180,14 +245,9 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
    offscreenWindow = nil;
 
-   hints = GLFW_DEFAULT_CONTEXT;
-   switch( [CGContext backend])
-   {
-   case CG_GL3   : hints = GLFW_GL3_CONTEXT; break;
-   case CG_GL3_2 : hints = GLFW_GL3_2_CONTEXT; break;
-   case CG_GLES2 : hints = GLFW_GLES2_CONTEXT; break;
-   case CG_GLES3 : hints = GLFW_GLES3_CONTEXT; break;
-   }
+   Self          = [self class];
+   osWindowClass = [Self osWindowClass];
+   hints         = [Self osGraphicsHints];
 
    _offscreenStyleMask = styleMask;
    // buffered with offscreen window is the default,
@@ -201,10 +261,11 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
       _offscreenStyleMask &= ~UIWindowStyleResizable;
       _offscreenStyleMask |= UIWindowStyleInvisible|UIWindowStyleOffscreen;
       _offscreenStyleMask |= UIWindowStyleSingleBuffer; // save some memory from bogus buffer
-      offscreenWindow      = [[[GLFWWindow alloc] initWithFrame:CGRectMake( 0, 0, 32, 32)
-                                                titleUTF8String:"OffScreen"
-                                                      styleMask:_offscreenStyleMask
-                                                  graphicsHints:hints] autorelease];
+      offscreenWindow      = [[[osWindowClass alloc] initWithFrame:CGRectMake( 0, 0, 32, 32)
+                                                   titleUTF8String:"OffScreen"
+                                                         styleMask:_offscreenStyleMask
+                                                     graphicsHints:hints
+                                                     sharingWindow:nil] autorelease];
       if( ! offscreenWindow)
       {
          [self release];
@@ -217,14 +278,14 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    }
 
    _styleMask = styleMask;
-   window     = [[[GLFWWindow alloc] initWithFrame:frame
-                                   titleUTF8String:title
-                                         styleMask:_styleMask
-                                     graphicsHints:hints
-                                     sharingWindow:offscreenWindow] autorelease];
+   window     = [[[osWindowClass alloc] initWithFrame:frame
+                                      titleUTF8String:title
+                                            styleMask:_styleMask
+                                        graphicsHints:hints
+                                        sharingWindow:offscreenWindow] autorelease];
 
-   return( [self initWithGLFWWindow:window
-                offscreenGLFWWindow:offscreenWindow]);
+   return( [self initWithOSWindow:window
+                offscreenOSWindow:offscreenWindow]);
 }
 
 
@@ -235,75 +296,6 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
                      styleMask:UIWindowStyleResizable]);
 }
 
-
-+ (instancetype) windowWithFrame:(CGRect) frame;
-{
-   return( [[[self alloc] initWithFrame:frame] autorelease]);
-}
-
-
-+ (instancetype) windowWithFrame:(CGRect) frame
-                 titleUTF8String:(char *) title
-                       styleMask:(NSUInteger) styleMask
-{
-   return( [[[self alloc] initWithFrame:frame
-                        titleUTF8String:title
-                              styleMask:styleMask] autorelease]);
-}
-
-
-// conveniences for quick hacks
-+ (instancetype) windowWithView:(UIView *) view
-                titleUTF8String:(char *) title
-{
-   NSUInteger   styleMask;
-   CGRect       rect;
-   BOOL         change;
-   NSUInteger   autoresizingMask;
-   UIWindow     *window;
-
-   styleMask = 0;
-   autoresizingMask = [view autoresizingMask];
-   if( autoresizingMask & UIViewAutoresizingFlexible)
-      styleMask = UIWindowStyleResizable;
-
-   rect = UIEdgeInsetsExtrudeRect( [view frame], [view margins]);
-   if( rect.size.width < 32)
-      rect.size.width = 32;
-   if( rect.size.height < 32)
-      rect.size.height = 32;
-   if( ! (autoresizingMask & ~UIViewAutoresizingFlexible))
-      [view setAutoresizingMask:autoresizingMask|UIViewAutoresizingStickToCenter];
-
-   rect.origin = CGPointZero;
-   window      = [[[UIWindow alloc] initWithFrame:rect
-                                  titleUTF8String:title ? title : "Demo"
-                                        styleMask:styleMask] autorelease];
-   [[window contentPlane] addSubview:view];
-   return( window);
-
-}
-// conveniences for quick hacks
-+ (instancetype) windowWithLayer:(CALayer *) layer
-                 titleUTF8String:(char *) title
-{
-   UIView          *view;
-   CGRect          frame;
-   UIEdgeInsets    margins;
-
-   // convenience
-   frame   = [layer frame];
-   margins = UIEdgeInsetsMake( frame.origin.x, frame.origin.y,
-                               frame.origin.x, frame.origin.y);
-   frame.origin = CGPointZero;
-   [layer setFrame:frame];
-
-   view = [UIView viewWithLayer:layer];
-   [view setMargins:margins];
-   [view setAutoresizingMask:UIViewAutoresizingFlexible|UIViewAutoresizingStickToCenter];
-   return( [self windowWithView:view
-               titleUTF8String:title]);
-}
 
 - (void) finalize
 {
@@ -345,6 +337,31 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
    // TODO: delete window ?
    [super dealloc];
+}
+
+
+
+- (BOOL) __isUIWindow
+{
+   return( YES);
+}
+
+
+- (void) requestClose
+{
+   [_os_window os_requestClose];
+}
+
+
+- (BOOL) shouldClose
+{
+   return( [_os_window os_windowShouldClose] ? YES : NO);
+}
+
+
+- (void) syncFrameWithWindow
+{
+   _frame = [_os_window os_windowFrame];
 }
 
 
@@ -390,6 +407,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 #endif
    _backingStore = UIWindowBackingStoreNonRetained;
 }
+
 
 - (void) runInApplication:(UIApplication *) application
 {
@@ -544,7 +562,6 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
       _postLayoutAnimator = [CAAnimator new];
    return( _postLayoutAnimator);
 }
-
 
 @end
 

@@ -7,7 +7,7 @@ int   main( void)
    UIWindow        *window;
    NSUInteger      styleMask;
 
-   styleMask = UIWindowsDefaultStyleMask;
+   styleMask = UIWindowStyleMaskDefault;
    styleMask = UIWindowsStyleMaskBySetting( styleMask, UIWindowStyleRetained, NO);
 
    app    = [UIApplication sharedInstance];

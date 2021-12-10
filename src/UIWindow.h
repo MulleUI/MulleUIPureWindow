@@ -1,13 +1,12 @@
-#import "UIView.h"
+#import "import.h"
 
 struct CGFrameInfo;
 
 typedef UIView   UIWindowPlane;
 
-@class UIPasteboard;
-@class UIEvent;
-@class UIApplication;
 @class GLFWWindow;  // move to private some time
+@class UIPasteboard;
+@class UIWindow;
 
 
 // UIWindowBackingStoreBuffered
@@ -46,7 +45,7 @@ typedef NSUInteger   UIWindowBackingStoreType;
 
 // value to use is styleMask is 0
 #define UIWindowStyleMaskDefault \
-   (GLFWWindowStyleMaskDefault\
+   (UIWindowStyleDecorated\
     |UIWindowStyleRetained\
     |UIWindowStyleResizable\
     |UIWindowStyleEdgeAntialias \
@@ -61,7 +60,7 @@ typedef NSUInteger   UIWindowBackingStoreType;
 #define UIWindowFrameRateSynced     -INFINITY  // tied to monitor frame rate (or 1/60.0 if not available)
 
 
-#define ui_window_pointer_fifo      mulle__pointerfifo128
+#define ui_window_pointer_fifo                mulle__pointerfifo128
 
 #define ui_window_pointer_fifo_init           _mulle__pointerfifo128_init
 #define ui_window_pointer_fifo_done           _mulle__pointerfifo128_done
@@ -75,11 +74,11 @@ typedef NSUInteger   UIWindowBackingStoreType;
 // none of these are optional, implement them all
 // call before beginRender
 - (void) windowWillBeginRender:(UIWindow *) window
-                       context:(CGContext *) context;
+                       context:(id <UIOSGraphicsContext>) context;
 
 // cabll before endRender
 - (void) windowWillEndRender:(UIWindow *) window
-                     context:(CGContext *) context;
+                     context:(id <UIOSGraphicsContext>) context;
 
 // call after endRender
 - (void) windowDidEndRender:(UIWindow *) window;
@@ -93,32 +92,32 @@ typedef NSUInteger   UIWindowBackingStoreType;
 //
 @interface UIWindow : UIView <UIWindow>
 {
-   id                 _os_window;             // our GLFW Window
-   id                 _offscreen_os_window;   // our drawing Window if buffered
+   id <UIOSWindow>             _os_window;             // our GLFW Window
+   id <UIOSWindow>             _offscreen_os_window;   // our drawing Window if buffered
 
-   CGContext          *_context;
-   CGContext          *_offscreenContext;
+   id <UIOSGraphicsContext>    _context;
+   id <UIOSGraphicsContext>    _offscreenContext;
 
    // TODO: full "beauty" is only needed for offscreen or ?
-   NSUInteger         _styleMask;
-   NSUInteger         _offscreenStyleMask;
+   NSUInteger                  _styleMask;
+   NSUInteger                  _offscreenStyleMask;
 
-   CGSize             _resizeSize;
-   id                 _firstResponder;
-   void               *_quadtree;
+   CGSize                      _resizeSize;
+   id                          _firstResponder;
+   void                       *_quadtree;
 
    struct mulle_pointerarray   _trackingViews;   // views with tracking areas
    struct mulle_pointerarray   _enteredViews;    // views with mouseEntered: sent
    struct mulle_pointerarray   _delegateViews;   // views with need willRender: sent
 
-   CGRect             _originalRect;
-   CGRect             _subdivideRect;
-   CGRect             _dividedRects[ 4];
-   NSUInteger         _nDividedRects;
-   NSUInteger         _nTest;
+   CGRect                      _originalRect;
+   CGRect                      _subdivideRect;
+   CGRect                      _dividedRects[ 4];
+   NSUInteger                  _nDividedRects;
+   NSUInteger                  _nTest;
 
-   CAAnimator         *_preLayoutAnimator;
-   CAAnimator         *_postLayoutAnimator;
+   CAAnimator                  *_preLayoutAnimator;
+   CAAnimator                  *_postLayoutAnimator;
 
    //
    // 8Khz at 60fps = 133 events, 256 should be ample
@@ -131,32 +130,29 @@ typedef NSUInteger   UIWindowBackingStoreType;
    // need to setNeedsDisplay to get the renderer out of the lock and start
    // the render. The _contextLock still needs to be observed when
    // attempting to modify the view hierarchy ?
-   NSConditionLock             *_needsDisplayLock;
-   BOOL                        _isResizing;
-   CAAbsoluteTime              _lastDidFramebufferSwapTimestamp;
-   CAAbsoluteTime              _lastDidProcessEventsTimestamp;
-   BOOL                        _shouldClose;
-   BOOL                        _needsWindowRefresh;
-   NSInteger                   _oldSwapInterval;
-   struct mulle_pointerarray   _renderQueue; // layers to render
+   NSConditionLock                 *_needsDisplayLock;
+   BOOL                            _isResizing;
+   CAAbsoluteTime                  _lastDidFramebufferSwapTimestamp;
+   CAAbsoluteTime                  _lastDidProcessEventsTimestamp;
+   BOOL                            _shouldClose;
+   BOOL                            _needsWindowRefresh;
+   NSInteger                       _oldSwapInterval;
+   struct mulle_pointerarray       _renderQueue; // layers to render
 }
 
-@property( retain) id                   userInfo;
+@property( retain) id              userInfo;
 // TODO: pasteboard is a global resource and is on Application ?
-@property( retain) UIPasteboard         *pasteboard;
-@property( assign) NSThread             *thread;
+@property( retain) UIPasteboard    *pasteboard;
+@property( assign) NSThread        *thread;
 
-@property( assign, readonly) CGFloat    primaryMonitorPPI;
-@property( assign, readonly) CGFloat    primaryMonitorRefreshRate;
+@property( assign) CGFloat         eventFrequency;
 
-@property( assign) CGFloat              eventFrequency;
-
-@property( assign) CGColor              backgroundColor;
+@property( assign) UIHexColor      backgroundHexColor;
 
 // as the framebufferSize via glfw calls can only be done on mainthread
 // we keep a shadow, that gets updated by glfw window events
-@property( assign, readonly) struct CGBitmapSize   framebufferSize;
-@property( assign, getter=clearsFramebuffer) BOOL  clearFramebuffer;
+@property( assign, readonly) struct CGBitmapSize    framebufferSize;
+@property( assign) BOOL                             clearsFramebuffer;
 
 // used for MulleUIPerformance
 @property( assign) id <UIWindowRenderDelegate>   renderDelegate;
@@ -182,13 +178,13 @@ typedef NSUInteger   UIWindowBackingStoreType;
 // be the same through all callbacks.
 //
 @property void   (*willLayoutCallback)( UIWindow *window,
-                                        CGContext *context,
+                                        id <UIOSGraphicsContext> context,
                                         struct CGFrameInfo *info);
 @property void   (*didLayoutCallback)( UIWindow *window,
-                                       CGContext *context,
+                                       id <UIOSGraphicsContext> context,
                                        struct CGFrameInfo *info);
 @property void   (*didCreateRenderQueueCallback)( UIWindow *window,
-                                                  CGContext *context,
+                                                  id <UIOSGraphicsContext> context,
                                                   struct CGFrameInfo *info);
 
 //
@@ -197,7 +193,7 @@ typedef NSUInteger   UIWindowBackingStoreType;
 // stage #2: after CALayer "privat" animations
 //
 @property void   (*didAnimateCallback)( UIWindow *window,
-                                        CGContext *context,
+                                        id <UIOSGraphicsContext> context,
                                         struct CGFrameInfo *info,
                                         NSInteger stage);
 
@@ -206,20 +202,20 @@ typedef NSUInteger   UIWindowBackingStoreType;
 // This is useful to add custom drawing stuff on the bottom.
 //
 @property void   (*willRenderCallback)( UIWindow *window,
-                                        CGContext *context,
+                                        id <UIOSGraphicsContext> context,
                                         struct CGFrameInfo *info);
 
 //
 // This is useful to add custom nanovg drawing stuff on top.
 //
 @property void   (*willEndRenderCallback)( UIWindow *window,
-                                           CGContext *context,
+                                           id <UIOSGraphicsContext> context,
                                            struct CGFrameInfo *info);
 //
 // This is useful to add custom Open GL drawing stuff on top of nanovg.
 //
 @property void   (*didRenderCallback)( UIWindow *window,
-                                       CGContext *context,
+                                       id <UIOSGraphicsContext> context,
                                        struct CGFrameInfo *info);
 
 //
@@ -258,11 +254,12 @@ typedef NSUInteger   UIWindowBackingStoreType;
 
 // even more convenient, even less configurable, for even more
 // convenience checkout UIApplication+UIWindow
-+ (instancetype) windowWithLayer:(CALayer *) layer
++ (instancetype) windowWithLayer:(id <UILayer>) layer
                  titleUTF8String:(char *) title;
 
-- (instancetype) initWithGLFWWindow:(GLFWWindow *) window
-                offscreenGLFWWindow:(GLFWWindow *) offscreenWindow;
+// typically that's a GLFWWindow
+- (instancetype) initWithOSWindow:(id <UIOSWindow>) window
+                offscreenOSWindow:(id <UIOSWindow>) offscreenWindow;
 
 - (instancetype) initWithFrame:(CGRect) frame;
 // default visible: closable, non-resizable, non-maximizable
@@ -275,8 +272,6 @@ typedef NSUInteger   UIWindowBackingStoreType;
 //- (void) hide;
 
 - (void) setNeedsDisplay;
-
-+ (CGFloat) primaryMonitorPPI;
 
 - (BOOL) isWindowThread;
 - (BOOL) isResizing;
@@ -292,6 +287,15 @@ typedef NSUInteger   UIWindowBackingStoreType;
 
 - (void) requestClose;
 - (BOOL) shouldClose;
+
+@end
+
+
+@interface UIWindow( OSFuture)
+
++ (Class) osWindowClass;
++ (Class) osGraphicsContextClass;
++ (NSUInteger) osGraphicsHints;
 
 @end
 
