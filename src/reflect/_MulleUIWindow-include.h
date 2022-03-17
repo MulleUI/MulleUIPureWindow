@@ -11,8 +11,8 @@
  *
  */
 
-#ifndef _mulle_ui_core_include_h__
-#define _mulle_ui_core_include_h__
+#ifndef _mulle_ui_window_include_h__
+#define _mulle_ui_window_include_h__
 
 // You can tweak the following #include with these commands.
 // (Use 148522C7-9709-4A0B-8D63-AC57AD5E520C instead of mulle-quadtree if there are duplicate entries)
@@ -37,18 +37,6 @@
 //    remove for platform:`mulle-sde dependency mark mulle-fifo no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #include <mulle-fifo/mulle-fifo.h>   // mulle-fifo
-
-// You can tweak the following #include with these commands.
-// (Use 83270b01-d35c-4b2e-8b74-7b87855d7c30 instead of glfw if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark glfw no-header`
-//    rename:             `mulle-sde dependency|library set glfw include whatever.h`
-//    reorder:            `mulle-sde dependency move glfw <up|down>`
-//    toggle #include:    `mulle-sde dependency mark glfw [no-]import`
-//    toggle public:      `mulle-sde dependency mark glfw [no-]public`
-//    toggle optional:    `mulle-sde dependency mark glfw [no-]require`
-//    remove for platform:`mulle-sde dependency mark glfw no-platform-<uname>`
-//        (use `mulle-sourcetree-to-c --unames` to list known values)
-#include <GLFW/glfw3.h>   // glfw
 
 // You can tweak the following #include with these commands.
 // (Use 639B19F3-50C8-49D8-9CB9-629102293C25 instead of mulle-framebuffer if there are duplicate entries)

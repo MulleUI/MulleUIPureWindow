@@ -1,4 +1,5 @@
-#import <MulleUICore/MulleUICore.h>
+#import "import.h"
+
 #import <string.h>
 
 struct
@@ -58,7 +59,7 @@ void   setupScene( UIWindowPlane *contentPlane)
 
       sprintf( buf, "child #%ld", (long) i);
       [subview setDebugNameUTF8String:buf];
-      [subview setBackgroundColor:CGColorMakeWithUnsignedInteger( subviewInfo[ i].color)];
+      [subview setBackgroundColor:CGColorMakeWithHexColor( subviewInfo[ i].color)];
       [subview setAutoresizingMask:subviewInfo[ i].mask];
       [view addSubview:subview];
       [view setNeedsLayout];
@@ -70,9 +71,9 @@ int   main()
 {
    CGContext       *context;
    UIWindow        *window;
-   UIApplication   *application;
+   UIApplication   *app;
 
-   application = [UIApplication sharedInstance];
+   app = [UIApplication sharedInstance];
    /*
     * window and app
     */
@@ -83,9 +84,7 @@ int   main()
 
    [window dump];
 
-   [application addWindow:window];
-   [window renderLoop];
-   [application terminate];
+   [app addWindow:window];
 
-   return( 0);
+   return( [app run]);
 }

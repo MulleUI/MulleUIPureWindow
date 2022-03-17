@@ -3,10 +3,16 @@
 #import "UIWindow.h"
 
 #import "UIWindow+UIEvent.h"
+#import "UIWindow+Frame.h"
 #import "UIWindow+Render.h"
+#import "UIWindow+Thread.h"
+#import "UIWindow+UIWindow.h"
 
 #import "import-private.h"
 
+
+//#define RENDER_DEBUG
+#define FLAG_DEBUG
 
 
 @implementation NSObject ( UIWindow)
@@ -17,6 +23,72 @@
 }
 
 @end
+
+
+@interface UIWindow ( Frame)
+
+- (void) _setFrame:(CGRect) frame;
+
+@end
+
+
+
+#define MulleObjCNSLockProtectedAssignReadAccessor( ivar, lockIvar, rval) \
+   ( [lockIvar lock], rval = ivar, [lockIvar unlock], rval)
+
+#define MulleObjCNSLockProtectedAssignWriteAccessor( ivar, lockIvar, value) \
+   ( [lockIvar lock], ivar = (value), [lockIvar unlock], ivar)
+
+
+
+
+static void   *MulleObjCAtomicPointerReadClearIfSet( mulle_atomic_pointer_t *pointer)
+{
+   void   *value;
+
+   do
+   {
+      value = _mulle_atomic_pointer_read( pointer);
+      if( ! value)
+         break;
+   }
+   while( ! _mulle_atomic_pointer_cas( pointer, (void *) 0, (void *) value));
+
+   return( value);
+}
+
+
+static void   MulleObjCAtomicPointerSetBit( mulle_atomic_pointer_t *pointer, uintptr_t bit)
+{
+   uintptr_t   old;
+   uintptr_t   value;
+
+   do
+   {
+      old   = (uintptr_t) _mulle_atomic_pointer_read( pointer);
+      value = old | bit;
+      if( value == old)
+         break;
+   }
+   while( ! _mulle_atomic_pointer_cas( pointer, (void *) value, (void *) old));
+}
+
+
+static void   MulleObjCAtomicPointerClearBit( mulle_atomic_pointer_t *pointer, uintptr_t bit)
+{
+   uintptr_t   old;
+   uintptr_t   value;
+
+   do
+   {
+      old   = (uintptr_t) _mulle_atomic_pointer_read( pointer);
+      value = old & ~bit;
+      if( value == old)
+         break;
+   }
+   while( ! _mulle_atomic_pointer_cas( pointer, (void *) value, (void *) old));
+}
+
 
 
 
@@ -108,28 +180,30 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 }
 
 
+static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEvent *event)
+{
+   return( event);
+}
+
+
 - (instancetype) _initWithFrame:(CGRect) frame
 {
+   NSUInteger   i;
+
    [super initWithFrame:frame];
 
    // assume window has a title bar for contentRect calculation
    // (No difference to frame for me here on Linux)
-   [self syncFrameWithWindow];
+   _frame           = [_OSWindow os_windowFrame];
+
    assert( frame.size.height == _frame.size.height);
    assert( frame.size.width == _frame.size.width);
 
    // initialize various plane for the future, currently only
    // _contentPlane can be used
-   frame.origin     = CGPointZero;
-   _framebufferSize = [_os_window os_framebufferSize];
-
-   // its kinda pointless to inherit clipRects down for views, that are full
-   // window size
-   _clipsToBounds      = NO;
-   _clearsFramebuffer  = YES;
-   _backgroundHexColor = 0xFFFFFFFF;
-
+   frame.origin  = CGPointZero;
    _contentPlane = [UIView viewWithFrame:frame];
+
    [_contentPlane setDebugNameUTF8String:"Window/ContentPlane"];
    [_contentPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
    [_contentPlane setClipsToBounds:NO];
@@ -163,39 +237,54 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    [_alertPlane setHidden:YES];
    [self addSubview:_alertPlane];
 
-   _mulle_pointerarray_init( &_renderQueue, 128, MulleObjCInstanceGetAllocator( self));
+   _mulle_pointerarray_init( &_drawingQueue, 128, MulleObjCInstanceGetAllocator( self));
    _mulle_pointerarray_init( &_delegateViews, 8, MulleObjCInstanceGetAllocator( self));
 
-   _eventFrequency  = 60.0;
-   _oldSwapInterval = NSIntegerMax;
-
    // initially dirty with renderer 1, renderer go!
-   _needsDisplayLock = [[NSConditionLock alloc] initWithCondition:1];
-   [self setNeedsLayout:YES];
+   _mulle_atomic_pointer_nonatomic_write( &_needsRefresh, (void *) 1);
+   _mulle_atomic_pointer_nonatomic_write( &_needsDisplay, (void *) ~0);
+
+   _frameRate           = UIWindowFrameRateAsync;
+   _oldSwapInterval     = NSIntegerMax;
+   _renderFrameCallback = UIWindowDefaultFrameCallback;
+
+   // its kinda pointless to inherit clipRects down for views, that are full
+   // window size
+   _clipsToBounds       = NO;
+   _backgroundColor     = CGColorMakeWithHexColor( 0xFFFFFFFF);
+   _refreshContentMode  = CGContentModeTopLeft;
+
+   _windowEventCallback = defaultWindowEventCallback;
+
+   // preset with some useable values
+   for( i = 0; i < UIWINDOW_S_ELAPSED_HISTORY; i++)
+      _elapsedHistory[ i] = 0.0005;
 
    ui_window_pointer_fifo_init( &_eventQueue);
 
    // don't initialize offscreen window for events
-   [_os_window os_initEvents];
-   [_os_window setWindowEventsReceiver:self];
-   [_os_window setEventsReceiver:self];
+   [_OSWindow os_initEvents];
+   [_OSWindow setWindowEventsReceiver:self];
+   [_OSWindow setEventsReceiver:self];
 
    return( self);
 }
 
 
-- (instancetype) initWithOSWindow:(id <UIOSWindow>) window
-                offscreenOSWindow:(id <UIOSWindow>) offscreenWindow
+- (instancetype) initWithOSWindow:(id <UIOSWindow>) osWindow
+                offscreenOSWindow:(id <UIOSWindow>) osOffscreenWindow
 {
 //CGFloat    primaryMonitorPPI;
+   mulle_absolutetime_t   wait_at_most_until;
+   struct CGFrameInfo     info;
 
-   if( ! window)
+   if( ! osWindow)
    {
       [self release];
       return( nil);
    }
 
-//   primaryMonitorPPI = [window os_primaryMonitorPPI];
+//   primaryMonitorPPI = [osWindow os_primaryMonitorPPI];
 //   if( primaryMonitorPPI == 0.0)
 //   {
 //      // no monitor connected, so lets just bail ? Why though ?
@@ -203,13 +292,23 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 //      return( nil);
 //   }
 
-   _os_window = [window retain];
-   if( offscreenWindow)
-      _offscreen_os_window = [offscreenWindow retain];
-   else
-      _backingStore = UIWindowBackingStoreNonRetained;
+   _OSWindow = [osWindow retain];
+   [_OSWindow setParentWindow:self];
 
-   return( [self _initWithFrame:[window os_windowFrame]]);
+   if( osOffscreenWindow)
+   {
+      _offscreenOSWindow = [osOffscreenWindow retain];
+      [_offscreenOSWindow setParentWindow:self];
+   }
+
+   // setup initial values while still single threaded
+   [self _getFrameInfo:&info];
+   _currentWindowInfo  = info.window;
+   _previousWindowInfo = info.window;
+
+   self = [self _initWithFrame:[osWindow os_windowFrame]];
+   [self initWindowThreadMainIfNeeded];
+   return( self);
 }
 
 
@@ -249,17 +348,19 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    osWindowClass = [Self osWindowClass];
    hints         = [Self osGraphicsHints];
 
+   // default for now
+   _backingStore       = UIWindowBackingStoreVolatile;
    _offscreenStyleMask = styleMask;
    // buffered with offscreen window is the default,
-   if( styleMask & UIWindowStyleRetained)
+   if( styleMask & (UIWindowStyleRetained|UIWindowStyleRetainedOnMainThread))
    {
       //
       // Offscreen window can be minimally sized as we use two different
       // framebuffers. Why ? Because then we have it under control and get a
       // textureID.
       //
-      _offscreenStyleMask &= ~UIWindowStyleResizable;
-      _offscreenStyleMask |= UIWindowStyleInvisible|UIWindowStyleOffscreen;
+      _offscreenStyleMask &= ~(UIWindowStyleResizable);
+      _offscreenStyleMask |= UIWindowStyleInvisible|UIWindowStyleOffscreen|UIWindowStyleBare;
       _offscreenStyleMask |= UIWindowStyleSingleBuffer; // save some memory from bogus buffer
       offscreenWindow      = [[[osWindowClass alloc] initWithFrame:CGRectMake( 0, 0, 32, 32)
                                                    titleUTF8String:"OffScreen"
@@ -272,17 +373,22 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
          return( nil);
       }
 
-      // as we just copy we don't need this
-      // We also don't need to doublebuffer
+      _backingStore = (styleMask & UIWindowStyleRetainedOnMainThread)
+                        ? UIWindowBackingStoreRetainedOnMainThread
+                        : UIWindowBackingStoreRetained;
+
+      // reduce stylrMask for main window
       styleMask &= ~(UIWindowStyleEdgeAntialias|UIWindowStyleStencilStrokes|UIWindowStyleSingleBuffer);
    }
 
    _styleMask = styleMask;
    window     = [[[osWindowClass alloc] initWithFrame:frame
                                       titleUTF8String:title
-                                            styleMask:_styleMask
+                                            styleMask:styleMask
                                         graphicsHints:hints
                                         sharingWindow:offscreenWindow] autorelease];
+
+   MulleObjCObjectSetDuplicatedUTF8String( self, &_titleUTF8String, title);
 
    return( [self initWithOSWindow:window
                 offscreenOSWindow:offscreenWindow]);
@@ -293,24 +399,42 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 {
    return( [self initWithFrame:frame
                titleUTF8String:"Demo"
-                     styleMask:UIWindowStyleResizable]);
+                     styleMask:UIWindowStyleMaskDefault|UIWindowStyleResizable]);
 }
 
 
 - (void) finalize
 {
-   CGContext   *context;
+   CGContext        *context;
+   NSTimeInterval   timeout;
+
+   // remove events from window thread and clear display flag
+   // this is better than not doing it, but no guarantee that an event isn't
+   // processed in the background
+#ifdef DEBUG
+   mulle_fprintf( stderr, "%@: %@ %s\n",
+                        [NSThread currentThread], self, __PRETTY_FUNCTION__);
+#endif
 
    [self discardPendingEvents];
+   _mulle_atomic_pointer_write( &_needsDisplay, (void *) 0);
+
+   // if we have a main thread, we need to bring it down
+   [self finalizeWindowThread];
+
+   // probably need to activate _OSWindow context one more time here
+   [_lastLayer mullePerformFinalize];
+   [_lastLayer autorelease];
+   _lastLayer = nil;
 
    // TODO: delete window ?
    //       remove from screen ?
-   [_offscreen_os_window mullePerformFinalize];
-   [_offscreen_os_window autorelease];
-   _offscreen_os_window = nil;
-   [_os_window mullePerformFinalize];
-   [_os_window autorelease];
-   _os_window = nil;
+   [_offscreenOSWindow mullePerformFinalize];
+   [_offscreenOSWindow autorelease];
+   _offscreenOSWindow = nil;
+   [_OSWindow mullePerformFinalize];
+   [_OSWindow autorelease];
+   _OSWindow = nil;
 
    _firstResponder = nil;
    [super finalize];
@@ -319,6 +443,8 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
 - (void) dealloc
 {
+   MulleObjCObjectSetDuplicatedUTF8String( self, &_titleUTF8String, NULL);
+
    [_postLayoutAnimator release];
    [_preLayoutAnimator release];
 
@@ -327,11 +453,9 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    mulle_pointerarray_release_all( &_enteredViews);
    mulle_pointerarray_done( &_enteredViews);
    mulle_pointerarray_done( &_delegateViews);
-   mulle_pointerarray_done( &_renderQueue);
+   mulle_pointerarray_done( &_drawingQueue);
 
    mulle_quadtree_destroy( _quadtree);
-
-   [_needsDisplayLock release];
 
    ui_window_pointer_fifo_done( &_eventQueue);
 
@@ -340,28 +464,33 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 }
 
 
-
 - (BOOL) __isUIWindow
 {
    return( YES);
 }
 
 
+//
+// forward methods to _OSWindow
+//
+- (void *) forward:(void *) param
+{
+   assert( _OSWindow); // window should not forward...
+   return( mulle_objc_object_call_variablemethodid_inline( _OSWindow,
+                                                          (mulle_objc_methodid_t) _cmd,
+                                                          param));
+}
+
+
 - (void) requestClose
 {
-   [_os_window os_requestClose];
+   [_OSWindow os_requestClose];
 }
 
 
 - (BOOL) shouldClose
 {
-   return( [_os_window os_windowShouldClose] ? YES : NO);
-}
-
-
-- (void) syncFrameWithWindow
-{
-   _frame = [_os_window os_windowFrame];
+   return( [_OSWindow os_windowShouldClose] ? YES : NO);
 }
 
 
@@ -369,85 +498,166 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 {
    assert( hz > 0.0);
    if( hz != 0.0)
-      _frameRate = 1.0f / hz;
+      [self setFrameRate:1.0f / hz];
 }
 
 
 - (CGFloat) frameRateHz
 {
-   if( _frameRate == INFINITY ||
-       _frameRate <= 0.0f)
+   double   frameRate;
+
+   frameRate = [self frameRate];
+   if( frameRate <= 0.0f)
       return( 0.0f);
-   return( 1.0f / _frameRate);
+   if( isinf( frameRate))
+      return( INFINITY);
+   return( 1.0f / frameRate);
+}
+
+- (struct CGBitmapSize) framebufferSize
+{
+   return( _currentWindowInfo.framebufferSize);
 }
 
 
 - (CGFloat) pixelRatio
 {
-   if( ! _framebufferSize.width)
-      return( 1.0);
-   if( _frame.size.width == 0.0)
-      return( 1.0);
-
-   return( _frame.size.width / _framebufferSize.width);
+   return( _currentWindowInfo.pixelRatio);
 }
 
 
-- (void) setBackingStore:(NSUInteger) backingStore
+- (double) primaryMonitorRefreshRate
 {
-   if( _offscreen_os_window)
-   {
-      _backingStore = backingStore;
-      return;
-   }
-#if DEBUG
-   if( backingStore != UIWindowBackingStoreNonRetained)
-       fprintf( stderr, "Window is not configured with an offscreen. "
-"Only UIWindowBackingStoreNonRetained is possible\n");
+   return( [_OSWindow os_primaryMonitorRefreshRate]);
+}
+
+
+- (double) monitorRefreshRate
+{
+   return( [_OSWindow os_monitorRefreshRate]);
+}
+
+//
+// This flag is set by the OS (or the window thread) to indicate that
+// either the most current offscreen buffer should be now copied to the
+// foreground window (thread) or that everything needs to be drawn
+// (direct)
+//
+- (void) setNeedsRefresh
+{
+   _mulle_atomic_pointer_write( &_needsRefresh, (void *) 1);
+#ifdef FLAG_DEBUG
+   mulle_fprintf( stderr, "%@: %@ %s (%p)\n",
+         [NSThread currentThread], self, __PRETTY_FUNCTION__, _mulle_atomic_pointer_read( &_needsRefresh));
 #endif
-   _backingStore = UIWindowBackingStoreNonRetained;
 }
 
 
-- (void) runInApplication:(UIApplication *) application
+- (void) setNeedsRefresh:(BOOL) value
 {
-   // should be public ?
-   [self setThread:[NSThread currentThread]];
-   [self renderLoop];
+   _mulle_atomic_pointer_write( &_needsRefresh, (void *) value);
+#ifdef FLAG_DEBUG
+   mulle_fprintf( stderr, "%@: %@ %s (%p)\n",
+         [NSThread currentThread], self, __PRETTY_FUNCTION__, _mulle_atomic_pointer_read( &_needsRefresh));
+#endif
+}
 
-   // when window closes we are here
-   // should tell application that we are done, but do a finalize first
-   [self mullePerformFinalize];
+
+- (BOOL) needsRefresh
+{
+   void   *value;
+
+   value = _mulle_atomic_pointer_read( &_needsRefresh);
+   return( (BOOL) (uintptr_t) value);
+}
+
+
+
+- (BOOL) needsRefreshClearIfSet
+{
+   return( (BOOL) (NSUInteger) MulleObjCAtomicPointerReadClearIfSet( &_needsRefresh));
 }
 
 
 - (void) setNeedsDisplay
 {
-   //
-   // Will not wait for the renderer to finish, if not already set.
-   //
-   // Problem: may "swallow" some of the changes, if the view hierarchy is
-   // not properly locked... (But it should be)
-   //
-   if( [_needsDisplayLock tryLockWhenCondition:0])
-      [_needsDisplayLock unlockWithCondition:1];
+   _mulle_atomic_pointer_write( &_needsDisplay, (void *) ~0);
+
+#ifdef FLAG_DEBUG
+   mulle_fprintf( stderr, "%@: %@ %s %p\n",
+         [NSThread currentThread], self, __PRETTY_FUNCTION__, _mulle_atomic_pointer_read( &_needsDisplay));
+#endif
 }
 
 
-- (BOOL) needsDisplay
+- (void) setNeedsDisplayBit:(NSUInteger) value
 {
-   //
-   // if we can tryLock with 1, its dirty. unlock keeping the dirty state
-   //
-   if( [_needsDisplayLock tryLockWhenCondition:1])
-   {
-      [_needsDisplayLock unlockWithCondition:1];
-      return( YES);
-   }
-   return( NO);
+   assert( value);
+
+   MulleObjCAtomicPointerSetBit( &_needsDisplay, value);
+
+#ifdef FLAG_DEBUG
+   mulle_fprintf( stderr, "%@: %@ %s %p\n",
+         [NSThread currentThread], self, __PRETTY_FUNCTION__, _mulle_atomic_pointer_read( &_needsDisplay));
+#endif
+
 }
 
 
+- (NSUInteger) needsDisplay
+{
+   void   *value;
+
+   value = _mulle_atomic_pointer_read( &_needsDisplay);
+   return( (NSUInteger) value);
+}
+
+
+- (NSUInteger) needsDisplayClearIfSet
+{
+   return( (NSUInteger) MulleObjCAtomicPointerReadClearIfSet( &_needsDisplay));
+}
+
+
+- (void) setNeedsLayout
+{
+   [self setNeedsDisplayBit:UIWindowNeedsLayout];
+}
+
+
+- (BOOL) needsLayout
+{
+   return( [self needsDisplay] & UIWindowNeedsLayout ? YES : NO);
+}
+
+
+- (void) setNeedsAnimation
+{
+   [self setNeedsDisplayBit:UIWindowNeedsAnimation];
+}
+
+
+- (BOOL) needsAnimation
+{
+   return( [self needsDisplay] & UIWindowNeedsAnimation ? YES : NO);
+}
+
+
+- (void) setNeedsRedraw
+{
+   [self setNeedsDisplayBit:UIWindowNeedsRedraw];
+}
+
+
+- (BOOL) needsRedraw
+{
+   return( [self needsDisplay] & UIWindowNeedsRedraw ? YES : NO);
+
+}
+
+/*
+ *
+ */
 - (BOOL) isWindowThread
 {
    if( ! _thread)
@@ -477,10 +687,10 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 // that renders with a separate thread. Problem (getting framebuffer to
 // other window)
 //
-- (BOOL) isResizing
-{
-   return( _isResizing);
-}
+// - (BOOL) isResizing
+// {
+//    return( _isResizing);
+// }
 
 /*
  * petty accessors
@@ -504,24 +714,227 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 }
 
 
-- (void) setFrame:(CGRect) frame
+/*
+ * only to be used by UIEvents, these don't reflect
+ */
+- (void) _setFrame:(CGRect) frame
 {
-   if( CGRectEqualToRect( _frame, frame))
-      return;
+   [_windowPropertyLock lock];
+   {
+      if( ! CGRectEqualToRect( _frame, frame))
+      {
+         _frame       = frame;
+         _bounds.size = frame.size;
+      }
+   }
+   [_windowPropertyLock unlock];
+}
 
-   _frame = frame;
+//
+// - (void) _setPosition:(CGPoint) position
+// {
+//    CGRect   frame;
+//
+//    [_windowPropertyLock lock];
+//    {
+//       if( ! CGPointEqualToPoint( _frame.origin, position))
+//          _frame.origin = position;
+//    }
+//    [_windowPropertyLock unlock];
+// }
+//
+//
+// - (void) _setSize:(CGSize) size
+// {
+//    CGRect   frame;
+//
+//    [_windowPropertyLock lock];
+//    {
+//       if( ! CGSizeEqualToSize( _frame.size, size))
+//       {
+//          _frame.size  = size;
+//          _bounds.size = size;
+//       }
+//    }
+//    [_windowPropertyLock unlock];
+// }
+//
+// - (void) _setFramebufferSize:(struct CGBitmapSize) size
+// {
+//    MulleObjCNSLockProtectedAssignWriteAccessor( _framebufferSize, _windowPropertyLock, size);
+// }
+
+
+/*
+ * Reflecting property changed to OSWindow
+ */
+
+static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
+{
+   NSUInteger   oldChanges;
+   NSUInteger   newChanges;
+
+   // changes property is read atomically, without locking
+   do
+   {
+      oldChanges = (NSUInteger) _mulle_atomic_pointer_read( &self->_propertyChanges);
+      newChanges = oldChanges | bit;
+      if( oldChanges == newChanges)
+         break;
+   }
+   while( ! _mulle_atomic_pointer_cas( &self->_propertyChanges, (void *) newChanges, (void *) oldChanges));
 }
 
 
+// returns an autoreleased copy of the title string
+- (char *) titleUTF8String
+{
+   char   *s;
+
+   [_windowPropertyLock lock];
+   {
+      s = MulleObjC_asprintf( "%s", _titleUTF8String ? _titleUTF8String : "");
+   }
+   [_windowPropertyLock unlock];
+   return( s);
+}
+
+
+- (void) setTitleUTF8String:(char *) s
+{
+   [_windowPropertyLock lock];
+   {
+      if( _titleUTF8String != s)
+      {
+         if( ! s || ! _titleUTF8String || strcmp( s, _titleUTF8String))
+         {
+            MulleObjCObjectSetDuplicatedUTF8String( self, &_titleUTF8String, s);
+            setPropertyChangesBit( self, UIWindowPropertyChangeTitle);
+         }
+      }
+   }
+   [_windowPropertyLock unlock];
+}
+
+
+- (void) setFrame:(CGRect) frame
+{
+   [_windowPropertyLock lock];
+   {
+      if( ! CGRectEqualToRect( _frame, frame))
+      {
+         _frame       = frame;
+         _bounds.size = frame.size;
+         setPropertyChangesBit( self, UIWindowPropertyChangeFrame);
+      }
+   }
+   [_windowPropertyLock unlock];
+}
+
+
+- (void) writeOSWindowPropertyChangesIfNeeded
+{
+   NSUInteger   changes;
+   CGRect       frame;
+   char         *title;
+
+   changes = (NSUInteger) _mulle_atomic_pointer_read( &_propertyChanges);
+   if( ! changes)
+      return;
+
+   // if this fails sporadically, it's no biggy, but zeroing out nilly, willy
+   // might lose a change
+   _mulle_atomic_pointer_cas( &_propertyChanges, (void *) 0, (void *) changes);
+
+   if( changes & UIWindowPropertyChangeFrame)
+   {
+      frame = [self frame];
+#ifdef DEBUG
+      mulle_fprintf( stderr, "%@: %@ push frame %.2f %.2f %.2f %.2f\n",
+                              [NSThread currentThread], self,
+                              frame.origin.x, frame.origin.y,
+                              frame.size.width, frame.size.height);
+#endif
+      [_OSWindow os_setWindowFrame:frame];
+   }
+
+   if( changes & UIWindowPropertyChangeTitle)
+   {
+      title = [self titleUTF8String];
+#ifdef DEBUG
+      mulle_fprintf( stderr, "%@: %@ push title %s\n",
+                              [NSThread currentThread], self,
+                              title);
+#endif
+      [_OSWindow os_setTitleUTF8String:title];
+   }
+}
+
+
+- (CGColor) backgroundColor
+{
+   CGColor   rval;
+
+   MulleObjCNSLockProtectedAssignReadAccessor( _backgroundColor, _windowPropertyLock, rval);
+   return( rval);
+}
+
+
+- (void) setBackgroundColor:(CGColor) color
+{
+   MulleObjCNSLockProtectedAssignWriteAccessor( _backgroundColor, _windowPropertyLock, color);
+}
+
+
+- (CGContentMode) refreshContentMode
+{
+   CGContentMode   rval;
+
+   MulleObjCNSLockProtectedAssignReadAccessor( _refreshContentMode, _windowPropertyLock, rval);
+   return( rval);
+}
+
+
+- (void) setRefreshContentMode:(CGContentMode) contentMode
+{
+   MulleObjCNSLockProtectedAssignWriteAccessor( _refreshContentMode, _windowPropertyLock, contentMode);
+}
+
+
+- (void) setWindowEventCallback:(UIWindowEvent *(*)(UIWindow *, UIWindowEvent *)) callback
+{
+   if( ! callback)
+      callback = defaultWindowEventCallback;
+   _windowEventCallback = callback;
+}
+
+
+
+
+/*
+ *
+ */
 - (CGRect) frame
 {
-   return( _frame);
+   CGRect         frame;
+
+   [_windowPropertyLock lock];
+   {
+      frame = _frame;
+   }
+   [_windowPropertyLock unlock];
+
+   return( frame);
 }
 
 
 - (CGRect) bounds
 {
-   return( CGRectMake( 0.0, 0.0, _frame.size.width, _frame.size.height));
+   CGRect   rect;
+
+   rect        = [self frame];
+   rect.origin = CGPointZero;
+   return( rect);
 }
 
 

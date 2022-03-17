@@ -1,4 +1,4 @@
-#import <MulleUICore/MulleUICore.h>
+#import "import.h"
 
 
 #define BLAU   CGColorMakeRGBA( 0.1, 0.1, 0.4, 1.0)
@@ -54,7 +54,7 @@ static void   setupSceneInView( UIView *contentPlane)
 
    view  = [UIView viewWithFrame:frame];
    [view setBackgroundColor:BLAU];
-   [[view layer] setDrawCallback:drawStuff];
+   [(CALayer *) [view layer] setDrawCallback:(CALayerDrawCallback_t *) drawStuff];
    [contentPlane addSubview:view];
 }
 
@@ -63,20 +63,24 @@ int   main( int argc, char *argv[])
 {
    UIWindow        *window;
    UIApplication   *app;
-
+   NSUInteger      styleMask;
+   
    app = [UIApplication sharedInstance];
    {
-      window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
+      styleMask = UIWindowStyleMaskDefault & ~UIWindowStyleRetained;
+      window    = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 800.0)
+                            titleUTF8String:"Demo"
+                                  styleMask:styleMask];
+
       assert( window);
 
       [window setBackgroundColor:WEISS];
-
+      [window setRefreshContentMode:CGContentModeTopLeft];
       setupSceneInView( [window contentPlane]);
 
       [app addWindow:window];
-      [window renderLoop];
    }
-   return( [app terminate]);
+   return( [app run]);
 }
 
 

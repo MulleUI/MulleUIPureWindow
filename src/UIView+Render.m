@@ -10,7 +10,7 @@
 
 @implementation UIView ( Render)
 
-- (void) renderInContext:(id <UIOSGraphicsContext>) context
+- (void) renderInContext:(id <UIGraphicsContext>) context
 {
    struct mulle_pointerarray   renderQueue;
 
@@ -20,8 +20,8 @@
 
    @autoreleasepool
    {
-      [self createRenderQueue:&renderQueue]; // 
-      [context renderObjects:&renderQueue];
+      [self createRenderQueue:&renderQueue]; //
+      [context drawObjects:&renderQueue];
    }
 
    _mulle_pointerarray_done( &renderQueue);

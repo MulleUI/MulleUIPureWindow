@@ -3,17 +3,17 @@
  *   `mulle-sde reflect` and any edits will be lost.
  *   Suppress generation of this file with:
  *
- *      mulle-sde environment set MULLE_SOURCETREE_TO_C_PRIVATEIMPORT_FILE DISABLE
+ *      mulle-sde environment set MULLE_SOURCETREE_TO_C_PRIVATEINCLUDE_FILE DISABLE
  *
  *   To not let mulle-sourcetree-to-c generate any header files:
  *
  *      mulle-sde environment set MULLE_SOURCETREE_TO_C_RUN DISABLE
  *
  */
+
+#ifndef _mulle_ui_window_include_private_h__
+#define _mulle_ui_window_include_private_h__
+
 /* no headers */
 
-#ifdef __has_include
-# if __has_include( "_MulleUICore-include-private.h")
-#  include "_MulleUICore-include-private.h"
-# endif
 #endif

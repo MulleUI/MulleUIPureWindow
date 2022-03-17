@@ -1,4 +1,6 @@
-#import <MulleUICore/MulleUICore.h>
+#import "import.h"
+
+#include <time.h>
 
 
 #define BLAU   CGColorMakeRGBA( 0.1, 0.1, 0.4, 1.0)
@@ -49,6 +51,13 @@ static void  drawStuff( CALayer *layer, CGContext *context)
    nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
    nvgTextColor( vg, WEISS, BLAU);
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), "1848", NULL);
+
+   // punish drawing to be super slow, because of buffering it's not
+   // noticable
+   {
+       struct timespec   delay = { 0, 1000 * 1000 * (1000 / 10) };
+       nanosleep( &delay, NULL);
+   }
 }
 
 
@@ -70,7 +79,7 @@ static void   setupSceneInView( UIView *contentPlane)
    //
    [view setMargins:UIEdgeInsetsMake( 10, 10, 10, 10)];
 
-   [[view layer] setDrawCallback:drawStuff];
+   [(CALayer *) [view layer] setDrawCallback:drawStuff];
    [contentPlane addSubview:view];
 }
 
@@ -90,9 +99,8 @@ int   main( int argc, char *argv[])
       setupSceneInView( [window contentPlane]);
 
       [app addWindow:window];
-      [window renderLoop];
    }
-   return( [app terminate]);
+   return( [app run]);
 }
 
 

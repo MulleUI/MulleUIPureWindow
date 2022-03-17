@@ -11,6 +11,7 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
+src/CGFrameInfo+UTF8String.m
 src/UIFont.m
 src/UIPasteboard.m
 src/UIView+CAAnimation.m
@@ -19,10 +20,14 @@ src/UIView+Render.m
 src/UIView+UIResponder.m
 src/UIView+UIWindow.m
 src/UIWindow+CGGeometry.m
+src/UIWindow+Frame.m
+src/UIWindow+OneFrame.m
 src/UIWindow+Render.m
+src/UIWindow+Thread.m
 src/UIWindow+UIEvent.m
 src/UIWindow+UIPasteboard.m
 src/UIWindow+UIResponder.m
+src/UIWindow+UIWindow.m
 src/UIWindow.m
 )
 
@@ -30,5 +35,5 @@ src/UIWindow.m
 # contents selected with patternfile ??-source--stage2-sources
 #
 set( STAGE2_SOURCES
-src/MulleObjCLoader+MulleUICore.m
+src/MulleObjCLoader+MulleUIWindow.m
 )

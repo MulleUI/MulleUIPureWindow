@@ -19,8 +19,8 @@ src/reflect
 # contents selected with patternfile ??-header--private-generated-headers
 #
 set( PRIVATE_GENERATED_HEADERS
-src/reflect/_MulleUICore-import-private.h
-src/reflect/_MulleUICore-include-private.h
+src/reflect/_MulleUIWindow-import-private.h
+src/reflect/_MulleUIWindow-include-private.h
 )
 
 #
@@ -35,10 +35,10 @@ src/include-private.h
 # contents selected with patternfile ??-header--public-generated-headers
 #
 set( PUBLIC_GENERATED_HEADERS
-src/reflect/_MulleUICore-export.h
-src/reflect/_MulleUICore-import.h
-src/reflect/_MulleUICore-include.h
-src/reflect/_MulleUICore-provide.h
+src/reflect/_MulleUIWindow-export.h
+src/reflect/_MulleUIWindow-import.h
+src/reflect/_MulleUIWindow-include.h
+src/reflect/_MulleUIWindow-provide.h
 )
 
 #
@@ -53,19 +53,25 @@ src/include.h
 # contents selected with patternfile ??-header--public-headers
 #
 set( PUBLIC_HEADERS
-src/MulleObjCLoader+MulleUICore.h
-src/MulleUICore.h
+src/CGFrameInfo+UTF8String.h
+src/MulleObjCLoader+MulleUIWindow.h
+src/MulleUIWindow.h
 src/UIFont.h
+src/UILayer.h
 src/UIPasteboard.h
 src/UIView+CAAnimation.h
 src/UIView+RenderQueue.h
 src/UIView+Render.h
 src/UIView+UIResponder.h
 src/UIView+UIWindow.h
+src/UIWindow+Frame.h
+src/UIWindow+OneFrame.h
 src/UIWindow+Render.h
+src/UIWindow+Thread.h
 src/UIWindow+UIEvent.h
 src/UIWindow+UIPasteboard.h
 src/UIWindow+UIResponder.h
+src/UIWindow+UIWindow.h
 src/UIWindow.h
 )
 

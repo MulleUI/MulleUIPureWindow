@@ -13,6 +13,6 @@
 // The semantics are also quite different, as there are no animations
 // and it doesn't layout.
 //
-- (void) renderInContext:(id <UIOSGraphicsContext>) context;
+- (void) renderInContext:(id <UIGraphicsContext>) context;
 
 @end

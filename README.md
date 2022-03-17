@@ -1,6 +1,6 @@
-# 🛸 MulleUICore
+# 🛸 MulleUIWindow
 
-#### 🛸 MulleUICore provides UIViews and UIWindow
+#### 🛸 MulleUIWindow provides UIViews and UIWindow
 
 ![](mulle-tiny-logo-255x256.png)
 
@@ -9,32 +9,14 @@ See live on stream how it progresses: [https://www.twitch.tv/mulle_kybernetik_tv
 
 ![](demos/candycrash.png)
 
-
-### You are here
-
-There is no actual "drawing" code in MulleUICore. Use "MulleGraphics" for
+There is no actual "drawing" code in MulleUIWindow. Use "MulleGraphics" for
 drawing. See "MulleUIControl" for widgets.
 
 
-```
-  .-----------------------------------------.
-  | MulleUIFoundation                       |
-  '-----------------------------------------'
-  .-----------------------------------------.
-  | MulleUIControl                          |
-  '-----------------------------------------'
-  .-----------------. .=====================.
-  | MulleUIImage    | | MulleUICore         |
-  '-----------------' '==============.======.
-  .--------------------------------. | glfw |
-  | MulleGraphics                  | | X11  |
-  '--------------------------------' '------'
-  .-----------------. .------------.
-  | MulleCG         | | MulleCA    |
-  '-----------------' '------------'
-  .--------------------------------.
-  | MulleLayout                    |
-  '--------------------------------'
-```
+### You are here
 
-MulleUICore is only based on [MulleObjCLockFoundation](//github.com/MulleFoundation/MulleObjCFoundation). Foundation datatypes like `NSString` are not available.
+![Overview](overview.dot.svg)
+
+
+MulleUIWindow is based on [MulleObjCLockFoundation](//github.com/MulleFoundation/MulleObjCFoundation). Foundation datatypes like `NSString` are not available
+through MulleUIWindow.

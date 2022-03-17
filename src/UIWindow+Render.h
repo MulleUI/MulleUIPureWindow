@@ -1,35 +1,33 @@
 //
 // Copyright (c) 2021 Nat!, Mulle kybernetiK
 //
+// prefer a local UIWindow over one in import.h
+#ifdef __has_include
+# if __has_include( "UIWindow.h")
+#  import "UIWindow.h"
+# endif
+#endif
 
-#import "UIWindow.h"
+// we want "import.h" always anyway
+#import "import.h"
 
-@class CGContext;
 
+extern void   UIWindowDefaultFrameCallback( UIWindow *self,
+                                            id <UIGraphicsContext> context,
+                                            struct CGFrameInfo *info,
+                                            NSUInteger displayBits);
 
 @interface UIWindow( Render)
 
-- (void) renderLoop;
-- (BOOL) renderUpToNumberOfFrames:(NSUInteger) maxFrames;
-- (void) renderFrame:(struct CGFrameInfo *) info;
-- (BOOL) renderFrameWaitForNeedsDisplay;
+- (void) willRenderWithAbsoluteTime:(mulle_absolutetime_t) renderStart;
 
-- (void) addToDelegateViews:(UIView *) view;
-- (void) removeFromDelegateViews:(UIView *) view;
+- (void) layoutFrame:(struct CGFrameInfo *) info
+     graphicsContext:(id <UIGraphicsContext>) context;
 
-- (void) getFrameInfo:(struct CGFrameInfo *) info;
+// returns YES if animation ran
+- (BOOL) animateFrame:(struct CGFrameInfo *) info
+      graphicsContext:(id <UIGraphicsContext>) context;
+- (void) drawFrame:(struct CGFrameInfo *) info
+   graphicsContext:(id <UIGraphicsContext>) context;
 
-- (id <UIOSGraphicsContext>) activateWindowGraphicsContext;
-- (void) deactivateWindowGraphicsContext:(id <UIOSGraphicsContext>) context;
-- (id <UIOSGraphicsContext>) activateRenderGraphicsContext;
-- (void) deactivateRenderGraphicsContext:(id <UIOSGraphicsContext>) context;
-
-- (void) swapBuffers;
-
-// this will activate the window context!
-- (struct CGFramebufferBitmap)
-   lastRenderedFramebufferBitmapType:(enum CGFramebufferBitmapType) type
-                            inFlight:(BOOL) inFlight
-                           allocator:(struct mulle_allocator *) allocator;
 @end
-

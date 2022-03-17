@@ -4,13 +4,13 @@
 int   main( void)
 {
    UIApplication   *app;
-   GLFWWindow      *window;
+   GLFWOSWindow      *window;
 
    app    = [UIApplication sharedInstance];
 
-   window = [[[GLFWWindow alloc] initWithFrame:CGRectMake( 0, 0, 128, 128)
+   window = [[[GLFWOSWindow alloc] initWithFrame:CGRectMake( 0, 0, 128, 128)
                                titleUTF8String:"Foo"
-                                     styleMask:UIWindowStyleInvisible
+                                     styleMask:UIWindowStyleBare|UIWindowStyleInvisible
                                  sharingWindow:nil] autorelease];
    if( ! window)
    {
