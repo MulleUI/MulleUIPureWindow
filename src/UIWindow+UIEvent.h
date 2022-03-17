@@ -12,21 +12,19 @@
 - (void) addTrackingView:(UIView *) view;
 - (void) removeTrackingView:(UIView *) view;
 
-- (NSUInteger) pollEvents;
 - (void) discardPendingEvents;
 
 // hardcore event handling
-- (void) queueRetainedEvent:(UIEvent *) event;
-- (void) queueEvent:(UIEvent *) event;
+- (void) handleRetainedEvent:(UIEvent *) event;
 
-// returns ored bits of handled events
-- (NSUInteger) waitForEvents:(CARelativeTime) timeout
-                         now:(CAAbsoluteTime) now
-                returnsEarly:(BOOL) returnsEarly;
 
 - (BOOL) willDiscardEvent:(UIEvent *) event;
 - (BOOL) willDiscardOverflowEvent:(UIEvent *) event;
 - (BOOL) willDiscardPendingEvent:(UIEvent *) event;
+
+- (NSUInteger) handleEventQueue;
+
+- (void) sendWindowFramebufferGeometryEvent:(struct CGWindowInfo *) info;
 
 @end
 

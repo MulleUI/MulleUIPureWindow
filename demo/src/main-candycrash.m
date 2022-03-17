@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
-#import <MulleUICore/MulleUICore.h>
-#import <MulleUIPerf/MulleUIPerf.h>
+
+#import "import.h"
 
 #include <float.h>
 #include <math.h>
@@ -12,6 +12,8 @@
 // kynd.info 2014
 // Code "inspired" by paper.js demos
 
+#define      MIN_RADIUS      40
+#define      MAX_RADIUS      40
 #define      numBalls        32
 #define      maxVec          15
 #define      overlapFactor   0.015  // bounce back over framerate 66.6 Hz ?
@@ -26,7 +28,7 @@ static id    balls[ numBalls];
    CGFloat             *_boundOffset;
    CGFloat             *_boundOffsetBuff;
    struct CGPoint      *_sidePoints;
-   CGColor          _fillColor;
+   CGColor              _fillColor;
 }
 
 @property( assign) CGPoint       point;
@@ -73,9 +75,9 @@ static id    balls[ numBalls];
 }
 
 
+#ifdef DUMP
 - (void) dump:(char *) name
 {
-#ifdef DUMP
    NSUInteger   i;
 
    fprintf( stdout, "%s r=%.2f p=%.2f/%.2f v=%.2f,%.2f [", name,
@@ -85,8 +87,8 @@ static id    balls[ numBalls];
       fprintf( stdout, " %.2f/%.2f", _sidePoints[ i].x, _sidePoints[ i].y);
    }
    fprintf( stdout, "]\n");
-#endif
 }
+#endif
 
 /*
  * Ball collision
@@ -266,15 +268,23 @@ static void  drawStuff( CALayer *layer, CGContext *context)
    NSUInteger   j;
    static int   rounds;
 
+#ifdef DEBUG
+   mulle_fprintf( stderr, "%s", __PRETTY_FUNCTION__);
+#endif
+
+#ifdef DUMP
    [balls[ 0] dump:"a (before)"];
    [balls[ 1] dump:"b (before)"];
+#endif
 
    for( i = 0; i < numBalls - 1; i++)
       for( j = i + 1; j < numBalls; j++)
          [balls[ i] react:balls[ j]];
 
+#ifdef DUMP
    [balls[ 0] dump:"a (after)"];
    [balls[ 1] dump:"b (after)"];
+#endif
 
    canvas = [layer canvas];
    for( i = 0; i < numBalls; i++)
@@ -299,7 +309,7 @@ static void   setupSceneInView( UIView *contentPlane)
 
    for( i = 0; i < numBalls; i++)
    {
-      r = CGFloatMakeRandom() * 40 + 40;
+      r = CGFloatMakeRandom() * (MAX_RADIUS - MIN_RADIUS) + MIN_RADIUS;
       p = CGPointMakeRandomInRect( contentRect);
       v = CAPolarPointMake( CGFloatMakeRandom(),
                             CAAngleDegreesToRadians( CGFloatMakeRandom() * 360));
@@ -326,23 +336,33 @@ int   main( int argc, char *argv[])
    UIWindow        *window;
    UIApplication   *app;
    MulleUIPerf     *perf;
+   CGRect          frame;
 
    app = [UIApplication sharedInstance];
    {
-      window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
-      assert( window);
-      //[window setBackgroundColor:CGColorMakeRGBA( 0.0, 0.0, 1.0, 1.0)];
+      frame  = CGRectMake( 0.0, 0.0, 800.0, 600.0);
+      window = [UIWindow windowWithFrame:frame
+                         titleUTF8String:"Demo"
+                               styleMask:UIWindowStyleMaskDefault & ~UIWindowStyleRetained];
 
-      perf = [MulleUIPerf object];
-      [window setRenderDelegate:perf];
+//      window = [UIWindow windowWithFrame:CGRectMake( frame)];
+      assert( window);
+
+      // If alpha is 0.0 balls lose contour ?
+      // If color is white, nothing is shown
+      [window setBackgroundColor:CGColorMakeRGBA( 0.0, 0.0, 0.0, 1.0)];
+
       [window setFrameRateHz:60.0];
 
       setupSceneInView( [window contentPlane]);
 
       [app addWindow:window];
-      [window renderLoop];
    }
-   return( [app terminate]);
+
+   perf = [MulleUIPerf object];
+   [window setFrameDelegate:perf];
+
+   return( [app run]);
 }
 
 

@@ -43,15 +43,6 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 @end
 
 
-@interface NSObject( CAAnimation)
-
-- (void) animatePropertiesWithSnapshot:(id) snapshot
-                        animationGroup:(CAAnimationGroup *) group;
-
-@end
-
-
-
 @implementation UIView ( CAAnimation)
 
 //
@@ -216,7 +207,7 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 
 
 //
-+ (CARelativeTime) animationDelay
++ (mulle_relativetime_t) animationDelay
 {
    CATransaction   *transaction;
 
@@ -226,7 +217,7 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 }
 
 
-+ (void) setAnimationDelay:(CARelativeTime) delay
++ (void) setAnimationDelay:(mulle_relativetime_t) delay
 {
    CATransaction   *transaction;
 
@@ -237,7 +228,7 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 
 
 
-+ (CARelativeTime) animationDuration
++ (mulle_relativetime_t) animationDuration
 {
    CATransaction   *transaction;
 
@@ -247,7 +238,7 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 }
 
 
-+ (void) setAnimationDuration:(CARelativeTime) duration
++ (void) setAnimationDuration:(mulle_relativetime_t) duration
 {
    CATransaction   *transaction;
 

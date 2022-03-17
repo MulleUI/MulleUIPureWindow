@@ -15,10 +15,13 @@ src/main-autoresizingmask.m
 src/main-candycrash.m
 src/main-demo.m
 src/main-demo-resizable.m
+src/main-fprintf-crash.m
 src/main-fps.m
+src/main-frames.m
 src/main-glfw-sharing.m
 src/main-glfw-texture.m
 src/main-shared.m
 src/main-swapinterval.m
-src/main-two-windows.m
+src/main-window-buffered.m
+src/main-window-unbuffered.m
 )

@@ -1,7 +1,6 @@
 #define _GNU_SOURCE
 
-#import <MulleUICore/MulleUICore.h>
-#import <MulleUIPerf/MulleUIPerf.h>
+#import "import.h"
 
 #include <stdio.h>
 #include <time.h>
@@ -132,7 +131,7 @@ static void   setupSceneInView( UIView *contentPlane)
 
    view  = [[[UIView alloc] initWithFrame:frame] autorelease];
    [view setBackgroundColor:CGColorMakeRGBA( 0.0, 0.0, 0.0, 1.0)];
-   [[view layer] setDrawCallback:drawStuff];
+   [(CALayer *) [view layer] setDrawCallback:drawStuff];
    [contentPlane addSubview:view];
 }
 
@@ -157,16 +156,17 @@ int   main( int argc, char *argv[])
 
       [window setBackgroundColor:CGColorMakeRGBA( 1.0, 1.0, 1.0, 1.0)];
 
-      perf = [MulleUIPerf object];
-      [window setRenderDelegate:perf];
       [window setFrameRate:UIWindowFrameRateSynced];
       [window setSwapInterval:swapInterval];
       setupSceneInView( [window contentPlane]);
 
       [app addWindow:window];
-      [window renderLoop];
    }
-   return( [app terminate]);
+
+   perf = [MulleUIPerf object];
+   [window setFrameDelegate:perf];
+
+   return( [app run]);
 }
 
 

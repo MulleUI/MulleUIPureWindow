@@ -43,11 +43,11 @@ enum UIViewAnimationCurve
 + (CATweenFunction *) animationTweenFunction;
 + (void) setAnimationTweenFunction:(CATweenFunction *) curve;
 
-+ (CARelativeTime) animationDelay;
-+ (void) setAnimationDelay:(CARelativeTime) delay;
++ (mulle_relativetime_t) animationDelay;
++ (void) setAnimationDelay:(mulle_relativetime_t) delay;
 
-+ (CARelativeTime) animationDuration;
-+ (void) setAnimationDuration:(CARelativeTime) duration;
++ (mulle_relativetime_t) animationDuration;
++ (void) setAnimationDuration:(mulle_relativetime_t) duration;
 
 + (BOOL) animationRepeatAutoreverses;
 + (void) setAnimationRepeatAutoreverses:(BOOL) flag;

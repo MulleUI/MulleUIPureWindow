@@ -1,6 +1,4 @@
-#import <MulleUICore/MulleUICore.h>
-#import <MulleUIImage/MulleUIImage.h>
-
+#import "import.h"
 
 
 static const GLfloat   vertices[4][2] =
@@ -100,14 +98,14 @@ static void  drawStuff_nvg( CALayer *layer, CGContext *context)
       if( ! imageHandle[ 0])
       {
          vgs[ 0]         = vg;
-         imageHandle[ 0] = nvgCreateImageRGBA( vg, 8, 8, 0, stupidtex);
-         imageID       = imageHandle[ 0];
+         imageHandle[ 0] = nvgCreateImageRGBA( vg, 8, 8, 0, (void *) stupidtex);
+         imageID         = imageHandle[ 0];
       }
       else
       {
          vgs[ 1]         = vg;
          imageHandle[ 1] = nvgCopyImage( vgs[ 1], vgs[ 0], imageHandle[ 0]);
-         imageID       = imageHandle[ 1];
+         imageID         = imageHandle[ 1];
       }
    }
 
@@ -175,14 +173,14 @@ static void   setupSceneInView( UIView *contentPlane, CGColor color)
 
    view  = [UIView viewWithFrame:frame];
    [view setBackgroundColor:color];
-   [[view layer] setDrawCallback:drawStuff];
+   [(CALayer *) [view layer] setDrawCallback:drawStuff];
    [contentPlane addSubview:view];
 }
 
 
 int   main( int argc, char *argv[])
 {
-   GLFWWindow      *glfwWindow[ 2];
+   GLFWOSWindow    *glfwWindow[ 2];
    UIApplication   *app;
    UIWindow        *window[ 2];
    NSUInteger      i;
@@ -197,13 +195,14 @@ int   main( int argc, char *argv[])
       for( i = 0; i < 2; i++)
       {
          frame = CGRectMake( 0.0 + 500 * i, 100.0, 400.0, 300.0);
-         glfwWindow[ i] = [[[GLFWWindow alloc] initWithFrame:frame
+         glfwWindow[ i] = [[[GLFWOSWindow alloc] initWithFrame:frame
                                                 titleUTF8String:! i ? "Demo" : "Demo2"
-                                                   styleMask:0
-                                               sharingWindow:i ? glfwWindow[ 0] : NULL] autorelease];
+                                                      styleMask:0
+                                                  graphicsHints:0
+                                                  sharingWindow:i ? glfwWindow[ 0] : NULL] autorelease];
 
-         window[ i] = [[[UIWindow alloc] initWithGLFWWindow:glfwWindow[ i]
-                                        offscreenGLFWWindow:nil] autorelease];
+         window[ i] = [[[UIWindow alloc] initWithOSWindow:glfwWindow[ i]
+                                        offscreenOSWindow:nil] autorelease];
          assert( window[ i]);
 
          [window[ i] setBackgroundColor:WEISS];
@@ -220,13 +219,13 @@ int   main( int argc, char *argv[])
       {
          if( ! closed[ 0])
          {
-            closed[ 0] = [window[ 0] renderUpToNumberOfFrames:1];
+            closed[ 0] = [window[ 0] runOneFrame];
             if( closed[ 0])
                fprintf( stderr, "0 closed\n");
          }
          if( ! closed[ 1])
          {
-            closed[ 1] = [window[ 1] renderUpToNumberOfFrames:1];
+            closed[ 1] = [window[ 1] runOneFrame];
             if( closed[ 1])
                fprintf( stderr, "1 closed\n");
          }

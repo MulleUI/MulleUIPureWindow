@@ -4,16 +4,69 @@
 
 #import "import-private.h"
 
-#import "UIWindow+Render.h"
+#import "UIWindow+Frame.h"
+#import "UIWindow+Thread.h"
 #import "UIWindow+UIResponder.h"
 #import "UIView+UIWindow.h"
 
 
-//#define CALLBACK_DEBUG
 //#define MOUSE_MOTION_CALLBACK_DEBUG
 //#define MOUSE_BUTTON_CALLBACK_DEBUG
 //#define RESIZE_CALLBACK_DEBUG
 #define ABORT_ON_EVENT_OVERFLOW
+#define HANDLE_EVENT_DEBUG
+//#define PROCESS_EVENT_DEBUG
+#define WINDOW_EVENT_CALLBACK_DEBUG
+
+
+#define UIEventTypeWindowFramebufferGeometry  1001
+
+
+@interface UIWindowFramebufferGeometryEvent : UIUserEvent
+
+- (instancetype) initWithWindowInfo:(struct CGWindowInfo *) windowInfo;
+
+@property( assign, readonly) struct CGWindowInfo   windowInfo;
+
+@end
+
+
+@implementation UIWindowFramebufferGeometryEvent
+
+- (instancetype) initWithWindowInfo:(struct CGWindowInfo *) windowInfo
+{
+   assert( windowInfo);
+
+   [self initWithMouseLocation:CGPointZero
+                     modifiers:0
+               eventIdentifier:UIEventTypeWindowFramebufferGeometry];
+   _windowInfo = *windowInfo;
+   return( self);
+}
+
+
+- (char *) _payloadUTF8String
+{
+   return( MulleObjC_asprintf( "eventIdentifier=%td frame=%.2f %.2f %.2f %.2f frameBuffer=%td %td",
+                                 _eventIdentifier,
+                                 _windowInfo.frame.origin.x,
+                                 _windowInfo.frame.origin.y,
+                                 _windowInfo.frame.size.width,
+                                 _windowInfo.frame.size.height,
+                                 _windowInfo.framebufferSize.width,
+                                 _windowInfo.framebufferSize.height));
+}
+
+@end
+
+
+@interface UIWindow( Private)
+
+//- (void) _setPosition:(CGPoint) position;
+//- (void) _setSize:(CGSize) size;
+//- (void) _setFramebufferSize:(struct CGBitmapSize) size;
+
+@end
 
 
 @implementation UIWindow( UIEvent)
@@ -21,6 +74,94 @@
 - (id) _firstResponder
 {
    return( _firstResponder);
+}
+
+
+/*
+ * Window events are special. They don't come in over the queue but are
+ * dispatched directly. It's assumed that only the main window (not the
+ * offscreen window) sends these events. In a multi-thread configuration
+ * these events come in and are handled by the mainThread. The regular
+ * evens also come in over the mainThread put are then queued for the
+ * window thread.
+ */
+- (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event
+{
+   CGRect  frame;
+
+   event = (*_windowEventCallback)( self, event);
+   if( ! event)
+      return( event);
+
+   assert( [NSThread mulleIsMainThread]);
+
+#ifdef WINDOW_EVENT_CALLBACK_DEBUG
+   mulle_fprintf( stderr, "%@: %@ %s handles %@\n",
+                          [NSThread currentThread], self, __PRETTY_FUNCTION__,
+                          event);
+#endif
+
+   switch( [event windowEventType])
+   {
+   case UIWindowEventTypeClose :
+      // this will be polled by the main loop, which will then
+      // finalize the window
+      //
+      _shouldClose = YES;
+      return( nil);
+
+   case UIWindowEventTypeFramebufferResize :
+      // [self _setFramebufferSize:[(UIWindowFramebufferResizeEvent *) event size]];
+      [self setNeedsDisplayBit:~0];
+      return( nil);
+
+   case UIWindowEventTypeResize :
+      // [self _setSize:CGBitmapSizeGetSize( [(UIWindowResizeEvent *) event size])];
+      _isResizing = YES;
+
+      [self setNeedsDisplayBit:~0];
+      return( nil);
+
+   //
+   // this necessitates a refresh on Linux, else flicker
+   // but we always get a refresh afterwards, so don't do it twice
+   // But how sure is that ?
+   case UIWindowEventTypeMove :
+      // [self _setPosition:CGBitmapPointGetPoint( [(UIWindowMoveEvent *) event origin])];
+      return( nil);
+      // fall thru
+
+   // on linux we always get refresh event, so it's not necessary to
+   // call this all the time for the other events (which could lead
+   // to duplicate redraws)
+   case UIWindowEventTypeRefresh :
+      // we react "fast" to incoming refresh request and swap buffers
+      // immediately, so that window contents look fine.
+      if( _backingStore == UIWindowBackingStoreVolatile)
+      {
+         [self setNeedsRefresh];  // forward to OS_Window
+         [UIEvent sendEmptyEvent];
+         return( nil);
+      }
+
+#ifdef WINDOW_EVENT_CALLBACK_DEBUG
+      mulle_fprintf( stderr, "%@: %@ %s short circuits refresh and swap\n",
+                        [NSThread currentThread], self, __PRETTY_FUNCTION__,
+                        UIWindowEventTypeUTF8String( [event windowEventType]));
+#endif
+      // immediately refresh framebuffer
+      [self setNeedsRefresh:NO];
+      [self refresh];
+      [self swapBuffers];
+
+      // window thread may want to check if geometry has changed and
+      // redraw if needed
+      [self wakeupWindowThread];
+
+      return( nil);
+   }
+
+   return( event);
 }
 
 
@@ -53,11 +194,11 @@
 
 - (void) addTrackingAreasOfView:(UIView *) view
 {
-   NSUInteger                 i;
-   NSUInteger                 n;
+   NSUInteger              i;
+   NSUInteger              n;
    struct UITrackingArea   *area;
-   CGRect                     rect;
-   CGRect                     converted;
+   CGRect                  rect;
+   CGRect                  converted;
 
    assert( ! view || [view isKindOfClass:[UIView class]]);
    assert( [view window] == self || ! [view window]);
@@ -205,74 +346,6 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    return( event);
 }
 
-/*
- * Window events are special. They don't come in over the queue but are
- * dispatched directly. It's assumed that only the main window (not the
- * offscreen window) handles these events.
- */
-- (UIEvent *) handleWindowEvent:(UIWindowEvent *) event
-{
-   CGRect  frame;
-
-   switch( [event windowEventType])
-   {
-   case UIWindowEventTypeClose :
-      _shouldClose = YES;
-      return( nil);
-
-   case UIWindowEventTypeFramebufferResize :
-      // ignore size, polled during next redraw anyway
-      // and we are getting a refresh anyway next
-#ifdef RESIZE_CALLBACK_DEBUG
-   fprintf( stderr, "%s %s handled UIWindowEventTypeFramebufferResize\n",
-                     __PRETTY_FUNCTION__,
-                     [self UTF8String]);
-#endif
-      _framebufferSize = [(UIWindowFramebufferResizeEvent *) event size];
-      _isResizing      = YES;
-      [self setNeedsDisplay];
-      return( nil);
-
-   case UIWindowEventTypeResize :
-      _frame.size = CGBitmapSizeGetSize( [(UIWindowResizeEvent *) event size]);
-      _isResizing = YES;
-
-      [self setNeedsLayout:YES];
-      [self setNeedsDisplay];
-#ifdef RESIZE_CALLBACK_DEBUG
-   fprintf( stderr, "%s %s handled UIWindowEventTypeResize\n",
-                     __PRETTY_FUNCTION__,
-                     [self UTF8String]);
-#endif
-      return( nil);
-
-   // this necessitates a refresh on Linux, else flicker
-   case UIWindowEventTypeMove :
-      _frame.origin = CGBitmapPointGetPoint( [(UIWindowMoveEvent *) event origin]);
-      _needsWindowRefresh = YES; // this preempts event processing
-                                 // so we can react as fast as possible
-      [self setNeedsDisplay];
-      return( nil);
-
-   // on linux we always get refresh event, so it's not necessary to
-   // call this all the time for the other events (which could lead
-   // to duplicate redraws)
-   case UIWindowEventTypeRefresh :
-      _needsWindowRefresh = YES; // this preempts event processing
-                                 // so we can react as fast as possible
-      [self setNeedsDisplay];
-
-      // we react "fast" to incoming refresh request and swap buffers
-      // immediately, so that window contents look fine.
-      if( _backingStore == UIWindowBackingStoreBuffered)
-         [self swapBuffers];
-      return( nil);
-   }
-
-   return( event);
-}
-
-
 
 
 /*
@@ -312,11 +385,22 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 }
 
 
-- (void) queueRetainedEvent:(UIEvent *) event
+- (void) handleRetainedEvent:(UIEvent *) event
 {
    assert( [NSThread mulleIsMainThread]);
-
    assert( event);
+
+   //
+   // if this is a "bare" mainthread window handle the event immediately
+   // otherwise queue it up
+   //
+   if( ! _windowThread)
+   {
+       assert( _backingStore != UIWindowBackingStoreRetained);
+
+       [self handleEvent:[event autorelease]];
+       return;
+   }
 
    //
    // events that can not be queued will have to be discarded
@@ -327,13 +411,12 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
       {                                          // for super important events
          [event autorelease];
       }
+      return;
    }
+
+   [self wakeupWindowThread];
 }
 
-- (void) queueEvent:(UIEvent *) event
-{
-   [self queueRetainedEvent:[event retain]];
-}
 
 
 //
@@ -346,8 +429,8 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 
    assert( [self isWindowThread]);
 
-   old = [_os_window discardEventsMask];
-   [_os_window setDiscardEventsMask:~0];  // discard all
+   old = [_OSWindow discardEventsMask];
+   [_OSWindow setDiscardEventsMask:~0];  // discard all
    {
       UIEvent   *event;
 
@@ -364,98 +447,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
          }
       }
    }
-   [_os_window setDiscardEventsMask:old];
-}
-
-//
-// Execute all events in the queue until empty. This has to be called by the
-// Windows thread. Returns OR of eventType
-//
-- (NSUInteger) handleEventQueue
-{
-   UIEvent      *event;
-   NSUInteger   mask;
-
-   mask = 0;
-   for(;;)
-   {
-      event = ui_window_pointer_fifo_read_barrier( &_eventQueue);
-      if( ! event)
-         break;
-
-      @autoreleasepool
-      {
-         [event autorelease];
-         // could time event time spent and then complain if it's too long
-         [self handleEvent:event];
-         mask |= [event eventType];
-      }
-   }
-   return( mask);
-}
-
-
-- (NSUInteger) pollEvents
-{
-   if( [NSThread mulleIsMainThread])
-      [UIEvent os_pollEvents];
-   return( [self handleEventQueue]);
-}
-
-
-// in terms of rendering, we are hopefully say in the middle of the frame
-// the frame as rendered and now we do the events. We want to do also events
-// coming in in the second half of the frame, but we do not want to busy wait
-// nor do we want to sleep long, because of latency.
-//
-#ifdef ns
-# undef ns
-#endif
-#ifdef us
-# undef us
-#endif
-
-#define us( x)    (long) ((x) * 1000)
-#define ms( x)    (long) (us(x) * 1000)
-
-
-- (NSUInteger) waitForEvents:(CARelativeTime) timeout
-                         now:(CAAbsoluteTime) now
-                returnsEarly:(BOOL) returnsEarly
-{
-   struct timespec   delay;
-   CAAbsoluteTime    then;
-   NSUInteger        mask;
-   CARelativeTime    diff;
-
-   then = now + timeout;
-   mask = 0;
-
-   //
-   // set this now to NO, if a window refresh events is received we
-   // preempt, even if returnsEarly is NO
-   //
-   _needsWindowRefresh = NO;  // need this be atomic ?
-
-   for(;;)
-   {
-      mask |= [self pollEvents];
-      if( mask && returnsEarly)
-         break;
-
-      if( _needsWindowRefresh)
-         break;
-
-      // could also check here, if events took too much time
-      diff = CAAbsoluteTimeNow() - then;
-      if( diff >= 0.0)
-         break;
-
-      delay.tv_sec  = 0;
-      delay.tv_nsec = diff < ms( 0.5) ? diff : ms( 0.5);
-      nanosleep( &delay, NULL);
-   }
-   return( mask);
+   [_OSWindow setDiscardEventsMask:old];
 }
 
 
@@ -470,11 +462,15 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    unsigned int                          n;
    BOOL                                  isDrag;
    id <UIResponder>                      responder;
+   struct CGWindowInfo                   windowInfo;
 
    assert( event);
 
-   if( _eventCallback)
-      event = (*_eventCallback)( self, event);
+#ifdef HANDLE_EVENT_DEBUG
+   mulle_fprintf( stderr, "%@: %@ handle %@ event\n",
+                        [NSThread currentThread], self, event);
+#endif
+   event = (*_eventCallback)( self, event);
 
    switch( [event eventType])
    {
@@ -502,7 +498,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
                if( [self respondsToSelector:@selector( dumpRenderQueue)])
                {
                   [self performSelector:@selector( dumpRenderQueue)
-                             withObject:(id) &_renderQueue];
+                             withObject:(id) &_drawingQueue];
                   return( nil);
                }
                break;
@@ -528,6 +524,22 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 
    case UIEventTypeWindow :
       event = [self handleWindowEvent:(UIWindowEvent *) event];
+
+   case UIEventTypeUser :
+      switch( [(UIUserEvent *) event eventIdentifier])
+      {
+      case UIEventTypeWindowFramebufferGeometry :
+        // copy value into our UIView hierarchy
+         _currentWindowInfo = [(UIWindowFramebufferGeometryEvent *) event windowInfo];
+
+         // set our frame, but don't propagate back so use _setFrame
+         // instead of setFrame:
+         [self _setFrame:_currentWindowInfo.frame];
+         [self setNeedsLayout];
+         event = nil;
+         break;
+      }
+      break;
 
    default:
       break;
@@ -560,6 +572,52 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 }
 
 
+//
+// Execute all events in the queue until empty. This has to be called by the
+// Windows thread. Returns OR of eventType
+//
+- (NSUInteger) handleEventQueue
+{
+   UIEvent      *event;
+   NSUInteger   mask;
+
+   //
+   // the event must be handled by the windowThread, if we have one
+   //
+   assert( ! _windowThread || [NSThread currentThread] == _windowThread);
+
+   mask = 0;
+   for(;;)
+   {
+      event = ui_window_pointer_fifo_read_barrier( &_eventQueue);
+      if( ! event)
+         break;
+
+      @autoreleasepool
+      {
+         [event autorelease];
+         // could time event time spent and then complain if it's too long
+         [self handleEvent:event];
+         mask |= [event eventType];
+      }
+   }
+   return( mask);
+}
+
+
+- (void) sendWindowFramebufferGeometryEvent:(struct CGWindowInfo *) info
+{
+   UIEvent   *event;
+
+   event = [[UIWindowFramebufferGeometryEvent alloc] initWithWindowInfo:info];
+
+#ifdef WINDOW_EVENT_CALLBACK_DEBUG
+   mulle_fprintf( stderr, "%@: %@ %s send %@\n",
+                          [NSThread currentThread], self, __PRETTY_FUNCTION__,
+                          event);
+#endif
+
+   [self handleRetainedEvent:event];
+}
 
 @end
-

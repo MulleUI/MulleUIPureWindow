@@ -51,7 +51,7 @@ following words:
 [source](src/main-fps.m)
 
 Swapinterval looks like fps, but here you can give the swapinterval on the
-commandline (0-3). 
+commandline (0-3).
 
 [source](src/main-swapinterval.m)
 
@@ -67,7 +67,7 @@ Share a GPU texture between three windows.
 
 #### glfw-texture
 
-Small GLUT demo transformed into a GLFWWindow with minimal effort.
+Small GLUT demo transformed into a GLFWOSWindow with minimal effort.
 A small texture is mapped onto a spinning rectangle.
 
 ![](glfw-texture.png)
