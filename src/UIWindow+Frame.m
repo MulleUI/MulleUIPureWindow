@@ -54,7 +54,7 @@
    [_context setActive:YES];
 
 #ifdef SWAP_DEBUG
-   mulle_fprintf( stderr, "%@: %s %@ window context\n",
+   mulle_fprintf( stderr, "%#@: %s %@ window context\n",
             [NSThread currentThread], __PRETTY_FUNCTION__, self);
 #endif
    return( _context);
@@ -87,7 +87,7 @@
    [_offscreenContext setActive:YES];                        // just a flag
 
 #ifdef SWAP_DEBUG
-   mulle_fprintf( stderr, "%@: %s %@ offscreen context\n",
+   mulle_fprintf( stderr, "%#@: %s %@ offscreen context\n",
             [NSThread currentThread], __PRETTY_FUNCTION__, self);
 #endif
    return( _offscreenContext);
@@ -102,7 +102,7 @@
    if( context == _offscreenContext)
    {
 #ifdef SWAP_DEBUG
-   mulle_fprintf( stderr, "%@: %s %@ offscreen context\n",
+   mulle_fprintf( stderr, "%#@: %s %@ offscreen context\n",
             [NSThread currentThread], __PRETTY_FUNCTION__, self);
 #endif
       [_offscreenOSWindow os_deactivateGraphicsContext];
@@ -110,7 +110,7 @@
    else
    {
 #ifdef SWAP_DEBUG
-      mulle_fprintf( stderr, "%@: %s %@ window context\n",
+      mulle_fprintf( stderr, "%#@: %s %@ window context\n",
             [NSThread currentThread], __PRETTY_FUNCTION__, self);
 #endif
       [_OSWindow os_deactivateGraphicsContext];
@@ -145,7 +145,7 @@
 {
    [self _getFrameInfo:info];
 #ifdef RENDERINFO_DEBUG
-   mulle_fprintf( stderr, "%@: %@ %s info:%s previous:%s\n",
+   mulle_fprintf( stderr, "%#@: %#@ %s info:%s previous:%s\n",
                         [NSThread currentThread],
                         self,
                         __PRETTY_FUNCTION__,
@@ -173,7 +173,7 @@
    context = [self activateRenderGraphicsContext];
    {
 #ifdef RENDERINFO_DEBUG
-      mulle_fprintf( stderr, "%@: %@ %s %s\n",
+      mulle_fprintf( stderr, "%#@: %#@ %s %s\n",
                         [NSThread currentThread], self, __PRETTY_FUNCTION__,
                         CGFrameInfoUTF8String( info));
 #endif
@@ -224,7 +224,7 @@
 - (void) swapBuffers
 {
 #ifdef SWAP_DEBUG
-   mulle_fprintf( stderr, "%@: %s %@\n",
+   mulle_fprintf( stderr, "%#@: %s %@\n",
             [NSThread currentThread], __PRETTY_FUNCTION__, self);
 #endif
 

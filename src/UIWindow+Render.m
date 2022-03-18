@@ -74,7 +74,7 @@
    UIView                                *view;
 
 #ifdef RENDER_DEBUG
-   mulle_fprintf( stderr, "%@: %s %@\n",
+   mulle_fprintf( stderr, "%#@: %s %@\n",
             [NSThread currentThread], __PRETTY_FUNCTION__, self);
 #endif
 
@@ -89,7 +89,7 @@
      graphicsContext:(id <UIGraphicsContext>) context
 {
 #ifdef RENDER_DEBUG
-   mulle_fprintf( stderr, "%@: %s %@\n",
+   mulle_fprintf( stderr, "%#@: %s %@\n",
             [NSThread currentThread], __PRETTY_FUNCTION__, self);
 #endif
    /*
@@ -131,7 +131,7 @@
    BOOL   didAnimate;
 
 #ifdef RENDER_DEBUG
-   mulle_fprintf( stderr, "%@: %s %@\n",
+   mulle_fprintf( stderr, "%#@: %s %@\n",
             [NSThread currentThread], __PRETTY_FUNCTION__, self);
 #endif
 
@@ -162,7 +162,7 @@
    BOOL   clearFramebuffer;
 
 #ifdef RENDER_DEBUG
-   mulle_fprintf( stderr, "%@: %s %@ %s\n",
+   mulle_fprintf( stderr, "%#@: %s %@ %s\n",
             [NSThread currentThread], __PRETTY_FUNCTION__, self,
             CGFrameInfoUTF8String( info));
 #endif
@@ -234,7 +234,7 @@
                     graphicsContext:(id <UIGraphicsContext>) context
 {
 #ifdef RENDER_DEBUG
-   mulle_fprintf( stderr, "%@: %s %@\n",
+   mulle_fprintf( stderr, "%#@: %s %@\n",
             [NSThread currentThread], __PRETTY_FUNCTION__, self);
 #endif
 
