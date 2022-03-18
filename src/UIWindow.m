@@ -412,7 +412,7 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
    // this is better than not doing it, but no guarantee that an event isn't
    // processed in the background
 #ifdef DEBUG
-   mulle_fprintf( stderr, "%@: %@ %s\n",
+   mulle_fprintf( stderr, "%#@: %#@ %s\n",
                         [NSThread currentThread], self, __PRETTY_FUNCTION__);
 #endif
 
@@ -547,7 +547,7 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
 {
    _mulle_atomic_pointer_write( &_needsRefresh, (void *) 1);
 #ifdef FLAG_DEBUG
-   mulle_fprintf( stderr, "%@: %@ %s (%p)\n",
+   mulle_fprintf( stderr, "%#@: %#@ %s (%p)\n",
          [NSThread currentThread], self, __PRETTY_FUNCTION__, _mulle_atomic_pointer_read( &_needsRefresh));
 #endif
 }
@@ -557,7 +557,7 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
 {
    _mulle_atomic_pointer_write( &_needsRefresh, (void *) value);
 #ifdef FLAG_DEBUG
-   mulle_fprintf( stderr, "%@: %@ %s (%p)\n",
+   mulle_fprintf( stderr, "%#@: %#@ %s (%p)\n",
          [NSThread currentThread], self, __PRETTY_FUNCTION__, _mulle_atomic_pointer_read( &_needsRefresh));
 #endif
 }
@@ -584,7 +584,7 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
    _mulle_atomic_pointer_write( &_needsDisplay, (void *) ~0);
 
 #ifdef FLAG_DEBUG
-   mulle_fprintf( stderr, "%@: %@ %s %p\n",
+   mulle_fprintf( stderr, "%#@: %#@ %s %p\n",
          [NSThread currentThread], self, __PRETTY_FUNCTION__, _mulle_atomic_pointer_read( &_needsDisplay));
 #endif
 }
@@ -597,7 +597,7 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
    MulleObjCAtomicPointerSetBit( &_needsDisplay, value);
 
 #ifdef FLAG_DEBUG
-   mulle_fprintf( stderr, "%@: %@ %s %p\n",
+   mulle_fprintf( stderr, "%#@: %#@ %s %p\n",
          [NSThread currentThread], self, __PRETTY_FUNCTION__, _mulle_atomic_pointer_read( &_needsDisplay));
 #endif
 
@@ -850,7 +850,7 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
    {
       frame = [self frame];
 #ifdef DEBUG
-      mulle_fprintf( stderr, "%@: %@ push frame %.2f %.2f %.2f %.2f\n",
+      mulle_fprintf( stderr, "%#@: %#@ push frame %.2f %.2f %.2f %.2f\n",
                               [NSThread currentThread], self,
                               frame.origin.x, frame.origin.y,
                               frame.size.width, frame.size.height);
@@ -862,7 +862,7 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
    {
       title = [self titleUTF8String];
 #ifdef DEBUG
-      mulle_fprintf( stderr, "%@: %@ push title %s\n",
+      mulle_fprintf( stderr, "%#@: %#@ push title %s\n",
                               [NSThread currentThread], self,
                               title);
 #endif

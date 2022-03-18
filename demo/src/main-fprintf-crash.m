@@ -13,10 +13,10 @@ int   main( int argc, char *argv[])
 
    memset( &a, 0, sizeof( a));
    memset( &b, 0xFF, sizeof( b));
-   mulle_fprintf( stderr, "%@: %s %s info:%s previous:%s\n",
-                        [NSThread currentThread], 
+   mulle_fprintf( stderr, "%#@: %s %s info:%s previous:%s\n",
+                        [NSThread currentThread],
                         "xxx",
-                        __PRETTY_FUNCTION__, 
+                        __PRETTY_FUNCTION__,
                         CGWindowInfoUTF8String( &a),
                         CGWindowInfoUTF8String( &b));
 

@@ -68,7 +68,7 @@
    remainingFrameTime = fastestFrameRate - diff - avgElapsed;
 
 #ifdef DISPLAY_DEBUG
-   mulle_fprintf( stderr, "%@: %@ %s frameRate: %.3f now: %.6f last: %.6f remaining: %.6f\n",
+   mulle_fprintf( stderr, "%#@: %#@ %s frameRate: %.3f now: %.6f last: %.6f remaining: %.6f\n",
                                 [NSThread currentThread], self, __PRETTY_FUNCTION__,
                                 fastestFrameRate,
                                 now,
@@ -106,7 +106,7 @@
 
    needsRefresh = [self needsRefreshClearIfSet];
 #ifdef DISPLAY_DEBUG
-   mulle_fprintf( stderr, "%@: %@ needsRefresh=%s\n",
+   mulle_fprintf( stderr, "%#@: %#@ needsRefresh=%s\n",
                                 [NSThread currentThread], self, needsRefresh ? "YES" : "NO");
 #endif
    // We get called, but do we really need to do something already ?
@@ -125,7 +125,7 @@
       if( needsRefresh)
       {
 #ifdef DISPLAY_DEBUG
-         mulle_fprintf( stderr, "%@: %@ refresh and swap\n",
+         mulle_fprintf( stderr, "%#@: %#@ refresh and swap\n",
                                 [NSThread currentThread], self);
 #endif
          if( _backingStore == UIWindowBackingStoreRetainedOnMainThread)
@@ -139,7 +139,7 @@
          [self swapBuffers];
       }
 #ifdef DISPLAY_DEBUG
-         mulle_fprintf( stderr, "%@: %@ wait inf\n",
+         mulle_fprintf( stderr, "%#@: %#@ wait inf\n",
                                 [NSThread currentThread], self);
 #endif
       return( INFINITY);  // call me for events only ?
@@ -159,7 +159,7 @@
    if( ! needsRefresh && remainingFrameTime != 0.0)
    {
 #ifdef DISPLAY_DEBUG
-      mulle_fprintf( stderr, "%@: %@ %s wait %.4f s\n",
+      mulle_fprintf( stderr, "%#@: %#@ %s wait %.4f s\n",
                              [NSThread currentThread], self, __PRETTY_FUNCTION__, remainingFrameTime);
 #endif
       return( remainingFrameTime);
@@ -168,7 +168,7 @@
    slowestFrameRate   = [self slowestFrameRate];
 
 #ifdef DISPLAY_DEBUG
-   mulle_fprintf( stderr, "%@: %@ UIWindowBackingStoreVolatile:: renderFrame and swapBuffers (%.3f)\n",
+   mulle_fprintf( stderr, "%#@: %#@ UIWindowBackingStoreVolatile:: renderFrame and swapBuffers (%.3f)\n",
                           [NSThread currentThread], self, remainingFrameTime);
 #endif
 
@@ -195,7 +195,7 @@
    // the UIApplication will notice the time spent and reduce remainingFrameTime
    //
 #ifdef DISPLAY_DEBUG
-   mulle_fprintf( stderr, "%@: %@ wait %.4fs\n",
+   mulle_fprintf( stderr, "%#@: %#@ wait %.4fs\n",
                            [NSThread currentThread], self, remainingFrameTime);
 #endif
 

@@ -58,12 +58,13 @@
    [_windowThreadLock unlockWithCondition:2];
 
 #ifdef THREAD_DEBUG
-   mulle_fprintf( stderr, "%@: %@ window thread started\n",
+   mulle_fprintf( stderr, "%#@: %#@ window thread started\n",
                            [NSThread currentThread], self);
 #endif
    // the window thread is now "somewhat" blocking, waiting for events
    //
 }
+
 
 - (void) finalizeWindowThread
 {
@@ -73,14 +74,14 @@
       return;
 
 #ifdef THREAD_DEBUG
-   mulle_fprintf( stderr, "%@: %@ %s\n",
+   mulle_fprintf( stderr, "%#@: %#@ %s\n",
                         [NSThread currentThread], self, __PRETTY_FUNCTION__);
 #endif
 
    timeout = RENDER_THREAD_GRACE_PERIOD;
 
 #ifdef THREAD_DEBUG
-   mulle_fprintf( stderr, "%@: %@ trying to lock with 1 (%@ = %td, %s) (%.3f)\n",
+   mulle_fprintf( stderr, "%#@: %#@ trying to lock with 1 (%@ = %td, %s) (%.3f)\n",
                            [NSThread currentThread], self,
                            _windowThreadLock, [_windowThreadLock condition],
                            [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED",
@@ -91,7 +92,7 @@
                                           timeout:timeout])
    {
 #ifdef THREAD_DEBUG
-      mulle_fprintf( stderr, "%@: %@ locked with 1, unlocking with 2 (%@ = %td, %s)\n",
+      mulle_fprintf( stderr, "%#@: %#@ locked with 1, unlocking with 2 (%@ = %td, %s)\n",
                               [NSThread currentThread], self,
                            _windowThreadLock, [_windowThreadLock condition],
                            [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
@@ -104,7 +105,7 @@
       [_windowThreadLock unlockWithCondition:2];
 
 #ifdef THREAD_DEBUG
-      mulle_fprintf( stderr, "%@: %@ waiting for unlock to 1 (%@ = %td)\n",
+      mulle_fprintf( stderr, "%#@: %#@ waiting for unlock to 1 (%@ = %td)\n",
                               [NSThread currentThread], self,
                               _windowThreadLock, [_windowThreadLock condition]);
 #endif
@@ -116,17 +117,16 @@
       }
       else
       {
-         mulle_fprintf( stderr, "%@: %@ main draw thread still very busy (%@ = %td)\n",
+         mulle_fprintf( stderr, "%#@: %#@ main draw thread still very busy (%@ = %td)\n",
                               [NSThread currentThread], self,
                               _windowThreadLock, [_windowThreadLock condition]);
       }
    }
    else
    {
-      mulle_fprintf( stderr, "%@: %@ could not cancel the main draw thread in due time %@\n",
+      mulle_fprintf( stderr, "%#@: %#@ could not cancel the main draw thread in due time %@\n",
                               [NSThread currentThread], self, _windowThreadLock);
    }
-
 
    // we have to wait for the thread to come down though, tricky problems
    // how do we know the thread is not hung ? (not sure)
@@ -153,7 +153,7 @@
 - (void) wakeupWindowThread
 {
 #ifdef THREAD_DEBUG
-   mulle_fprintf( stderr, "%@: %s (%@ = %td, %s)\n",
+   mulle_fprintf( stderr, "%#@: %s (%@ = %td, %s)\n",
                         [NSThread currentThread], __PRETTY_FUNCTION__,
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
@@ -204,7 +204,7 @@
    [thread mulleSetNameUTF8String:"UIWindowThread"];
 
 #ifdef THREAD_DEBUG
-   mulle_fprintf( stderr, "%@: %s coming up (%@ = %td, %s)\n",
+   mulle_fprintf( stderr, "%#@: %s coming up (%@ = %td, %s)\n",
                         [NSThread currentThread], __PRETTY_FUNCTION__,
                      _windowThreadLock, [_windowThreadLock condition],
                      [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
@@ -232,7 +232,7 @@
    for(;;)
    {
 #ifdef THREAD_DEBUG_VERBOSE
-      mulle_fprintf( stderr, "%@: %s waiting for condition 2 (%@ = %td, %s) (%.3f)\n",
+      mulle_fprintf( stderr, "%#@: %s waiting for condition 2 (%@ = %td, %s) (%.3f)\n",
                      [NSThread currentThread], __PRETTY_FUNCTION__,
                      _windowThreadLock, [_windowThreadLock condition],
                      [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED",
@@ -250,7 +250,7 @@
             {
                [_windowThreadLock unlockWithCondition:1];
 #ifdef THREAD_DEBUG
-               mulle_fprintf( stderr, "%@: %s going down (%@ = %td, %s)\n",
+               mulle_fprintf( stderr, "%#@: %s going down (%@ = %td, %s)\n",
                         [NSThread currentThread], __PRETTY_FUNCTION__,
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
@@ -262,7 +262,7 @@
             // communicate with the main thread, so we just redo the wait
             // for lock. The cancel flag sticks
 #ifdef THREAD_DEBUG
-            mulle_fprintf( stderr, "%@: %s waiting for final lock (%@ = %td, %s)\n",
+            mulle_fprintf( stderr, "%#@: %s waiting for final lock (%@ = %td, %s)\n",
                         [NSThread currentThread], __PRETTY_FUNCTION__,
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
@@ -278,13 +278,15 @@
          {
             displayBits = [self needsDisplayClearIfSet];
 #ifdef THREAD_DEBUG
-            mulle_fprintf( stderr, "%@: %s displayBits = 0x%tx\n",
+            mulle_fprintf( stderr, "%#@: %s displayBits = 0x%tx\n",
                            [NSThread currentThread], __PRETTY_FUNCTION__,
                            displayBits);
 #endif
             if( displayBits)
             {
-               info     = CGFrameInfoSFMake( [self frame], _currentWindowInfo.framebufferSize, _currentWindowInfo.pixelRatio);
+               info     = CGFrameInfoSFMake( [self frame],
+                                             _currentWindowInfo.framebufferSize,
+                                             _currentWindowInfo.pixelRatio);
                info.now = mulle_absolutetime_now();
                [self renderWithFrameInfo:&info
                              displayBits:displayBits];
@@ -303,7 +305,7 @@
       {
          [_windowThreadLock unlockWithCondition:1];
 #ifdef THREAD_DEBUG
-         mulle_fprintf( stderr, "%@: %s unlockWithCondition 1 (%@ = %td, %s)\n",
+         mulle_fprintf( stderr, "%#@: %s unlockWithCondition 1 (%@ = %td, %s)\n",
                         [NSThread currentThread], __PRETTY_FUNCTION__,
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
@@ -312,7 +314,7 @@
       else
       {
 #ifdef THREAD_DEBUG_VERBOSE
-         mulle_fprintf( stderr, "%@: %s haveNoLock (%@ = %td, %s)\n",
+         mulle_fprintf( stderr, "%#@: %s haveNoLock (%@ = %td, %s)\n",
                         [NSThread currentThread], __PRETTY_FUNCTION__,
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
@@ -370,7 +372,7 @@
    }
 
 #ifdef SWAP_DEBUG
-   mulle_fprintf( stderr, "%@: %s %@ (layer %@)\n",
+   mulle_fprintf( stderr, "%#@: %s %@ (layer %@)\n",
             [NSThread currentThread], __PRETTY_FUNCTION__, self, layer);
 #endif
 

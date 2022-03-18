@@ -64,6 +64,7 @@
 
 //- (void) _setPosition:(CGPoint) position;
 //- (void) _setSize:(CGSize) size;
+- (void) _setFrame:(CGRect) rect;
 //- (void) _setFramebufferSize:(struct CGBitmapSize) size;
 
 @end
@@ -96,7 +97,7 @@
    assert( [NSThread mulleIsMainThread]);
 
 #ifdef WINDOW_EVENT_CALLBACK_DEBUG
-   mulle_fprintf( stderr, "%@: %@ %s handles %@\n",
+   mulle_fprintf( stderr, "%#@: %#@ %s handle %#@\n",
                           [NSThread currentThread], self, __PRETTY_FUNCTION__,
                           event);
 #endif
@@ -145,7 +146,7 @@
       }
 
 #ifdef WINDOW_EVENT_CALLBACK_DEBUG
-      mulle_fprintf( stderr, "%@: %@ %s short circuits refresh and swap\n",
+      mulle_fprintf( stderr, "%#@: %#@ %s short circuits refresh and swap\n",
                         [NSThread currentThread], self, __PRETTY_FUNCTION__,
                         UIWindowEventTypeUTF8String( [event windowEventType]));
 #endif
@@ -467,7 +468,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    assert( event);
 
 #ifdef HANDLE_EVENT_DEBUG
-   mulle_fprintf( stderr, "%@: %@ handle %@ event\n",
+   mulle_fprintf( stderr, "%#@: %#@ handle %#@ event\n",
                         [NSThread currentThread], self, event);
 #endif
    event = (*_eventCallback)( self, event);
@@ -604,20 +605,25 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    return( mask);
 }
 
+- (void) sendRetainedEvent:(UIEvent *) event
+{
+#ifdef WINDOW_EVENT_CALLBACK_DEBUG
+   mulle_fprintf( stderr, "%#@: %#@ %s send %@\n",
+                          [NSThread currentThread], self, __PRETTY_FUNCTION__,
+                          event);
+#endif
+
+   [self handleRetainedEvent:event];
+   [self wakeupWindowThread];
+}
+
 
 - (void) sendWindowFramebufferGeometryEvent:(struct CGWindowInfo *) info
 {
    UIEvent   *event;
 
    event = [[UIWindowFramebufferGeometryEvent alloc] initWithWindowInfo:info];
-
-#ifdef WINDOW_EVENT_CALLBACK_DEBUG
-   mulle_fprintf( stderr, "%@: %@ %s send %@\n",
-                          [NSThread currentThread], self, __PRETTY_FUNCTION__,
-                          event);
-#endif
-
-   [self handleRetainedEvent:event];
+   [self sendRetainedEvent:event];
 }
 
 @end

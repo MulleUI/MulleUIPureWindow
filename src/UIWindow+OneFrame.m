@@ -55,7 +55,7 @@
    delay.tv_nsec = 0;
 
 #ifdef PROCESS_EVENT_DEBUG
-   mulle_fprintf( stderr, "%@: %@ is waiting for events until %.4fs\n",
+   mulle_fprintf( stderr, "%#@: %#@ is waiting for events until %.4fs\n",
                            [NSThread currentThread], self, then);
 #endif
    //
@@ -79,7 +79,7 @@
       if( mask && returnsEarly)
       {
 #ifdef PROCESS_EVENT_DEBUG
-         mulle_fprintf( stderr, "%@: %@ returns early\n",
+         mulle_fprintf( stderr, "%#@: %#@ returns early\n",
                            [NSThread currentThread], self);
 #endif
          break;
@@ -93,7 +93,7 @@
          if( [self needsDisplay])
          {
 #ifdef PROCESS_EVENT_DEBUG
-            mulle_fprintf( stderr, "%@: %@ stop processing events, needs redraw\n",
+            mulle_fprintf( stderr, "%#@: %#@ stop processing events, needs redraw\n",
                               [NSThread currentThread], self);
 #endif
             break;
@@ -112,7 +112,7 @@
          if( [self needsRefresh])
          {
 #ifdef PROCESS_EVENT_DEBUG
-            mulle_fprintf( stderr, "%@: %@ stop processing events, needs redraw\n",
+            mulle_fprintf( stderr, "%#@: %#@ stop processing events, needs redraw\n",
                               [NSThread currentThread], self);
 #endif
             break;
@@ -122,7 +122,7 @@
       if( diff >= 0.0)
       {
 #ifdef PROCESS_EVENT_DEBUG
-         mulle_fprintf( stderr, "%@: %@ stop processing events, timeout reached (setNeedsDisplay)\n",
+         mulle_fprintf( stderr, "%#@: %#@ stop processing events, timeout reached (setNeedsDisplay)\n",
                            [NSThread currentThread], self);
 #endif
          if( ! [self frameRateLimiter])
