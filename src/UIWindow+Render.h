@@ -12,7 +12,7 @@
 #import "import.h"
 
 
-extern void   UIWindowDefaultFrameCallback( UIWindow *self,
+extern BOOL   UIWindowDefaultFrameCallback( UIWindow *self,
                                             id <UIGraphicsContext> context,
                                             struct CGFrameInfo *info,
                                             NSUInteger displayBits);
@@ -21,8 +21,16 @@ extern void   UIWindowDefaultFrameCallback( UIWindow *self,
 
 - (void) willRenderWithAbsoluteTime:(mulle_absolutetime_t) renderStart;
 
+// runs even if layout is not
+- (BOOL) preLayoutAnimations:(struct CGFrameInfo *) info
+             graphicsContext:(id <UIGraphicsContext>) context;
+
 - (void) layoutFrame:(struct CGFrameInfo *) info
      graphicsContext:(id <UIGraphicsContext>) context;
+
+// runs even if layout is not
+- (BOOL) postLayoutAnimations:(struct CGFrameInfo *) info
+              graphicsContext:(id <UIGraphicsContext>) context;
 
 // returns YES if animation ran
 - (BOOL) animateFrame:(struct CGFrameInfo *) info

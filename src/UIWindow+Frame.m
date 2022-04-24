@@ -14,27 +14,94 @@
 
 
 //#define LAYOUT_ANIMATIONS
-//#define SWAP_DEBUG
+#define SWAP_DEBUG
 #define RENDERINFO_DEBUG
+
+
+@interface UIWindow( Private)
+
+//- (void) _setPosition:(CGPoint) position;
+//- (void) _setSize:(CGSize) size;
+- (void) _setFrame:(CGRect) rect;
+//- (void) _setFramebufferSize:(struct CGBitmapSize) size;
+
+@end
+
 
 @implementation UIWindow ( Frame)
 
-- (double) fastestFrameRate
+- (mulle_relativetime_t) displayAndRefreshRate
 {
-   if( _frameRate == UIWindowFrameRateSynced)
-      return( [self monitorRefreshRate]);
-   return( _frameRate);  // async=INFINITY, unsynced=0.0
+   if( [NSThread mulleIsMainThread])
+      return( _mainThreadStatistics.lastEndTimestamp - _mainThreadStatistics.lastBeginTimestamp);
+   return( _windowThreadStatistics.lastEndTimestamp - _windowThreadStatistics.lastBeginTimestamp);
 }
 
-
-- (double) slowestFrameRate
+//
+// returns 0.0 : means refresh/redraw now
+// otherwise the remainingFrameTime before paint
+//
+- (mulle_relativetime_t) remainingFrameTime:(mulle_absolutetime_t) now
+                                  frameRate:(mulle_relativetime_t) frameRate
+                              animationRate:(mulle_relativetime_t) animationRate
+                            frameStatistics:(struct UIWindowFrameStatistics *) stats
+                           frameRateLimiter:(BOOL) frameRateLimiter
 {
-   // if we use a limiter, we could make no updates for forever
-   if( _frameRateLimiter)
-      return( INFINITY);
-   if( _frameRate == UIWindowFrameRateSynced)
-      return( [self monitorRefreshRate]);
-   return( _frameRate);
+   mulle_relativetime_t   diff;
+   mulle_relativetime_t   elapsed;
+   mulle_relativetime_t   avgElapsed;
+   BOOL                   frameTimeReached;
+   mulle_relativetime_t   remainingFrameTime;
+   mulle_relativetime_t   rate;
+   unsigned int           i;
+   NSUInteger             displayBits;
+
+   // first run always draw
+   if( stats->lastEndTimestamp == 0.0)
+      return( 0.0);
+
+   // unsynced always runs loose
+   if( frameRate == UIWindowFrameRateUnsynced)
+      return( 0.0);
+
+   rate        = frameRate;
+   displayBits = [self needsDisplay];
+   // async is special, we ignore the frameRate but use the animationRate
+   // instead (IF we are animating)
+   if( frameRate == UIWindowFrameRateAsync)
+   {
+      if( ! displayBits)
+         return( INFINITY);
+
+      // if only animation is needed, we need to use the animationRate
+      if( displayBits != UIWindowNeedsAnimation)
+         return( 0.0);
+
+      rate = animationRate;
+   }
+
+   assert( now > stats->lastEndTimestamp);
+
+   remainingFrameTime = rate - (now - stats->lastEndTimestamp); // - stats->avgElapsedHistory;
+
+#ifdef DISPLAY_DEBUG
+   MulleUILog( "frameRate: %.3f now: %.6f last: %.6f remaining: %.6f",
+               rate,
+               now,
+               previous,
+               remainingFrameTime);
+#endif
+
+   if( remainingFrameTime <= 0.0)
+      return( 0.0);
+
+   if( frameRateLimiter)
+   {
+      if( ! displayBits) // ???
+         return( INFINITY);
+   }
+
+   return( remainingFrameTime);
 }
 
 
@@ -54,8 +121,7 @@
    [_context setActive:YES];
 
 #ifdef SWAP_DEBUG
-   mulle_fprintf( stderr, "%#@: %s %@ window context\n",
-            [NSThread currentThread], __PRETTY_FUNCTION__, self);
+   MulleUILog( "window context");
 #endif
    return( _context);
 }
@@ -87,8 +153,7 @@
    [_offscreenContext setActive:YES];                        // just a flag
 
 #ifdef SWAP_DEBUG
-   mulle_fprintf( stderr, "%#@: %s %@ offscreen context\n",
-            [NSThread currentThread], __PRETTY_FUNCTION__, self);
+   MulleUILog( "offscreen context");
 #endif
    return( _offscreenContext);
 }
@@ -102,16 +167,14 @@
    if( context == _offscreenContext)
    {
 #ifdef SWAP_DEBUG
-   mulle_fprintf( stderr, "%#@: %s %@ offscreen context\n",
-            [NSThread currentThread], __PRETTY_FUNCTION__, self);
+   MulleUILog( "offscreen context");
 #endif
       [_offscreenOSWindow os_deactivateGraphicsContext];
    }
    else
    {
 #ifdef SWAP_DEBUG
-      mulle_fprintf( stderr, "%#@: %s %@ window context\n",
-            [NSThread currentThread], __PRETTY_FUNCTION__, self);
+      MulleUILog( "window context");
 #endif
       [_OSWindow os_deactivateGraphicsContext];
    }
@@ -124,6 +187,8 @@
 //
 - (void) _getFrameInfo:(struct CGFrameInfo *) info
 {
+   struct UIOSWindowInfo   tmp;
+
    assert( info);
    assert( [NSThread mulleIsMainThread]);
 
@@ -131,7 +196,9 @@
    // assumption is, the optimizing compiler will inline this with -O3
    // and then combine with settings
    //
-   [_OSWindow getWindowInfo:&info->window];
+   [_OSWindow getOSWindowInfo:&tmp];
+
+   info->window        = tmp.base;
    info->viewportFrame = CGBitmapRectMake( 0,
                                            0,
                                            info->window.framebufferSize.width,
@@ -145,12 +212,9 @@
 {
    [self _getFrameInfo:info];
 #ifdef RENDERINFO_DEBUG
-   mulle_fprintf( stderr, "%#@: %#@ %s info:%s previous:%s\n",
-                        [NSThread currentThread],
-                        self,
-                        __PRETTY_FUNCTION__,
-                        CGWindowInfoUTF8String( &info->window),
-                        CGWindowInfoUTF8String( &self->_previousWindowInfo));
+   MulleUILog( "info:%s previous:%s",
+               CGWindowInfoUTF8String( &info->window),
+               CGWindowInfoUTF8String( &self->_previousWindowInfo));
 #endif
    if( ! CGWindowInfoEqualToWindowInfo( &info->window, &self->_previousWindowInfo))
    {
@@ -165,22 +229,29 @@
 }
 
 
-- (void) renderWithFrameInfo:(struct CGFrameInfo *) info
+- (BOOL) renderWithFrameInfo:(struct CGFrameInfo *) info
                  displayBits:(NSUInteger) displayBits
 {
    id <UIGraphicsContext>   context;
+   BOOL                     didAnimate;
 
    context = [self activateRenderGraphicsContext];
    {
 #ifdef RENDERINFO_DEBUG
-      mulle_fprintf( stderr, "%#@: %#@ %s %s\n",
-                        [NSThread currentThread], self, __PRETTY_FUNCTION__,
-                        CGFrameInfoUTF8String( info));
+      MulleUILog( "%s", CGFrameInfoUTF8String( info));
 #endif
+      // if the window size changed, we need to relayout
+      if( ! CGSizeEqualToSize( info->window.frame.size, [self frame].size))
+      {
+         [self _setFrame:info->window.frame]; // don't trigger property change
+         displayBits |= UIWindowNeedsLayout;
+      }
+
       // This is usually UIWindowDefaultFrameCallback (UIWindow+Render.m)
-      (*self->_renderFrameCallback)( self, context, info, displayBits);
+      didAnimate = (*self->_renderFrameCallback)( self, context, info, displayBits);
    }
    [self deactivateContext:context];
+   return( didAnimate);
 }
 
 
@@ -224,22 +295,19 @@
 - (void) swapBuffers
 {
 #ifdef SWAP_DEBUG
-   mulle_fprintf( stderr, "%#@: %s %@\n",
-            [NSThread currentThread], __PRETTY_FUNCTION__, self);
+   MulleUILog( "swap");
 #endif
 
    [self changeSwapIntervalIfNeeded];
    [_OSWindow os_swapBuffers];
 
-#ifdef SWAP_DEBUG
-   mulle_fprintf( stderr, "%@: UIWindow %@ swapped buffers (%.6f)\n",
-                        [NSThread currentThread], self, now);
-#endif
-
    //
    // from here on CGImages should be safe to be reaped by autorelease pool
    // or ?
    //
+#ifdef SWAP_DEBUG
+   MulleUILog( "\033[1mswapped buffers\033[0m");
+#endif
 }
 
 

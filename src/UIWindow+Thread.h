@@ -17,7 +17,7 @@
 - (void) initWindowThreadMainIfNeeded;
 - (void) finalizeWindowThread;
 - (void) wakeupWindowThread;
-- (mulle_relativetime_t) windowThreadTimeout;
+- (mulle_relativetime_t) windowThreadTimeoutIsAnimating:(BOOL) flag;
 
 - (void) refresh;
 

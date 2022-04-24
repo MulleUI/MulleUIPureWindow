@@ -6,9 +6,12 @@
 #import "import-private.h"
 
 #import "UIView+RenderQueue.h"
+#import "CGFrameInfo+UTF8String.h"
 
+#define RENDER_DEBUG
+#define RENDER_DEBUG_VERBOSE
 
-// #define RENDER_DEBUG
+// #define DRAW_FRAMEBUFFER_ID_RECT
 
 //
 //
@@ -74,8 +77,7 @@
    UIView                                *view;
 
 #ifdef RENDER_DEBUG
-   mulle_fprintf( stderr, "%#@: %s %@\n",
-            [NSThread currentThread], __PRETTY_FUNCTION__, self);
+   MulleUILogThisMethod();
 #endif
 
    rover = mulle_pointerarray_enumerate( &_delegateViews);
@@ -85,23 +87,50 @@
 }
 
 
-- (void) layoutFrame:(struct CGFrameInfo *) info
-     graphicsContext:(id <UIGraphicsContext>) context
+- (BOOL) preLayoutAnimations:(struct CGFrameInfo *) info
+             graphicsContext:(id <UIGraphicsContext>) context
 {
-#ifdef RENDER_DEBUG
-   mulle_fprintf( stderr, "%#@: %s %@\n",
-            [NSThread currentThread], __PRETTY_FUNCTION__, self);
-#endif
-   /*
-    * Layout
-    */
-   [self willRenderWithAbsoluteTime:info->now];
+   BOOL   didAnimate;
 
-   [_preLayoutAnimator animateWithAbsoluteTime:info->now];
+#ifdef RENDER_DEBUG
+   MulleUILogThisMethod();
+#endif
+   didAnimate = [_preLayoutAnimator animateWithAbsoluteTime:info->now];
 
    if( _didAnimateCallback)
       (*_didAnimateCallback)( self, context, info, 0);
 
+   return( didAnimate);
+}
+
+
+- (BOOL) postLayoutAnimations:(struct CGFrameInfo *) info
+             graphicsContext:(id <UIGraphicsContext>) context
+{
+   BOOL   didAnimate;
+
+#ifdef RENDER_DEBUG
+   MulleUILogThisMethod();
+#endif
+
+   didAnimate = [_postLayoutAnimator animateWithAbsoluteTime:info->now];
+
+   if( _didAnimateCallback)
+      (*_didAnimateCallback)( self, context, info, 1);
+
+   return( didAnimate);
+}
+
+
+- (void) layoutFrame:(struct CGFrameInfo *) info
+     graphicsContext:(id <UIGraphicsContext>) context
+{
+#ifdef RENDER_DEBUG
+   MulleUILogThisMethod();
+#endif
+   /*
+    * Layout
+    */
    if( _willLayoutCallback)
       (*_willLayoutCallback)( self, context, info);
 
@@ -111,17 +140,12 @@
 #if LAYOUT_ANIMATIONS
    [self beginLayout:info];
 #endif
-   [self layoutIfNeeded];
+   [self layout];
 #if LAYOUT_ANIMATIONS
    [self endLayout];
 #endif
    if( _didLayoutCallback)
       (*_didLayoutCallback)( self, context, info);
-
-   [_postLayoutAnimator animateWithAbsoluteTime:info->now];
-
-   if( _didAnimateCallback)
-      (*_didAnimateCallback)( self, context, info, 1);
 }
 
 
@@ -131,8 +155,7 @@
    BOOL   didAnimate;
 
 #ifdef RENDER_DEBUG
-   mulle_fprintf( stderr, "%#@: %s %@\n",
-            [NSThread currentThread], __PRETTY_FUNCTION__, self);
+   MulleUILogThisMethod();
 #endif
 
    /*
@@ -141,7 +164,6 @@
    //
    didAnimate = [CAAnimation animateObjects:&_drawingQueue
                                absoluteTime:info->now];
-
    //
    // can animations add and subtract layers and views ?
    // they may, but they won't show up this render
@@ -162,9 +184,7 @@
    BOOL   clearFramebuffer;
 
 #ifdef RENDER_DEBUG
-   mulle_fprintf( stderr, "%#@: %s %@ %s\n",
-            [NSThread currentThread], __PRETTY_FUNCTION__, self,
-            CGFrameInfoUTF8String( info));
+   MulleUILog( "%s", CGFrameInfoUTF8String( info));
 #endif
 
    /*
@@ -173,29 +193,43 @@
     // don't pool this, autoreleased stuff needs to hang on until
     // swap buffers
 
-   _renderInfo.lastStartTime = _renderInfo.startTime;
-   _renderInfo.startTime     = info->now;
+//   _renderInfo.lastStartTime = _renderInfo.startTime;
+//   _renderInfo.startTime     = info->now;
 
-   clearFramebuffer = YES;
+   clearFramebuffer = [self isOpaque] ? NO : YES;
+
    [context beginRender:info];
    {
       if( _willDrawCallback)
          clearFramebuffer = (*_willDrawCallback)( self, context, info);
 
       if( clearFramebuffer)
+      {
+#ifdef RENDER_DEBUG_VERBOSE
+         MulleUILog( "clearing framebuffer");
+#endif
          [context clearFramebufferWithColor:[self backgroundColor]];
+#ifdef RENDER_DEBUG_VERBOSE
+         MulleUILog( "cleared framebuffer");
+#endif
+      }
 
       [self->_frameDelegate window:self
                      willDrawFrame:info
                    graphicsContext:context];
 
+#ifdef RENDER_DEBUG_VERBOSE
+      MulleUILog( "drawing objects");
+#endif
       [context drawObjects:&_drawingQueue];
+#ifdef RENDER_DEBUG_VERBOSE
+      MulleUILog( "drew objects");
+#endif
 
       if( _didDrawObjectsCallback)
          (*_didDrawObjectsCallback)( self, context, info);
 
-#ifdef DEBUG
-      if( [context rendersOffScreen])
+      if( _debugEnabled & UIWindowDrawFramebufferIdRect)
       {
          CGRect   rect;
 
@@ -208,20 +242,26 @@
                        color:CGColorMakeWithHexColor( 0xE04020FF)
                        width:4.0];
       }
-#endif
 
       [self->_frameDelegate window:self
                       didDrawFrame:info
                    graphicsContext:context];
    }
+#ifdef RENDER_DEBUG
+   [self renderFrameInfo:info
+                 atPoint:CGPointMake( 20, 20)
+                   color:CGColorMakeRed()
+         graphicsContext:context];
+#endif
+
    [context suspendRender];
 
    // context is still active though and framebuffer is bound
    if( _didDrawCallback)
       (*_didDrawCallback)( self, context, info);
 
-   _renderInfo.lastFrameInfo = *info;
-   _renderInfo.numberOfRenderedFrames++;
+//   _renderInfo.lastFrameInfo = *info;
+//   _renderInfo.numberOfRenderedFrames++;
 
    [context _endRender];
    //
@@ -230,12 +270,12 @@
    //mulle_pointerarray_reset( &_drawingQueue);
 }
 
+
 - (void) createDrawingQueueForFrame:(struct CGFrameInfo *) info
                     graphicsContext:(id <UIGraphicsContext>) context
 {
 #ifdef RENDER_DEBUG
-   mulle_fprintf( stderr, "%#@: %s %@\n",
-            [NSThread currentThread], __PRETTY_FUNCTION__, self);
+   MulleUILogThisMethod();
 #endif
 
    _mulle_pointerarray_reset( &_drawingQueue);
@@ -244,18 +284,78 @@
       (*_didCreateRenderQueueCallback)( self, context, info);
 }
 
+
+// use very basic drawing
+// render everything line by line
+//
+// typedef struct CGFrameInfo
+// {
+//    struct CGWindowInfo    window;
+//    struct CGBitmapRect    viewportFrame;    // used for the viewport (use: 0, 0, frameSize)
+//    CGFloat                alpha;            // set to 1.0
+//    mulle_absolutetime_t   now;              // mulle_absolutetime_t
+// } CGFrameInfo;
+//
+// typedef struct CGWindowInfo
+// {
+//    CGRect                 frame;            // window coordinates frame
+//    struct CGBitmapSize    framebufferSize;  // actual pixels (frameSize * pixelRatio)
+//    CGVector               UIScale;
+//    CGFloat                pixelRatio;
+// } CGWindowInfo;
+
+- (void) renderFrameInfo:(struct CGFrameInfo *) info
+                 atPoint:(CGPoint) point
+                   color:(CGColor) color
+         graphicsContext:(id <UIGraphicsContext>) context
+{
+   struct mulle_buffer    buffer;
+
+   assert( info);
+
+   mulle_buffer_init( &buffer, NULL);
+   {
+      mulle_buffer_sprintf( &buffer, "frame           : %s\n",   CGRectUTF8String( info->window.frame));
+      mulle_buffer_sprintf( &buffer, "framebufferSize : %s\n",   CGBitmapSizeUTF8String( info->window.framebufferSize));
+      mulle_buffer_sprintf( &buffer, "UIScale         : %s\n",   CGVectorUTF8String( info->window.UIScale));
+      mulle_buffer_sprintf( &buffer, "pixelRatio      : %.3f\n", info->window.pixelRatio);
+      mulle_buffer_sprintf( &buffer, "viewportFrame   : %s\n",   CGBitmapRectUTF8String( info->viewportFrame));
+      mulle_buffer_sprintf( &buffer, "alpha           : %.3f\n", info->alpha);
+      mulle_buffer_sprintf( &buffer, "now             : %.6f\n", info->now);
+      mulle_buffer_add_byte( &buffer, 0);
+
+      [context drawAtPoint:point
+                UTF8String:mulle_buffer_get_bytes( &buffer)
+                  fontName:NULL
+                  fontSize:12.0
+                     color:color];
+   }
+   mulle_buffer_done( &buffer);
+}
+
 //
 // this is default renderFrame callback
 //
-void   UIWindowDefaultFrameCallback( UIWindow *self,
+BOOL   UIWindowDefaultFrameCallback( UIWindow *self,
                                      id <UIGraphicsContext> context,
                                      struct CGFrameInfo *info,
                                      NSUInteger displayBits)
 {
+   BOOL   didAnimate;
+
+#ifdef RENDER_DEBUG
+   MulleUILog( "(0x%tx)", displayBits);
+#endif
+
    if( self->_frameDelegate)
       [self->_frameDelegate window:self
                     willBeginFrame:info
                    graphicsContext:context];
+
+   [self willRenderWithAbsoluteTime:info->now];
+
+   didAnimate = [self preLayoutAnimations:info
+                          graphicsContext:context];
 
    if( displayBits & UIWindowNeedsLayout)
    {
@@ -263,6 +363,9 @@ void   UIWindowDefaultFrameCallback( UIWindow *self,
         graphicsContext:context];
       displayBits |= UIWindowNeedsRedraw;
    }
+
+   didAnimate |= [self postLayoutAnimations:info
+                            graphicsContext:context];
 
    //
    // create the renderQueue. This will set the transforms for all
@@ -276,11 +379,11 @@ void   UIWindowDefaultFrameCallback( UIWindow *self,
    // this animateFrame: runs unconditonally over the displayQueue
    // that will be then also be used by drawFrame:
    //
-   if( [self animateFrame:info
-         graphicsContext:context])
-   {
+   didAnimate |= [self animateFrame:info
+                    graphicsContext:context];
+
+   if( didAnimate)
       displayBits |= UIWindowNeedsRedraw;
-   }
 
    // drawFrame: does beginRender/endRender...
    if( displayBits & UIWindowNeedsRedraw)
@@ -292,6 +395,8 @@ void   UIWindowDefaultFrameCallback( UIWindow *self,
    [self->_frameDelegate window:self
                     didEndFrame:info
                 graphicsContext:context];
+
+   return( didAnimate);
 }
 
 @end

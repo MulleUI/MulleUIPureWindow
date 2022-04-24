@@ -134,20 +134,51 @@ graphicsContext:(id <UIGraphicsContext>) context;
 @end
 
 
-struct UIWindowRenderInfo
+//struct UIWindowRenderInfo
+//{
+//   struct CGFrameInfo     lastFrameInfo;
+//   NSUInteger             numberOfRenderedFrames;
+//   mulle_absolutetime_t   startTime;
+//   mulle_absolutetime_t   lastStartTime;
+//};
+
+
+#define UIWINDOW_S_ELAPSED_HISTORY  4
+
+
+struct UIWindowFrameStatistics
 {
-   struct CGFrameInfo     lastFrameInfo;
-   NSUInteger             numberOfRenderedFrames;
-   mulle_absolutetime_t   startTime;
-   mulle_absolutetime_t   lastStartTime;
+   mulle_absolutetime_t   lastBeginTimestamp;
+   mulle_absolutetime_t   lastEndTimestamp;
+   mulle_relativetime_t   elapsedHistory[ UIWINDOW_S_ELAPSED_HISTORY];
+   NSUInteger             elapsedHistoryIndex;
+   mulle_relativetime_t   avgElapsedHistory;
 };
+
+void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *stats,
+                                             mulle_absolutetime_t start,
+                                             mulle_absolutetime_t end);
+
+static inline void   UIWindowDisplayFrameStatisticsInit( struct UIWindowFrameStatistics *stats)
+{
+   NSUInteger   i;
+
+   if( stats)
+   {
+      memset( stats, 0, sizeof( *stats));
+      for( i = 0; i < UIWINDOW_S_ELAPSED_HISTORY; i++)
+        stats->elapsedHistory[ i] = 0.0005;
+      stats->avgElapsedHistory = 0.0005;
+   }
+}
+
 
 
 enum UIWindowNeedsDisplay
 {
-   UIWindowNeedsLayout    = 0x1,
-   UIWindowNeedsAnimation = 0x2,
-   UIWindowNeedsRedraw    = 0x4
+   UIWindowNeedsRedraw    = 0x1,   // needs immediate attention
+   UIWindowNeedsLayout    = 0x2,   // needs immediate attention, forces redraw
+   UIWindowNeedsAnimation = 0x4    // needs attention according to animationRate
 };
 
 
@@ -157,7 +188,12 @@ enum UIWindowPropertyChange
    UIWindowPropertyChangeTitle = 0x2
 //   UIWindowPropertyChangeIcon  = 0x4
 };
-#define UIWINDOW_S_ELAPSED_HISTORY  4
+
+enum UIWindowDebugBit
+{
+   UIWindowDrawFramebufferIdRect = 0x1
+};
+
 
 //
 // TODO: firstResponder needed for UITextField to gain keyboard focus
@@ -166,42 +202,42 @@ enum UIWindowPropertyChange
 // protocol UIWindow is implemented by +Frame.h
 @interface UIWindow : UIView
 {
-   id <UIOSWindow>             _offscreenOSWindow;   // our drawing Window if buffered
+// these ivars are mainthread only
 
-   id <UIGraphicsContext>      _context;
-   id <UIGraphicsContext>      _offscreenContext;
+   id <UIOSWindow>                 _offscreenOSWindow;   // our drawing Window if buffered
+
+   id <UIGraphicsContext>          _context;
+   id <UIGraphicsContext>          _offscreenContext;
 
    // TODO: full "beauty" is only needed for offscreen or ?
-   NSUInteger                  _styleMask;
-   NSUInteger                  _offscreenStyleMask;
+   NSUInteger                      _styleMask;
+   NSUInteger                      _offscreenStyleMask;
 
-//   CGSize                      _resizeSize;
-   id                          _firstResponder;
-   void                        *_quadtree;
+   // need to setNeedsDisplay to get the renderer out of the lock and start
+   // the render. The _contextLock still needs to be observed when
+   // attempting to modify the view hierarchy ?
+   BOOL                            _isResizing;  // obsolete
+   BOOL                            _shouldClose;
+   NSInteger                       _oldSwapInterval;
+   id <UILayer>                    _lastOffscreenFrambuffer;
 
-   struct mulle_pointerarray   _trackingViews;   // views with tracking areas
-   struct mulle_pointerarray   _enteredViews;    // views with mouseEntered: sent
-   struct mulle_pointerarray   _delegateViews;   // views with need willRender: sent
+// These ivars are used by the rendering thread only to manage the view
+// hierarchy, layout, handle events and draw stuff. If there is no windowThread
+// then the mainThread can access this
+//
+@protected
+   id                              _firstResponder;
+   void                            *_quadtree;
 
-//   CGRect                      _originalRect;
-//   CGRect                      _subdivideRect;
-//   CGRect                      _dividedRects[ 4];
-//   NSUInteger                  _nDividedRects;
-//   NSUInteger                  _nTest;
+   struct mulle_pointerarray       _trackingViews;   // views with tracking areas
+   struct mulle_pointerarray       _enteredViews;    // views with mouseEntered: sent
+   struct mulle_pointerarray       _delegateViews;   // views with need willRender: sent
 
-   CAAnimator                  *_preLayoutAnimator;
-   CAAnimator                  *_postLayoutAnimator;
+   CAAnimator                      *_preLayoutAnimator;
+   CAAnimator                      *_postLayoutAnimator;
+   struct mulle_pointerarray       _drawingQueue; // layers to render
 
-   // usually if we are buffered, we have a windowThread to do everything
-   NSThread                    *_windowThread;
-   NSConditionLock             *_windowThreadLock;
-   mulle_absolutetime_t        _lastWindowThreadTimestamp;
-
-   // for properties set by events, and observable properties that are
-   // written to by the window thread and read by the main thread and pushed
-   // into OS_Window, we need a lock (if the changes can't be done atomically)
-   NSLock                      *_windowPropertyLock;
-
+@protected
    //
    // 8Khz at 60fps = 133 events, 256 should be ample
    // The queue is single consumer/single producer thread. The producer is
@@ -210,12 +246,19 @@ enum UIWindowPropertyChange
    //
    struct ui_window_pointer_fifo   _eventQueue;
 
-   // need to setNeedsDisplay to get the renderer out of the lock and start
-   // the render. The _contextLock still needs to be observed when
-   // attempting to modify the view hierarchy ?
-   BOOL                            _isResizing;
-   BOOL                            _shouldClose;
+   // usually if we are buffered, we have a windowThread to do everything
+   NSThread                        *_windowThread;
+   NSConditionLock                 *_windowThreadLock;
+   mulle_absolutetime_t            _lastWindowThreadTimestamp;
 
+   // for properties set by events, and observable properties that are
+   // written to by the window thread and read by the main thread and pushed
+   // into OS_Window, we need a lock (if the changes can't be done atomically)
+   NSLock                          *_windowPropertyLock;
+
+
+// atomic variables accessed by both threads
+@private
    // window was resized, so we need an immediate render
    mulle_atomic_pointer_t          _needsDisplay;
    // we have a fresh framebuffer drawn, pls2swap
@@ -223,48 +266,42 @@ enum UIWindowPropertyChange
 
    mulle_atomic_pointer_t          _propertyChanges;
 
-   NSInteger                       _oldSwapInterval;
-   struct mulle_pointerarray       _drawingQueue; // layers to render
+//   struct UIWindowRenderInfo       _renderInfo;
 
-   id <UILayer>                    _lastLayer;
-
-   struct UIWindowRenderInfo       _renderInfo;
-
-   // ephemeral, used during render
+   // these values are only accessible to the window thread
 @protected
-   NSUInteger                      _phases;
+   struct UIWindowFrameStatistics  _windowThreadStatistics;
 
 // these values are only accessible to the main thread
 @private
-  mulle_absolutetime_t             _lastDidFramebufferSwapTimestamp;
    mulle_absolutetime_t            _lastDidProcessEventsTimestamp;
-   mulle_absolutetime_t            _lastDisplayStartTimestamp;
-   mulle_relativetime_t            _elapsedHistory[ UIWINDOW_S_ELAPSED_HISTORY];
-   NSUInteger                      _elapsedHistoryIndex;
 
+   struct UIWindowFrameStatistics  _mainThreadStatistics;
+
+   // only used to create UIEventTypeWindowFramebufferGeometry events
    struct CGWindowInfo             _previousWindowInfo;
-
-   // used by the render code
    struct CGWindowInfo             _currentWindowInfo;
 }
 
-@property( retain, readonly) id <UIOSWindow>   OSWindow;
+@property( retain, readonly) id <UIOSWindow>       OSWindow;
 
+@property( assign) NSUInteger                      debugEnabled;
 
-@property( retain) id              userInfo;
+@property( retain) id                              userInfo;
 // TODO: pasteboard is a global resource and is on Application ?
-@property( retain) UIPasteboard    *pasteboard;
+@property( retain) UIPasteboard                    *pasteboard;
 
 // TODO: not the same as _windowThread, obsolete ?
-@property( assign) NSThread        *thread;
+@property( assign) NSThread                        *thread;
 
 // used for MulleUIPerformance
 @property( assign) id <UIWindowFrameDelegate>      frameDelegate;
 
-@property( assign) double                          frameRate;
-// a soft framerate is a limiter (YES) a hard framerate redraws regardless
-@property( assign) BOOL                            frameRateLimiter;
+// default is 1.0/60.0. Only for use in async configuration
+@property( assign) mulle_relativetime_t            animationRate;
+
 @property( assign) NSUInteger                      swapInterval;
+
 
 @property char                                     *titleUTF8String;
 
@@ -289,7 +326,8 @@ enum UIWindowPropertyChange
 // This is the "master" callback, if you override this, none of the other
 // render callbacks and delegate methods will be invoked. So in general
 // keep it as is. DisplayBits are UIWindowNeedsRedraw et.al.
-@property void   (*renderFrameCallback)( UIWindow *window,
+// Returns YES, if any animations were run
+@property BOOL   (*renderFrameCallback)( UIWindow *window,
                                          id <UIGraphicsContext> context,
                                          struct CGFrameInfo *info,
                                          NSUInteger displayBits);
@@ -318,7 +356,6 @@ enum UIWindowPropertyChange
                                         id <UIGraphicsContext> context,
                                         struct CGFrameInfo *info,
                                         NSInteger stage);
-
 
 //
 // This is useful to add custom drawing stuff on the bottom.
@@ -386,10 +423,6 @@ enum UIWindowPropertyChange
 //- (void) show;
 //- (void) hide;
 
-// this is not HZ, but 1.0 / HZ
-- (double) primaryMonitorRefreshRate;
-- (double) monitorRefreshRate;
-
 //
 // GLFWOSWindow also has a flag like this, but UIWindow has one itself
 // in  buffered configuration the currently "ready" framebuffer is
@@ -428,8 +461,6 @@ enum UIWindowPropertyChange
 
 - (BOOL) isWindowThread;
 
-- (void) setFrameRateHz:(CGFloat) hz;
-- (CGFloat) frameRateHz;
 - (CGFloat) pixelRatio;
 - (struct CGBitmapSize) framebufferSize;
 

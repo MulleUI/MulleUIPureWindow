@@ -25,7 +25,7 @@
 @end
 
 
-@interface UIWindow ( Frame)
+@interface UIWindow ( SetFrame)
 
 - (void) _setFrame:(CGRect) frame;
 
@@ -186,15 +186,48 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
 }
 
 
+void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *stats,
+                                             mulle_absolutetime_t begin,
+                                             mulle_absolutetime_t end)
+{
+   NSUInteger             i;
+   mulle_relativetime_t   diff;
+
+   if( ! stats)
+      return;
+
+   diff = end - begin;
+
+   stats->lastEndTimestamp   = end;
+   stats->lastBeginTimestamp = begin;
+
+   // time spent for display last time
+   stats->elapsedHistory[ stats->elapsedHistoryIndex] = diff;
+   stats->elapsedHistoryIndex++;
+   stats->elapsedHistoryIndex &= (UIWINDOW_S_ELAPSED_HISTORY - 1);
+
+   stats->avgElapsedHistory = 0.0;
+   for( i = 0; i < UIWINDOW_S_ELAPSED_HISTORY; i++)
+      stats->avgElapsedHistory += stats->elapsedHistory[ i];
+   stats->avgElapsedHistory /= UIWINDOW_S_ELAPSED_HISTORY;
+}
+
+
+//
+// No OSWindow calls in here
+//
 - (instancetype) _initWithFrame:(CGRect) frame
 {
    NSUInteger   i;
+   char         *s;
 
+   // UIView init
    [super initWithFrame:frame];
 
-   // assume window has a title bar for contentRect calculation
-   // (No difference to frame for me here on Linux)
-   _frame           = [_OSWindow os_windowFrame];
+   _frame = frame;
+   s      = getenv( "UIWindowDebugEnabled");
+   if( s)
+      _debugEnabled = strtol( s, NULL, 0);
 
    assert( frame.size.height == _frame.size.height);
    assert( frame.size.width == _frame.size.width);
@@ -244,7 +277,6 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
    _mulle_atomic_pointer_nonatomic_write( &_needsRefresh, (void *) 1);
    _mulle_atomic_pointer_nonatomic_write( &_needsDisplay, (void *) ~0);
 
-   _frameRate           = UIWindowFrameRateAsync;
    _oldSwapInterval     = NSIntegerMax;
    _renderFrameCallback = UIWindowDefaultFrameCallback;
 
@@ -257,15 +289,10 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
    _windowEventCallback = defaultWindowEventCallback;
 
    // preset with some useable values
-   for( i = 0; i < UIWINDOW_S_ELAPSED_HISTORY; i++)
-      _elapsedHistory[ i] = 0.0005;
+   UIWindowDisplayFrameStatisticsInit( &_windowThreadStatistics);
+   UIWindowDisplayFrameStatisticsInit( &_mainThreadStatistics);
 
    ui_window_pointer_fifo_init( &_eventQueue);
-
-   // don't initialize offscreen window for events
-   [_OSWindow os_initEvents];
-   [_OSWindow setWindowEventsReceiver:self];
-   [_OSWindow setEventsReceiver:self];
 
    return( self);
 }
@@ -307,7 +334,17 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
    _previousWindowInfo = info.window;
 
    self = [self _initWithFrame:[osWindow os_windowFrame]];
-   [self initWindowThreadMainIfNeeded];
+
+   if( self)
+   {
+      // don't initialize offscreen window for events
+      [_OSWindow os_initEvents];
+      [_OSWindow setWindowEventsReceiver:self];
+      [_OSWindow setEventsReceiver:self];
+
+      [self initWindowThreadMainIfNeeded];
+   }
+
    return( self);
 }
 
@@ -315,7 +352,7 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
 //
 // When we create a window on Linux, the first one usually stays where
 // it's at, and doesn't get a refresh or move notice. But a window manager
-// may reposititon the subsequent window (or even the first), so we get
+// may reposition the subsequent window (or even the first), so we get
 // a move and refresh event. The refresh event will hit after the first
 // render forcing a second render sortof immediately, as the eventloop is
 // positioned byhind the renderloop.
@@ -373,11 +410,15 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
          return( nil);
       }
 
+      //
+      // MEMO: if we have a retained scenario, does it make sense to run the
+      //       foreground window double buffered ?
+      //
       _backingStore = (styleMask & UIWindowStyleRetainedOnMainThread)
                         ? UIWindowBackingStoreRetainedOnMainThread
                         : UIWindowBackingStoreRetained;
 
-      // reduce stylrMask for main window
+      // reduce styleMask for main window
       styleMask &= ~(UIWindowStyleEdgeAntialias|UIWindowStyleStencilStrokes|UIWindowStyleSingleBuffer);
    }
 
@@ -412,8 +453,7 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
    // this is better than not doing it, but no guarantee that an event isn't
    // processed in the background
 #ifdef DEBUG
-   mulle_fprintf( stderr, "%#@: %#@ %s\n",
-                        [NSThread currentThread], self, __PRETTY_FUNCTION__);
+   MulleUILogThisMethod();
 #endif
 
    [self discardPendingEvents];
@@ -423,9 +463,9 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
    [self finalizeWindowThread];
 
    // probably need to activate _OSWindow context one more time here
-   [_lastLayer mullePerformFinalize];
-   [_lastLayer autorelease];
-   _lastLayer = nil;
+   [_lastOffscreenFrambuffer mullePerformFinalize];
+   [_lastOffscreenFrambuffer autorelease];
+   _lastOffscreenFrambuffer = nil;
 
    // TODO: delete window ?
    //       remove from screen ?
@@ -494,48 +534,23 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
 }
 
 
-- (void) setFrameRateHz:(CGFloat) hz
-{
-   assert( hz > 0.0);
-   if( hz != 0.0)
-      [self setFrameRate:1.0f / hz];
-}
-
-
-- (CGFloat) frameRateHz
-{
-   double   frameRate;
-
-   frameRate = [self frameRate];
-   if( frameRate <= 0.0f)
-      return( 0.0f);
-   if( isinf( frameRate))
-      return( INFINITY);
-   return( 1.0f / frameRate);
-}
-
 - (struct CGBitmapSize) framebufferSize
 {
-   return( _currentWindowInfo.framebufferSize);
+   struct UIOSWindowInfo   info;
+
+   [_OSWindow getOSWindowInfo:&info];
+   return( UIOSWindowInfoGetFramebufferSize( &info));
 }
 
 
 - (CGFloat) pixelRatio
 {
-   return( _currentWindowInfo.pixelRatio);
+   struct UIOSWindowInfo   info;
+
+   [_OSWindow getOSWindowInfo:&info];
+   return( UIOSWindowInfoGetPixelRatio( &info));
 }
 
-
-- (double) primaryMonitorRefreshRate
-{
-   return( [_OSWindow os_primaryMonitorRefreshRate]);
-}
-
-
-- (double) monitorRefreshRate
-{
-   return( [_OSWindow os_monitorRefreshRate]);
-}
 
 //
 // This flag is set by the OS (or the window thread) to indicate that
@@ -547,8 +562,7 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
 {
    _mulle_atomic_pointer_write( &_needsRefresh, (void *) 1);
 #ifdef FLAG_DEBUG
-   mulle_fprintf( stderr, "%#@: %#@ %s (%p)\n",
-         [NSThread currentThread], self, __PRETTY_FUNCTION__, _mulle_atomic_pointer_read( &_needsRefresh));
+   MulleUILog( "(%p)", _mulle_atomic_pointer_read( &_needsRefresh));
 #endif
 }
 
@@ -557,8 +571,7 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
 {
    _mulle_atomic_pointer_write( &_needsRefresh, (void *) value);
 #ifdef FLAG_DEBUG
-   mulle_fprintf( stderr, "%#@: %#@ %s (%p)\n",
-         [NSThread currentThread], self, __PRETTY_FUNCTION__, _mulle_atomic_pointer_read( &_needsRefresh));
+   MulleUILog( "(%p)", _mulle_atomic_pointer_read( &_needsRefresh));
 #endif
 }
 
@@ -572,7 +585,6 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
 }
 
 
-
 - (BOOL) needsRefreshClearIfSet
 {
    return( (BOOL) (NSUInteger) MulleObjCAtomicPointerReadClearIfSet( &_needsRefresh));
@@ -584,8 +596,7 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
    _mulle_atomic_pointer_write( &_needsDisplay, (void *) ~0);
 
 #ifdef FLAG_DEBUG
-   mulle_fprintf( stderr, "%#@: %#@ %s %p\n",
-         [NSThread currentThread], self, __PRETTY_FUNCTION__, _mulle_atomic_pointer_read( &_needsDisplay));
+   MulleUILog( "(%p)", _mulle_atomic_pointer_read( &_needsDisplay));
 #endif
 }
 
@@ -597,10 +608,8 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
    MulleObjCAtomicPointerSetBit( &_needsDisplay, value);
 
 #ifdef FLAG_DEBUG
-   mulle_fprintf( stderr, "%#@: %#@ %s %p\n",
-         [NSThread currentThread], self, __PRETTY_FUNCTION__, _mulle_atomic_pointer_read( &_needsDisplay));
+   MulleUILog( "(%p)", _mulle_atomic_pointer_read( &_needsDisplay));
 #endif
-
 }
 
 
@@ -715,7 +724,9 @@ static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEv
 
 
 /*
- * only to be used by UIEvents, these don't reflect
+ * Only to be used by UIEvents, these don't reflect. This sets our view
+ * frame/bounds (from the moved OSWindow frame. It does not set the OSWindow
+ * frame.
  */
 - (void) _setFrame:(CGRect) frame
 {
@@ -832,45 +843,6 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 }
 
 
-- (void) writeOSWindowPropertyChangesIfNeeded
-{
-   NSUInteger   changes;
-   CGRect       frame;
-   char         *title;
-
-   changes = (NSUInteger) _mulle_atomic_pointer_read( &_propertyChanges);
-   if( ! changes)
-      return;
-
-   // if this fails sporadically, it's no biggy, but zeroing out nilly, willy
-   // might lose a change
-   _mulle_atomic_pointer_cas( &_propertyChanges, (void *) 0, (void *) changes);
-
-   if( changes & UIWindowPropertyChangeFrame)
-   {
-      frame = [self frame];
-#ifdef DEBUG
-      mulle_fprintf( stderr, "%#@: %#@ push frame %.2f %.2f %.2f %.2f\n",
-                              [NSThread currentThread], self,
-                              frame.origin.x, frame.origin.y,
-                              frame.size.width, frame.size.height);
-#endif
-      [_OSWindow os_setWindowFrame:frame];
-   }
-
-   if( changes & UIWindowPropertyChangeTitle)
-   {
-      title = [self titleUTF8String];
-#ifdef DEBUG
-      mulle_fprintf( stderr, "%#@: %#@ push title %s\n",
-                              [NSThread currentThread], self,
-                              title);
-#endif
-      [_OSWindow os_setTitleUTF8String:title];
-   }
-}
-
-
 - (CGColor) backgroundColor
 {
    CGColor   rval;
@@ -907,8 +879,6 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
       callback = defaultWindowEventCallback;
    _windowEventCallback = callback;
 }
-
-
 
 
 /*

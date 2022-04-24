@@ -1,4 +1,4 @@
-#import <MulleUICore/MulleUICore.h>
+#import "import.h"
 
 
 @interface TestOpenGLLayer : CALayer

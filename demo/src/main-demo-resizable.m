@@ -3,6 +3,9 @@
 #include <time.h>
 
 
+//#define RANDOM_SLEEP_DURING_DRAW
+
+
 #define BLAU   CGColorMakeRGBA( 0.1, 0.1, 0.4, 1.0)
 #define WEISS  CGColorMakeRGBA( 1.0, 1.0, 1.0, 1.0)
 
@@ -19,13 +22,16 @@
 //
 // drawStuff and main are left unchanged.
 //
-static void  drawStuff( CALayer *layer, CGContext *context)
+static void  drawStuff( CALayer *layer, void *uicontext)
 {
-   CGFloat             radius;
-   CGFloat             strokeWidth;
-   CGFont              *font;
-   CGRect              canvas;
-   struct NVGcontext   *vg;
+   CGContext             *context = uicontext;
+   CGFloat               radius;
+   CGFloat               strokeWidth;
+   CGFont                *font;
+   CGRect                canvas;
+   struct NVGcontext     *vg;
+
+   MulleUICLog( "start");
 
    canvas      = [layer canvas];
    strokeWidth = 20.0;
@@ -47,17 +53,20 @@ static void  drawStuff( CALayer *layer, CGContext *context)
    font = [context fontWithNameUTF8String:"sans"];
    [context setFont:font];
 
-   nvgFontSize( vg, strokeWidth * 8.0);
+   nvgFontSize( vg, strokeWidth * 2.0);
    nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
    nvgTextColor( vg, WEISS, BLAU);
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), "1848", NULL);
+   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), CGSizeUTF8String( canvas.size), NULL);
 
    // punish drawing to be super slow, because of buffering it's not
    // noticable
+#ifdef RANDOM_SLEEP_DURING_DRAW
    {
        struct timespec   delay = { 0, 1000 * 1000 * (1000 / 10) };
        nanosleep( &delay, NULL);
    }
+#endif
+   MulleUICLog( "stop");
 }
 
 
@@ -94,7 +103,15 @@ int   main( int argc, char *argv[])
       window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
       assert( window);
 
-      [window setBackgroundColor:WEISS];
+      [window setBackgroundColor:CGColorMakeChartreuse()];
+
+      // CGContentModeTopLeft is the default, the window will extend with
+      // borders in background color until the drawing thread is done
+      //[window setRefreshContentMode:CGContentModeTopLeft];
+
+      // CGContentModeScaleToFill will use the previous contents and scale
+      // them, until the drawing thread is done.
+      [window setRefreshContentMode:CGContentModeScaleToFill];
 
       setupSceneInView( [window contentPlane]);
 

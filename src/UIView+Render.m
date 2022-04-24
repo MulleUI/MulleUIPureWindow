@@ -14,8 +14,6 @@
 {
    struct mulle_pointerarray   renderQueue;
 
-   assert( ![self needsLayout]);
-
    _mulle_pointerarray_init( &renderQueue, 0, NULL);
 
    @autoreleasepool

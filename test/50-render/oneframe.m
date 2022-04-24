@@ -1,4 +1,4 @@
-#import <MulleUICore/MulleUICore.h>
+#import <MulleUIWindow/MulleUIWindow.h>
 
 
 int   main( void)
