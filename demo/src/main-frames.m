@@ -30,16 +30,17 @@ static void  usage( void)
 
 static void   drawStuff( CALayer *layer, CGContext *context)
 {
-   auto char            buf[ 64];
-   CGFont               *font;
-   CGRect               canvas;
-   char                 *s;
-   double               frameRate;
-   GLFWOSWindow         *osWindow;
-   NSUInteger           counter;
-   struct CGFrameInfo   *info;
-   struct NVGcontext    *vg;
-   UIWindow             *window;
+   auto char               buf[ 64];
+   CGFont                  *font;
+   CGRect                  canvas;
+   char                    *s;
+   double                  frameRate;
+   GLFWOSWindow            *osWindow;
+   NSUInteger              counter;
+   struct CGFrameInfo      *info;
+   struct UIOSWindowInfo   windowInfo;
+   struct NVGcontext      *vg;
+   UIWindow               *window;
 
    osWindow = [context OSWindow];
    window   = [osWindow parentWindow];
@@ -76,10 +77,12 @@ static void   drawStuff( CALayer *layer, CGContext *context)
 
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 3 + 2, buf, NULL);
 
-   sprintf( buf, "slowestFrameRate : %.3f  (%.2f Hz)", [window slowestFrameRate], 1.0 / [window slowestFrameRate]);
+   [window getOSWindowInfo:&windowInfo];
+
+   sprintf( buf, "slowestFrameRate : %.3f  (%.2f Hz)", UIOSWindowInfoGetSlowestFrameRate( &windowInfo), 1.0 / UIOSWindowInfoGetSlowestFrameRate( &windowInfo));
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 4 + 2, buf, NULL);
 
-   sprintf( buf, "fastestFrameRate : %.3f (%.2f Hz)", [window fastestFrameRate],  1.0 / [window fastestFrameRate]);
+   sprintf( buf, "fastestFrameRate : %.3f (%.2f Hz)",  UIOSWindowInfoGetFastestFrameRate( &windowInfo),  1.0 /  UIOSWindowInfoGetFastestFrameRate( &windowInfo));
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 5 + 2, buf, NULL);
 
    sprintf( buf, "OSContextInfo : %s", [osWindow os_contextInfoUTF8String]);
@@ -99,8 +102,8 @@ static void   drawStuff( CALayer *layer, CGContext *context)
    sprintf( buf, "%.2f FPS", [context numberOfRenderedFrames] / [context secondsSinceFirstRender]);
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 2 + 8, buf, NULL);
 
-   sprintf( buf, "%.6f display+refresh", [window displayAndRefreshRate]);
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 3 + 8, buf, NULL);
+//   sprintf( buf, "%.6f display+refresh", [window displayAndRefreshRate]);
+//   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 3 + 8, buf, NULL);
 }
 
 
@@ -147,7 +150,7 @@ int   main( int argc, char *argv[])
    BOOL            isMainThread;
    BOOL            isDoubleBuffered;
    NSUInteger      styleMask;
-   
+
    rate             = UIWindowFrameRateSynced;
    limiter          = NO;
    isRetained       = NO;

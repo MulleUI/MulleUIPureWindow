@@ -269,7 +269,7 @@ static void  drawStuff( CALayer *layer, CGContext *context)
    static int   rounds;
 
 #ifdef DEBUG
-   mulle_fprintf( stderr, "%s", __PRETTY_FUNCTION__);
+   mulle_fprintf( stderr, "%s\n", __PRETTY_FUNCTION__);
 #endif
 
 #ifdef DUMP

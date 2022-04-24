@@ -35,18 +35,6 @@
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleCA/MulleCA.h>   // MulleCA
 
-// You can tweak the following #import with these commands.
-// (Use 5E0E2D05-248F-48B9-9189-4A9CB47F2535 instead of MulleObjCLockFoundation if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark MulleObjCLockFoundation no-header`
-//    rename:             `mulle-sde dependency|library set MulleObjCLockFoundation include whatever.h`
-//    reorder:            `mulle-sde dependency move MulleObjCLockFoundation <up|down>`
-//    toggle #import:     `mulle-sde dependency mark MulleObjCLockFoundation [no-]import`
-//    toggle public:      `mulle-sde dependency mark MulleObjCLockFoundation [no-]public`
-//    toggle optional:    `mulle-sde dependency mark MulleObjCLockFoundation [no-]require`
-//    remove for platform:`mulle-sde dependency mark MulleObjCLockFoundation no-platform-<uname>`
-//        (use `mulle-sourcetree-to-c --unames` to list known values)
-#import <MulleObjCLockFoundation/MulleObjCLockFoundation.h>   // MulleObjCLockFoundation
-
 #ifdef __has_include
 # if __has_include( "_MulleUIWindow-include.h")
 #  include "_MulleUIWindow-include.h"

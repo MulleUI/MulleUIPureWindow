@@ -172,44 +172,6 @@ endif()
 
 
 #
-# Generated from sourcetree: 4433B02B-9DD5-4A36-A862-ABE747D3BC5C;MulleObjC-startup;no-cmake-dependency,no-cmake-loader,no-cmake-searchpath,no-dynamic-link,no-header,no-intermediate-link;
-# Disable with : `mulle-sourcetree mark MulleObjC-startup no-link`
-# Disable for this platform: `mulle-sourcetree mark MulleObjC-startup no-cmake-platform-${MULLE_UNAME}`
-#
-if( NOT MULLE_OBJC_STARTUP_LIBRARY)
-   find_library( MULLE_OBJC_STARTUP_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX} NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
-   message( STATUS "MULLE_OBJC_STARTUP_LIBRARY is ${MULLE_OBJC_STARTUP_LIBRARY}")
-   #
-   # The order looks ascending, but due to the way this file is read
-   # it ends up being descending, which is what we need.
-   #
-   if( MULLE_OBJC_STARTUP_LIBRARY)
-      #
-      # Add MULLE_OBJC_STARTUP_LIBRARY to STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES list.
-      # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-add`
-      #
-      set( STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES
-         ${STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES}
-         ${MULLE_OBJC_STARTUP_LIBRARY}
-         CACHE INTERNAL "need to cache this"
-      )
-      #
-      # Inherit information from dependency.
-      # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
-      # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-inherit`
-      #
-      # temporarily expand CMAKE_MODULE_PATH
-      get_filename_component( _TMP_MULLE_OBJC_STARTUP_ROOT "${MULLE_OBJC_STARTUP_LIBRARY}" DIRECTORY)
-      get_filename_component( _TMP_MULLE_OBJC_STARTUP_ROOT "${_TMP_MULLE_OBJC_STARTUP_ROOT}" DIRECTORY)
-      #
-   else()
-      # Disable with: `mulle-sourcetree mark MulleObjC-startup no-require-link`
-      message( FATAL_ERROR "MULLE_OBJC_STARTUP_LIBRARY was not found")
-   endif()
-endif()
-
-
-#
 # Generated from sourcetree: CD9E2749-A72F-44D4-A4E9-6C86DCFD61D4;MulleUIPerf;no-singlephase;
 # Disable with : `mulle-sourcetree mark MulleUIPerf no-link`
 # Disable for this platform: `mulle-sourcetree mark MulleUIPerf no-cmake-platform-${MULLE_UNAME}`
@@ -365,5 +327,43 @@ if( NOT MULLE_UI_IMAGE_LIBRARY)
    else()
       # Disable with: `mulle-sourcetree mark MulleUIImage no-require-link`
       message( FATAL_ERROR "MULLE_UI_IMAGE_LIBRARY was not found")
+   endif()
+endif()
+
+
+#
+# Generated from sourcetree: 4433B02B-9DD5-4A36-A862-ABE747D3BC5C;MulleObjC-startup;no-cmake-dependency,no-cmake-loader,no-cmake-searchpath,no-dynamic-link,no-header,no-intermediate-link;
+# Disable with : `mulle-sourcetree mark MulleObjC-startup no-link`
+# Disable for this platform: `mulle-sourcetree mark MulleObjC-startup no-cmake-platform-${MULLE_UNAME}`
+#
+if( NOT MULLE_OBJC_STARTUP_LIBRARY)
+   find_library( MULLE_OBJC_STARTUP_LIBRARY NAMES ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX} NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH)
+   message( STATUS "MULLE_OBJC_STARTUP_LIBRARY is ${MULLE_OBJC_STARTUP_LIBRARY}")
+   #
+   # The order looks ascending, but due to the way this file is read
+   # it ends up being descending, which is what we need.
+   #
+   if( MULLE_OBJC_STARTUP_LIBRARY)
+      #
+      # Add MULLE_OBJC_STARTUP_LIBRARY to STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES list.
+      # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-add`
+      #
+      set( STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES
+         ${STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES}
+         ${MULLE_OBJC_STARTUP_LIBRARY}
+         CACHE INTERNAL "need to cache this"
+      )
+      #
+      # Inherit information from dependency.
+      # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
+      # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-inherit`
+      #
+      # temporarily expand CMAKE_MODULE_PATH
+      get_filename_component( _TMP_MULLE_OBJC_STARTUP_ROOT "${MULLE_OBJC_STARTUP_LIBRARY}" DIRECTORY)
+      get_filename_component( _TMP_MULLE_OBJC_STARTUP_ROOT "${_TMP_MULLE_OBJC_STARTUP_ROOT}" DIRECTORY)
+      #
+   else()
+      # Disable with: `mulle-sourcetree mark MulleObjC-startup no-require-link`
+      message( FATAL_ERROR "MULLE_OBJC_STARTUP_LIBRARY was not found")
    endif()
 endif()

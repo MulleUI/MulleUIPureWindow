@@ -209,8 +209,7 @@ static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
       reshape( size.width, size.height);
    }
 
-   [window displayFrameIfNeeded:mulle_absolutetime_now()
-                          nextCallSchedule:INFINITY];
+   [window displayFrameIfNeeded:mulle_absolutetime_now()];
 }
 
 
@@ -233,24 +232,26 @@ int   main( int argc, char *argv[])
 //    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 //    glutInitWindowSize(500, 500);
 //    glutCreateWindow("Demo");
-
       assert( window);
+      [app addWindow:window];
 
       [window setWindowEventsCallback:receiveWindowEvents];
 //    glutReshapeFunc(reshape);
-      timer = [[[NSTimer alloc] mulleInitWithTimeInterval:0.0
-                                           repeatInterval:delay/1000.0
-                                                 callback:timerCallback
-                                                 userInfo:nil] autorelease];
+      timer = [[[NSTimer alloc] mulleInitWithRelativeTimeInterval:0.0
+                                                   repeatInterval:delay/1000.0
+                                                         callback:timerCallback
+                                                         userInfo:nil] autorelease];
       [app addTimer:timer];
 
 //    glutTimerFunc(delay, timer, 0);
 
       [window os_activateGraphicsContext];
+      {
+         init_texture();
+      }
+      [window os_deactivateGraphicsContext];
 
-      init_texture();
-
-      [window setRenderFrameCallback:display];
+      [window setFrameCallback:display];
 //    glutDisplayFunc(display);
 
       [window setFrameRateHz:100.0];

@@ -14,6 +14,4 @@
 
 - (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate;
 
-- (mulle_relativetime_t) displayAndRefreshRate;
-
 @end

@@ -2,6 +2,7 @@
       { @selector( MulleObjCLoader), @selector( MulleObjCLockFoundation) },      // 47a9beb6;MulleObjCLoader;86a97828;MulleObjCLockFoundation
       { @selector( MulleObjCLoader), @selector( MulleObjCTimeFoundation) },      // 47a9beb6;MulleObjCLoader;cc20d48b;MulleObjCTimeFoundation
       { @selector( MulleObjCLoader), @selector( MulleUIApplication) },      // 47a9beb6;MulleObjCLoader;55c305e6;MulleUIApplication
+      { @selector( MulleObjCLoader), @selector( MulleUIBase) },      // 47a9beb6;MulleObjCLoader;3ebba954;MulleUIBase
       { @selector( MulleObjCLoader), @selector( MulleUIView) },      // 47a9beb6;MulleObjCLoader;58e9d41b;MulleUIView
       { @selector( NSObject), @selector( UIWindow) },      // b3a66256;NSObject;895a123f;UIWindow
       { @selector( UIAnimatableViewPropertiesSnapshot), MULLE_OBJC_NO_CATEGORYID },      // d500f939;UIAnimatableViewPropertiesSnapshot;;

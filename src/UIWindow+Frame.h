@@ -16,28 +16,19 @@
 - (void) _getFrameInfo:(struct CGFrameInfo *) info; // does not send event
 - (void) getFrameInfo:(struct CGFrameInfo *) info;
 - (void) swapBuffers;
-- (void) renderWithFrameInfo:(struct CGFrameInfo *) info
-         displayBits:(NSUInteger) displayBits;  // assorted UIWindowNeedsDislay bits
+- (BOOL) renderWithFrameInfo:(struct CGFrameInfo *) info
+                 displayBits:(NSUInteger) displayBits;  // assorted UIWindowNeedsDislay bits
 
 - (id <UIGraphicsContext>) activateWindowGraphicsContext;
 - (id <UIGraphicsContext>) activateRenderGraphicsContext;
 
 - (void) deactivateContext:(id <UIGraphicsContext>) context;
 
-// UIWindowFrameRateAsync    : INFINITY
-// UIWindowFrameRateSynced   : refreshRate
-// UIWindowFrameRateUnsynced : 0.0
-// other                     : other
-- (double) fastestFrameRate;
-
-// UIWindowFrameRateAsync    : INFINITY
-// UIWindowFrameRateSynced   : frameLimiter ? INFINITY : refreshRate
-// UIWindowFrameRateUnsynced : 0.0
-// other                     : frameLimiter ? INFINITY : other
-- (double) slowestFrameRate;
-
-- (BOOL) frameTimeReached;
-
+- (mulle_relativetime_t) remainingFrameTime:(mulle_absolutetime_t) now
+                                  frameRate:(mulle_relativetime_t) frameRate
+                              animationRate:(mulle_relativetime_t) animationRate
+                            frameStatistics:(struct UIWindowFrameStatistics *) stats
+                           frameRateLimiter:(BOOL) frameLimiter;
 #if 0
 // this will activate the window context!
 - (struct CGBitmap)

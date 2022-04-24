@@ -46,6 +46,7 @@
    struct timespec        delay;
    mulle_absolutetime_t   then;
    NSUInteger             mask;
+   mulle_absolutetime_t   now;
    mulle_relativetime_t   diff;
    BOOL                   isMainThread;
 
@@ -55,8 +56,7 @@
    delay.tv_nsec = 0;
 
 #ifdef PROCESS_EVENT_DEBUG
-   mulle_fprintf( stderr, "%#@: %#@ is waiting for events until %.4fs\n",
-                           [NSThread currentThread], self, then);
+   MulleUILog( "is waiting for events until %.4fs", then);
 #endif
    //
    // set this now to NO, if a window refresh events is received we
@@ -79,13 +79,13 @@
       if( mask && returnsEarly)
       {
 #ifdef PROCESS_EVENT_DEBUG
-         mulle_fprintf( stderr, "%#@: %#@ returns early\n",
-                           [NSThread currentThread], self);
+         MulleUILog( "returns early");
 #endif
          break;
       }
 
-      diff = mulle_absolutetime_now() - then;
+      now  = mulle_absolutetime_now();
+      diff = now - then;
 
       if( ! isMainThread)
       {
@@ -93,8 +93,7 @@
          if( [self needsDisplay])
          {
 #ifdef PROCESS_EVENT_DEBUG
-            mulle_fprintf( stderr, "%#@: %#@ stop processing events, needs redraw\n",
-                              [NSThread currentThread], self);
+            MulleUILog("stop processing events, needs redraw");
 #endif
             break;
          }
@@ -112,8 +111,7 @@
          if( [self needsRefresh])
          {
 #ifdef PROCESS_EVENT_DEBUG
-            mulle_fprintf( stderr, "%#@: %#@ stop processing events, needs redraw\n",
-                              [NSThread currentThread], self);
+            MulleUILog( "stop processing events, needs redraw");
 #endif
             break;
          }
@@ -122,10 +120,9 @@
       if( diff >= 0.0)
       {
 #ifdef PROCESS_EVENT_DEBUG
-         mulle_fprintf( stderr, "%#@: %#@ stop processing events, timeout reached (setNeedsDisplay)\n",
-                           [NSThread currentThread], self);
+         MulleUILog( "stop processing events, timeout reached (setNeedsDisplay)");
 #endif
-         if( ! [self frameRateLimiter])
+         if( ! [_OSWindow frameRateLimiter])
             [self setNeedsDisplay];
          break;
       }
@@ -148,7 +145,7 @@
    // UIWindowFrameRateUnsynced: timout == 0.0  returnsEarly: YES
    // Else timeout: returnsEarly: NO
    if( frameRate == UIWindowFrameRateSynced)
-      timeout = [self monitorRefreshRate];
+      timeout = [[[UIApplication sharedInstance] primaryScreen] refreshRate];
    else
       timeout = fabs( frameRate); // deal with softframerate
    return( [self waitForEventsUntil:now + timeout
@@ -175,7 +172,7 @@
       // but is it desirable ?
       timestamp = _lastDidProcessEventsTimestamp
                      ? _lastDidProcessEventsTimestamp
-                     : _lastDidFramebufferSwapTimestamp;
+                     : _mainThreadStatistics.lastEndTimestamp;
 
       // just push next one through ASAP or ?
       usedFrameRate = frameRate;
@@ -196,8 +193,9 @@
 
 - (BOOL) runOneFrame
 {
-   NSUInteger           displayBits;
-   struct CGFrameInfo   info;
+   NSUInteger              displayBits;
+   struct CGFrameInfo      frameInfo;
+   struct UIOSWindowInfo   windowInfo;
 
    assert( _backingStore == UIWindowBackingStoreVolatile && "Don't call runOneFrame on a UIWindowStyleRetained window");
 
@@ -205,8 +203,8 @@
    {
       displayBits  = [self needsDisplayClearIfSet];
       displayBits |= UIWindowNeedsRedraw;
-      [self getFrameInfo:&info];  // retrieve newest geometry
-      [self renderWithFrameInfo:&info
+      [self getFrameInfo:&frameInfo];  // retrieve newest geometry
+      [self renderWithFrameInfo:&frameInfo
                     displayBits:displayBits];
 
       [self setNeedsRefresh:NO];
@@ -215,7 +213,9 @@
       // now no openGL or CGContext calls should happen
       // as the context has been detached from this thread
       [self setupQuadtree];
-      [self eventHandlingWithFrameRate:_frameRate];
+      [_OSWindow getOSWindowInfo:&windowInfo];
+      // slowest seems right or ?
+      [self eventHandlingWithFrameRate:UIOSWindowInfoGetSlowestFrameRate( &windowInfo)];
       [self writeOSWindowPropertyChangesIfNeeded];
    }
 

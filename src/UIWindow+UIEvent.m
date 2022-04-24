@@ -37,9 +37,7 @@
 {
    assert( windowInfo);
 
-   [self initWithMouseLocation:CGPointZero
-                     modifiers:0
-               eventIdentifier:UIEventTypeWindowFramebufferGeometry];
+   [self initWithEventIdentifier:UIEventTypeWindowFramebufferGeometry];
    _windowInfo = *windowInfo;
    return( self);
 }
@@ -97,9 +95,7 @@
    assert( [NSThread mulleIsMainThread]);
 
 #ifdef WINDOW_EVENT_CALLBACK_DEBUG
-   mulle_fprintf( stderr, "%#@: %#@ %s handle %#@\n",
-                          [NSThread currentThread], self, __PRETTY_FUNCTION__,
-                          event);
+   MulleUILog( "handle %#@", event);
 #endif
 
    switch( [event windowEventType])
@@ -146,9 +142,8 @@
       }
 
 #ifdef WINDOW_EVENT_CALLBACK_DEBUG
-      mulle_fprintf( stderr, "%#@: %#@ %s short circuits refresh and swap\n",
-                        [NSThread currentThread], self, __PRETTY_FUNCTION__,
-                        UIWindowEventTypeUTF8String( [event windowEventType]));
+      MulleUILog( "%s short circuits refresh and swap",
+                  UIWindowEventTypeUTF8String( [event windowEventType]));
 #endif
       // immediately refresh framebuffer
       [self setNeedsRefresh:NO];
@@ -452,6 +447,39 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 }
 
 
+
+- (UIEvent *) responder:(id <UIResponder>) responder
+            handleEvent:(UIEvent *) event
+{
+#ifdef EVENT_DEBUG
+   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, (char *) [responder UTF8String]);
+#endif
+
+   while( responder)
+   {
+      // TODO: translate positions
+      //       UIViewController could also be the responder here
+      if( responder != (id <UIResponder>) self)
+      {
+         event = [responder handleEvent:event];
+         if( ! event)
+         {
+#ifdef EVENT_DEBUG
+            fprintf( stderr, "Responder %s consumed event\n", (char *) [responder UTF8String]);
+#endif
+            break;
+         }
+#ifdef EVENT_DEBUG
+         fprintf( stderr, "Responder %s did not consume event, try next\n", (char *) [responder UTF8String]);
+#endif
+      }
+      responder = [responder nextResponder];
+   }
+
+   return( event);
+}
+
+
 - (UIEvent *) handleEvent:(UIEvent *) event
 {
    CGRect                                rect;
@@ -468,8 +496,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    assert( event);
 
 #ifdef HANDLE_EVENT_DEBUG
-   mulle_fprintf( stderr, "%#@: %#@ handle %#@ event\n",
-                        [NSThread currentThread], self, event);
+   MulleUILog( "handle %#@ event", event);
 #endif
    event = (*_eventCallback)( self, event);
 
@@ -530,12 +557,6 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
       switch( [(UIUserEvent *) event eventIdentifier])
       {
       case UIEventTypeWindowFramebufferGeometry :
-        // copy value into our UIView hierarchy
-         _currentWindowInfo = [(UIWindowFramebufferGeometryEvent *) event windowInfo];
-
-         // set our frame, but don't propagate back so use _setFrame
-         // instead of setFrame:
-         [self _setFrame:_currentWindowInfo.frame];
          [self setNeedsLayout];
          event = nil;
          break;
@@ -553,22 +574,22 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 //   if( [event isKindOfClass:[UIMouseScrollEvent class]])
 //      [self dump];
 
-   responder = [self firstResponder];
-   if( responder)
+   event = [self responder:[self firstResponder]
+               handleEvent:event];
+   if( ! event)
    {
-      event = [self responder:responder
-                  handleEvent:event];
-      if( ! event)
-      {
 #ifdef EVENT_DEBUG
-         fprintf( stderr, "First Responder handled event: %s\n",
-                        (char *) [responder UTF8String]);
+      fprintf( stderr, "First Responder handled event: %s\n",
+                     (char *) [responder UTF8String]);
 #endif
-         return( event);
-      }
+      return( event);
    }
 
-   event = [super handleEvent:event];
+   //
+   // pass down input events to the views
+   //
+   if( [event isInputEvent])
+      event = [self handleInputEvent:(UIInputEvent *) event];
    return( event);
 }
 
@@ -608,9 +629,7 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 - (void) sendRetainedEvent:(UIEvent *) event
 {
 #ifdef WINDOW_EVENT_CALLBACK_DEBUG
-   mulle_fprintf( stderr, "%#@: %#@ %s send %@\n",
-                          [NSThread currentThread], self, __PRETTY_FUNCTION__,
-                          event);
+   MulleUILog( "send %@", event);
 #endif
 
    [self handleRetainedEvent:event];
