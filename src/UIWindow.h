@@ -317,6 +317,12 @@ enum UIWindowDebugBit
 @property( assign) CGContentMode                    refreshContentMode;
 @property( assign) CGColor                          backgroundColor;
 
+// what's the difference to alpha ? An alpha value of 1.0 does not mean
+// that all pixels are opaque. This guarantees it. The main benefit of
+// setting this flag is, that you can avoid clearing the framebuffer
+// color bits, which might save bandwidth
+@property( getter=isOpaque) BOOL      opaque;
+
 
 // Rendercallbacks. If the renderer is in its own thread, then all these
 //                  callbacks will appear on the render thread. This thread
@@ -359,10 +365,18 @@ enum UIWindowDebugBit
 
 //
 // This is useful to add custom drawing stuff on the bottom.
-// If you return NO, the framebuffer will not be precleared
-@property BOOL   (*willDrawCallback)( UIWindow *window,
-                                      id <UIGraphicsContext> context,
-                                      struct CGFrameInfo *info);
+// If you return NO, it's assumed that you cleared the framebuffer yourself.
+// Remember that nanovg needs the stencilbuffer cleared.
+@property BOOL  (*willClearCallback)( UIWindow *window,
+                                     id <UIGraphicsContext> context,
+                                     struct CGFrameInfo *info);
+
+//
+// This is useful to add custom drawing stuff on the bottom.
+//
+@property void  (*willDrawCallback)( UIWindow *window,
+                                     id <UIGraphicsContext> context,
+                                     struct CGFrameInfo *info);
 
 //
 // This is useful to add custom nanovg drawing stuff on top.

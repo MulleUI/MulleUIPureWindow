@@ -191,24 +191,58 @@
    }
 }
 
-- (BOOL) runOneFrame
+//
+// does a screenshot of the primary context (front buffer)
+// TODO: could grab hidden framebuffer, maybe even more easy ?
+//
+- (struct CGBitmap) screenshotBitmap
+{
+   id <UIGraphicsContext>   context;
+   struct CGBitmap          bitmap;
+   struct CGFrameInfo       frameInfo;
+   struct CGBitmapRect      rect;
+
+   context = [self activateWindowGraphicsContext];
+
+   [self getFrameInfo:&frameInfo];
+
+   rect  = CGBitmapRectMake( 0,
+                             0,
+                             frameInfo.window.framebufferSize.width,
+                             frameInfo.window.framebufferSize.height);
+   bitmap = [context readFramebufferBitmap:rect
+                     framebufferBitmapType:CGFramebufferRGBABytes
+                                 allocator:NULL];
+   [self deactivateContext:context];
+
+   return( bitmap);
+}
+
+
+- (void) renderAndSwapOneFrame
 {
    NSUInteger              displayBits;
    struct CGFrameInfo      frameInfo;
-   struct UIOSWindowInfo   windowInfo;
 
-   assert( _backingStore == UIWindowBackingStoreVolatile && "Don't call runOneFrame on a UIWindowStyleRetained window");
+   assert( _backingStore == UIWindowBackingStoreVolatile && "Don't call processOneFrame on a UIWindowStyleRetained window");
+   displayBits  = [self needsDisplayClearIfSet];
+   displayBits |= UIWindowNeedsRedraw;
+   [self getFrameInfo:&frameInfo];  // retrieve newest geometry
+   [self renderWithFrameInfo:&frameInfo
+                  displayBits:displayBits];
+
+   [self setNeedsRefresh:NO];
+   [self swapBuffers];
+}
+
+
+- (BOOL) processOneFrame
+{
+   struct UIOSWindowInfo   windowInfo;
 
    @autoreleasepool
    {
-      displayBits  = [self needsDisplayClearIfSet];
-      displayBits |= UIWindowNeedsRedraw;
-      [self getFrameInfo:&frameInfo];  // retrieve newest geometry
-      [self renderWithFrameInfo:&frameInfo
-                    displayBits:displayBits];
-
-      [self setNeedsRefresh:NO];
-      [self swapBuffers];
+      [self renderAndSwapOneFrame];
 
       // now no openGL or CGContext calls should happen
       // as the context has been detached from this thread

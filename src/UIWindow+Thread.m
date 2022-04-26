@@ -17,8 +17,10 @@
 #define THREAD_DEBUG_VERBOSE
 #define SWAP_DEBUG
 
+// this writes out a PNG for each frame
+// #define REFRESH_IMAGE_DEBUG
 // catch race conditions (only works if picture drawn is not empty)
-#define MISSING_BARRIER_DEBUG
+//#define MISSING_BARRIER_DEBUG
 //#define RANDOM_SLEEP_DURING_DRAW
 
 
@@ -449,7 +451,7 @@
 //     char         *s;
 //
 //     s = MulleObjC_asprintf( "layer-%d.png", ++nr);
-//     [[layer bitmapImage] writeToPNGFileWithSystemRepresentation:s];
+//     [[layer bitmapImage] writeToPNGUTF8String:s];
 //  }
 //  [self deactivateContext:context];
 
@@ -500,9 +502,11 @@
                        width:4.0];
       }
 
-#ifdef SWAP_DEBUG
+#ifdef REFRESH_IMAGE_DEBUG
       MulleUIWriteImageToPNGFileSequenceAsync( image, "refresh-image");
+#endif
 
+#ifdef SWAP_DEBUG
       MulleUILog( "drew image %#@ of size %.1f %.1f into %.1f %.1f %.1f %.1f for refresh",
                         image,
                         imageSize.width, imageSize.height,

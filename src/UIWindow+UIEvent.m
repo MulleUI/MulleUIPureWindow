@@ -532,9 +532,9 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
                break;
 
             case 299:
-               if( [self respondsToSelector:@selector( saveScreenshotToFileWithSystemRepresentation:)])
+               if( [self respondsToSelector:@selector( writeScreenshotToPNGUTF8String:)])
                {
-                  if( [self performSelector:@selector( saveScreenshotToFileWithSystemRepresentation:)
+                  if( [self performSelector:@selector( writeScreenshotToPNGUTF8String:)
                              withObject:(id) "screenshot.png"])
                      fprintf( stderr, "Saved \"screenshot.png\"\n");
                   return( nil);
