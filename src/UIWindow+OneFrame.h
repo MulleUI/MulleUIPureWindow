@@ -21,7 +21,14 @@
 - (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate;
 
 // returns NO, if windows should close
-- (BOOL) runOneFrame;
+// does event handling after renderAndSwapOneFrame
+- (BOOL) processOneFrame;
+
+// as processOneFrame
+- (void) renderAndSwapOneFrame;
+
+// activate and deactivates window context
+- (struct CGBitmap) screenshotBitmap;
 
 @end
 

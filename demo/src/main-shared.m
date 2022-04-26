@@ -219,13 +219,13 @@ int   main( int argc, char *argv[])
       {
          if( ! closed[ 0])
          {
-            closed[ 0] = [window[ 0] runOneFrame];
+            closed[ 0] = [window[ 0] processOneFrame];
             if( closed[ 0])
                fprintf( stderr, "0 closed\n");
          }
          if( ! closed[ 1])
          {
-            closed[ 1] = [window[ 1] runOneFrame];
+            closed[ 1] = [window[ 1] processOneFrame];
             if( closed[ 1])
                fprintf( stderr, "1 closed\n");
          }

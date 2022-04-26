@@ -16,7 +16,7 @@ int   main( void)
                       titleUTF8String:"Demo"
                             styleMask:styleMask];
    [app addWindow:window];
-   [window runOneFrame];
+   [window processOneFrame];
    [app terminate];
 
    return( 0);

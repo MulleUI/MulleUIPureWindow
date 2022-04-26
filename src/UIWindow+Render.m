@@ -181,8 +181,9 @@
 - (void) drawFrame:(struct CGFrameInfo *) info
    graphicsContext:(id <UIGraphicsContext>) context
 {
-   BOOL   clearFramebuffer;
-
+   BOOL          clearFramebuffer;
+   BOOL          clearColorFramebuffer;
+   NSUInteger    framebufferBits;
 #ifdef RENDER_DEBUG
    MulleUILog( "%s", CGFrameInfoUTF8String( info));
 #endif
@@ -196,19 +197,27 @@
 //   _renderInfo.lastStartTime = _renderInfo.startTime;
 //   _renderInfo.startTime     = info->now;
 
-   clearFramebuffer = [self isOpaque] ? NO : YES;
+
+   clearFramebuffer = YES;
 
    [context beginRender:info];
    {
-      if( _willDrawCallback)
-         clearFramebuffer = (*_willDrawCallback)( self, context, info);
+      if( _willClearCallback)
+         clearFramebuffer = (*_willClearCallback)( self, context, info);
 
       if( clearFramebuffer)
       {
+         clearColorFramebuffer = info->alpha == 1.0 && ([self isOpaque] ? NO : YES);
 #ifdef RENDER_DEBUG_VERBOSE
-         MulleUILog( "clearing framebuffer");
+         MulleUILog( "clearing framebuffer color=%btd", clearColorFramebuffer);
 #endif
-         [context clearFramebufferWithColor:[self backgroundColor]];
+         // we have to clear some of the framebuffer for nanovg anyway
+         // like the stencil bits
+         if( clearColorFramebuffer)
+            [context clearFramebufferWithColor:[self backgroundColor]];
+         else
+            [context clearFramebufferNoColor];
+
 #ifdef RENDER_DEBUG_VERBOSE
          MulleUILog( "cleared framebuffer");
 #endif
@@ -217,6 +226,9 @@
       [self->_frameDelegate window:self
                      willDrawFrame:info
                    graphicsContext:context];
+
+      if( _willDrawCallback)
+         (*_willDrawCallback)( self, context, info);
 
 #ifdef RENDER_DEBUG_VERBOSE
       MulleUILog( "drawing objects");
