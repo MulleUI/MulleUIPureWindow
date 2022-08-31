@@ -9,7 +9,7 @@
 //
 // Frame is about layouting views, animating views and layers and
 // finally rendering into a framebuffer. If you want to directly get called
-// without UIView handling then override the renderFrameCallback.
+// without UIView handling then override the frameCallback.
 //
 @interface UIWindow( Frame)
 
@@ -22,7 +22,7 @@
 - (id <UIGraphicsContext>) activateWindowGraphicsContext;
 - (id <UIGraphicsContext>) activateRenderGraphicsContext;
 
-- (void) deactivateContext:(id <UIGraphicsContext>) context;
+- (void) deactivateGraphicsContext:(id <UIGraphicsContext>) context;
 
 - (mulle_relativetime_t) remainingFrameTime:(mulle_absolutetime_t) now
                                   frameRate:(mulle_relativetime_t) frameRate

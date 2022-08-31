@@ -10,7 +10,7 @@
 #import "UIWindow+Frame.h"
 #import "UIWindow+Thread.h"
 
-#define DISPLAY_DEBUG
+//#define DISPLAY_DEBUG
 
 
 //
@@ -25,6 +25,7 @@
    NSUInteger   changes;
    CGRect       frame;
    char         *title;
+   void         *cursor;
 
    changes = (NSUInteger) _mulle_atomic_pointer_read( &_propertyChanges);
    if( ! changes)
@@ -53,6 +54,15 @@
                               title);
 #endif
       [_OSWindow os_setTitleUTF8String:title];
+   }
+
+   if( changes & UIWindowPropertyChangeCursor)
+   {
+      cursor = [self cursor];
+#ifdef DEBUG
+      MulleUILog( "change cursor %p", cursor);
+#endif
+      [_OSWindow os_setCursor:cursor];
    }
 }
 

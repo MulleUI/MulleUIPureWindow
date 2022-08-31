@@ -111,10 +111,12 @@ enum UIWindowFramePhase
 
 #define UIWindowFrameAllPhases   (~0)
 
-// mulle addition
-@protocol UIWindowFrameDelegate
 
-// none of these are optional, implement them all
+
+// mulle addition
+PROTOCOLCLASS_INTERFACE0( UIWindowFrameDelegate)
+
+@optional
 - (void) window:(UIWindow *) window
  willBeginFrame:(struct CGFrameInfo *) info
 graphicsContext:(id <UIGraphicsContext>) context;
@@ -131,13 +133,13 @@ graphicsContext:(id <UIGraphicsContext>) context;
     didDrawFrame:(struct CGFrameInfo *) info
  graphicsContext:(id <UIGraphicsContext>) context;
 
-@end
+PROTOCOLCLASS_END()
 
 
 //struct UIWindowRenderInfo
 //{
 //   struct CGFrameInfo     lastFrameInfo;
-//   NSUInteger             numberOfRenderedFrames;
+//   NSUInteger             numberOfFrames;
 //   mulle_absolutetime_t   startTime;
 //   mulle_absolutetime_t   lastStartTime;
 //};
@@ -184,8 +186,9 @@ enum UIWindowNeedsDisplay
 
 enum UIWindowPropertyChange
 {
-   UIWindowPropertyChangeFrame = 0x1,
-   UIWindowPropertyChangeTitle = 0x2
+   UIWindowPropertyChangeFrame  = 0x1,
+   UIWindowPropertyChangeTitle  = 0x2,
+   UIWindowPropertyChangeCursor = 0x4
 //   UIWindowPropertyChangeIcon  = 0x4
 };
 
@@ -193,6 +196,8 @@ enum UIWindowDebugBit
 {
    UIWindowDrawFramebufferIdRect = 0x1
 };
+
+@class UIMouseTrackingEvent;
 
 
 //
@@ -216,8 +221,8 @@ enum UIWindowDebugBit
    // need to setNeedsDisplay to get the renderer out of the lock and start
    // the render. The _contextLock still needs to be observed when
    // attempting to modify the view hierarchy ?
-   BOOL                            _isResizing;  // obsolete
-   BOOL                            _shouldClose;
+   BOOL                            _isResizing;       // obsolete yet in use (?) in OneFrame
+   BOOL                            _shouldClose;      // obsolete yet in use (?) in OneFrame
    NSInteger                       _oldSwapInterval;
    id <UILayer>                    _lastOffscreenFrambuffer;
 
@@ -228,9 +233,11 @@ enum UIWindowDebugBit
 @protected
    id                              _firstResponder;
    void                            *_quadtree;
-
+   BOOL                            _quadtreeNeedsSetup;
+   UIMouseTrackingEvent            *_reusableTrackingEvent;
+   
    struct mulle_pointerarray       _trackingViews;   // views with tracking areas
-   struct mulle_pointerarray       _enteredViews;    // views with mouseEntered: sent
+   struct mulle_pointerarray       _enteredAreas;    // areas with mouseEntered: sent
    struct mulle_pointerarray       _delegateViews;   // views with need willRender: sent
 
    CAAnimator                      *_preLayoutAnimator;
@@ -245,6 +252,7 @@ enum UIWindowDebugBit
    // main thread)
    //
    struct ui_window_pointer_fifo   _eventQueue;
+   struct ui_window_pointer_fifo   _timerQueue;
 
    // usually if we are buffered, we have a windowThread to do everything
    NSThread                        *_windowThread;
@@ -266,6 +274,8 @@ enum UIWindowDebugBit
 
    mulle_atomic_pointer_t          _propertyChanges;
 
+   NSUInteger                      _cursorGenerationCount;
+   
 //   struct UIWindowRenderInfo       _renderInfo;
 
    // these values are only accessible to the window thread
@@ -291,6 +301,15 @@ enum UIWindowDebugBit
 // TODO: pasteboard is a global resource and is on Application ?
 @property( retain) UIPasteboard                    *pasteboard;
 
+// get a cursor from UIApplication cursorWithStandardShape:
+// NULL is the default arrow. this is the current cursor
+@property( assign) UICursor                        *cursor;
+
+// cursor to use, when no cursor is set 
+@property( assign) UICursor                        *defaultCursor;
+
+@property( assign, getter=areTrackingAreasEnabled) BOOL   trackingAreasEnabled;
+
 // TODO: not the same as _windowThread, obsolete ?
 @property( assign) NSThread                        *thread;
 
@@ -298,7 +317,7 @@ enum UIWindowDebugBit
 @property( assign) id <UIWindowFrameDelegate>      frameDelegate;
 
 // default is 1.0/60.0. Only for use in async configuration
-@property( assign) mulle_relativetime_t            animationRate;
+@property( assign) mulle_relativetime_t            asyncAnimationRate;
 
 @property( assign) NSUInteger                      swapInterval;
 
@@ -321,7 +340,7 @@ enum UIWindowDebugBit
 // that all pixels are opaque. This guarantees it. The main benefit of
 // setting this flag is, that you can avoid clearing the framebuffer
 // color bits, which might save bandwidth
-@property( getter=isOpaque) BOOL      opaque;
+@property( getter=isOpaque) BOOL                    opaque;
 
 
 // Rendercallbacks. If the renderer is in its own thread, then all these
@@ -331,12 +350,25 @@ enum UIWindowDebugBit
 
 // This is the "master" callback, if you override this, none of the other
 // render callbacks and delegate methods will be invoked. So in general
-// keep it as is. DisplayBits are UIWindowNeedsRedraw et.al.
-// Returns YES, if any animations were run
-@property BOOL   (*renderFrameCallback)( UIWindow *window,
-                                         id <UIGraphicsContext> context,
-                                         struct CGFrameInfo *info,
-                                         NSUInteger displayBits);
+// keep it as UIWindowDefaultRawFrameCallback. DisplayBits are 
+// UIWindowNeedsRedraw et.al.
+// Returns YES, if any animations were run.
+//
+// Will be usually either  or 
+//
+@property BOOL   (*rawFrameCallback)( UIWindow *window,
+                                      id <UIGraphicsContext> context,
+                                      struct CGFrameInfo *frameInfo,
+                                      NSUInteger displayBits);
+
+// If this callback is set, then UIViews and CAAnimatons are ignored and this 
+// callback will be used for drawing, the context is already setup for 
+// rendering.  UIWindowFrameDelegate methods will be sent but other callbacks
+// won't.
+//
+@property void   (*frameCallback)( UIWindow *window,
+                                   id <UIGraphicsContext> context,
+                                   struct CGFrameInfo *frameInfo);
 
 // These callbacks will be called in this sequence for every frame.
 // It should be obvious, that you don't do any system calls in these callbacks
@@ -489,6 +521,11 @@ enum UIWindowDebugBit
 - (void) addToDelegateViews:(UIView *) view;
 - (void) removeFromDelegateViews:(UIView *) view;
 
+- (void) applicationDidAddWindow;
+- (void) applicationDidRemoveWindow;
+
+- (BOOL) isWindowPlane:(UIView *) view;
+
 @end
 
 
@@ -501,7 +538,7 @@ enum UIWindowDebugBit
 // use this if you want to send glfw C commands to the window
 // see UIOSWindow protocol in MulleUIBase for more
 //
-- (void *)  os_window;
+- (void *) os_window;
 
 @end
 

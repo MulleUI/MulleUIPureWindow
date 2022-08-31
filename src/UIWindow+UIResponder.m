@@ -1,6 +1,9 @@
 #import "UIWindow+UIResponder.h"
 
 
+#define FIRST_RESPONDER_DEBUG
+
+
 @implementation UIWindow( UIResponder)
 
 - (id <UIResponder>) firstResponder
@@ -15,11 +18,9 @@
    // we can set any non-nil value
    assert( ! responder || ! _firstResponder);
 
-#if DEBUG
+#ifdef FIRST_RESPONDER_DEBUG
    if( responder != _firstResponder)
-      fprintf( stderr, "UIWindow: change firstResponder to %s\n",
-                           responder ? (char *) [responder UTF8String]
-                                     : "nil");
+      MulleUILog( "change firstResponder to %#@", responder);
 #endif
 
    _firstResponder = responder;

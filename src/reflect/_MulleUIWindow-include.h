@@ -38,4 +38,16 @@
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #include <mulle-fifo/mulle-fifo.h>   // mulle-fifo
 
+// You can tweak the following #include with these commands.
+// (Use B5E27755-9A50-4C10-92BC-21596B68CDA5 instead of mulle-layout if there are duplicate entries)
+//    remove:             `mulle-sde dependency mark mulle-layout no-header`
+//    rename:             `mulle-sde dependency|library set mulle-layout include whatever.h`
+//    reorder:            `mulle-sde dependency move mulle-layout <up|down>`
+//    toggle #include:    `mulle-sde dependency mark mulle-layout [no-]import`
+//    toggle public:      `mulle-sde dependency mark mulle-layout [no-]public`
+//    toggle optional:    `mulle-sde dependency mark mulle-layout [no-]require`
+//    remove for platform:`mulle-sde dependency mark mulle-layout no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
+#include <mulle-layout/mulle-layout.h>   // mulle-layout
+
 #endif

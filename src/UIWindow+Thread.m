@@ -9,13 +9,13 @@
 
 #import "UIWindow+Frame.h"
 #import "UIWindow+Render.h"
+#import "UIWindow+NSTimer.h"
 #import "UIWindow+UIEvent.h"
 #import "UIView+RenderQueue.h"
 
-// #define LAYOUT_ANIMATIONS
-#define THREAD_DEBUG
-#define THREAD_DEBUG_VERBOSE
-#define SWAP_DEBUG
+//#define THREAD_DEBUG
+//#define THREAD_DEBUG_VERBOSE
+//#define SWAP_DEBUG
 
 // this writes out a PNG for each frame
 // #define REFRESH_IMAGE_DEBUG
@@ -36,7 +36,7 @@
 
 #define RENDER_THREAD_GRACE_PERIOD  2.0 // seconds
 
-- (void) initWindowThreadMainIfNeeded
+- (void) startWindowThreadMainIfNeeded
 {
    if( _backingStore != UIWindowBackingStoreRetained)
       return;
@@ -67,7 +67,7 @@
    [_windowThreadLock unlockWithCondition:2];
 
 #ifdef THREAD_DEBUG
-   MulleUILog( "window thread started");
+   MulleUILog( "\033[1mwindow thread started\033[0m");
 #endif
    // the window thread is now "somewhat" blocking, waiting for events
    //
@@ -145,6 +145,10 @@
    _windowThread = nil;
    [_windowPropertyLock autorelease];
    _windowPropertyLock = nil;
+
+#ifdef THREAD_DEBUG
+   MulleUILog( "\033[1mwindow thread stopped\033[0m");
+#endif
 }
 
 //
@@ -293,7 +297,6 @@
 #endif
             break;
          }
-
          //
          // same code really as UIWindow( UIWindow) #159
          // check that in a frequency dependent mode, we draw stuff
@@ -324,6 +327,7 @@
                      remainingFrameTime,
                      didAnimate);
 #endif
+
          if( displayBits)
          {
             frameInfo     = CGFrameInfoSFMake( windowInfo.base.frame,
@@ -361,7 +365,8 @@
                 [self setNeedsAnimation];
          }
 
-         mask = [self handleEventQueue];
+         mask  = [self handleTimerQueue];
+         mask |= [self handleEventQueue];
       }
       while( mask);
 
@@ -409,7 +414,7 @@
    id <UIGraphicsContext>   context;
    id <UIImage>             image;
    id <UILayer>             layer;
-   NSUInteger               refreshContentMode;
+   CGContentMode            refreshContentMode;
    struct CGFrameInfo       frameInfo;
 
    assert( [NSThread mulleIsMainThread]);
@@ -453,7 +458,7 @@
 //     s = MulleObjC_asprintf( "layer-%d.png", ++nr);
 //     [[layer bitmapImage] writeToPNGUTF8String:s];
 //  }
-//  [self deactivateContext:context];
+//  [self deactivateGraphicsContext:context];
 
    context = [self activateWindowGraphicsContext];
    {
@@ -515,7 +520,7 @@
 #endif
       [context endRender];
    }
-   [self deactivateContext:context];
+   [self deactivateGraphicsContext:context];
 }
 
 @end

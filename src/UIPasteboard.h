@@ -17,7 +17,7 @@
 
 + (instancetype) pasteboardWithWindow:(UIWindow *) window;
 
-- (char *) cString;
-- (void) setCString:(char *) s;
+- (char *) textUTF8String;
+- (void) setTextUTF8String:(char *) s;
 
 @end

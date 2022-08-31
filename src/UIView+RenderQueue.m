@@ -53,18 +53,16 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
    struct RenderQueueContext             v;
    UIView                                *view;
 
-   if( [self isCulledByLayout])
+   if( [self isHidden] || [self isCulledByLayout])
       return;
 
    v.alpha = _alpha * ctx->alpha;
-   // TODO: this is same as CGAlphaIsTransparent. Could check actual bit
-   //       depth of context here though
-   if( v.alpha < 0.5 / 32767.0)  // assume rounding up and 16 bit color depth
+   if( CGAlphaIsTransparent( v.alpha))  // assume rounding up and 16 bit color depth
       return;
 
    bounds     = [self bounds];
    projection = CGAffineTransformMakeProjection( _frame, bounds);
-   v.xform    = CGAffineTransformConcat( ctx->xform, projection);
+   v.xform    = CGAffineTransformConcat( projection, ctx->xform);
 
    v.clipRect = ctx->clipRect;
    if( _clipsToBounds)
@@ -79,7 +77,7 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
    // we use 0.1 for FP errors. An invalid intersetion also produces
    // inf origins, which apparently is bad later on. This should implicitly
    // catch this too
-   //
+   // TODO: why not check for 0.5 ?
    if( v.clipRect.size.width < 0.1 || v.clipRect.size.height < 0.1)
       return;
 
@@ -92,11 +90,11 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
 #endif
    {
       /*
-      * Layers
-      */
+       * Layers
+       */
       renderQueueAddLayer( renderQueue, _mainLayer, &v);
 
-      rover = mulle_pointerarray_enumerate( _layers);
+      rover = mulle_pointerarray_enumerate( &_layers);
       while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
       {
          renderQueueAddLayer( renderQueue, layer, &v);
@@ -107,7 +105,7 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
    /*
     * Subviews
     */
-   rover = mulle_pointerarray_enumerate( _subviews);
+   rover = mulle_pointerarray_enumerate( &_subviews);
    while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
    {
       // we cull clipped views completely here
@@ -164,7 +162,7 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
    v.clipRect = CGRectMake( -INFINITY, -INFINITY, INFINITY, INFINITY);
    v.alpha    = 1.0;
 
-   rover = mulle_pointerarray_enumerate( _subviews);
+   rover = mulle_pointerarray_enumerate( &_subviews);
    while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
    {
       [view createRenderQueue:renderQueue

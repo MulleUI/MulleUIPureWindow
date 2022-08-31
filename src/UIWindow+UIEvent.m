@@ -13,10 +13,28 @@
 //#define MOUSE_MOTION_CALLBACK_DEBUG
 //#define MOUSE_BUTTON_CALLBACK_DEBUG
 //#define RESIZE_CALLBACK_DEBUG
-#define ABORT_ON_EVENT_OVERFLOW
-#define HANDLE_EVENT_DEBUG
+//#define ABORT_ON_EVENT_OVERFLOW
+//#define HANDLE_EVENT_DEBUG
 //#define PROCESS_EVENT_DEBUG
-#define WINDOW_EVENT_CALLBACK_DEBUG
+//#define WINDOW_EVENT_CALLBACK_DEBUG
+//#define FIRST_RESPONDER_DEBUG
+
+@implementation UIMouseTrackingEvent
+
+- (void) updateTrackingArea:(UITrackingArea *) area
+                       type:(NSUInteger) type
+{
+   _area = area;
+   _type = type;
+}
+
+- (void) updateWithInputEvent:(UIInputEvent *) event
+{
+   memcpy( self, event, sizeof( UIInputEvent));
+}
+
+@end
+
 
 
 #define UIEventTypeWindowFramebufferGeometry  1001
@@ -169,22 +187,65 @@
    assert( [view isKindOfClass:[UIView class]]);
    assert( [view window] == self || ! [view window]);
 
-   assert( _mulle_pointerarray_find( &_trackingViews, view) == mulle_not_found_e);
+   // adding a view a second time is OK, but it won't stak
+   if( _mulle_pointerarray_find( &_trackingViews, view) != mulle_not_found_e)
+      return;
+
    [view retain];
    _mulle_pointerarray_add( &_trackingViews, view);
+
+   _quadtreeNeedsSetup = YES;
 }
 
 
 - (void) removeTrackingView:(UIView *) view
 {
+   uintptr_t   i;
+
    assert( [view isKindOfClass:[UIView class]]);
 
-   if( _mulle_pointerarray_find( &_trackingViews, view) != mulle_not_found_e)
+   i = mulle_pointerarray_find( &_trackingViews, view);
+   if( i == mulle_not_found_e)
+      return;
+
+   mulle_pointerarray_remove_in_range( &_trackingViews, mulle_range_make( i, 1));
+   [view autorelease];
+
+   _quadtreeNeedsSetup = YES;
+}
+
+
+- (void) invalidateTrackingAreasForView:(UIView *) view
+{
+   UITrackingArea                        *area;
+   struct mulle_pointerarray             areas;
+   struct mulle_pointerarrayenumerator   rover;
+   unsigned int                          n;
+
+   if( ! view)
+      return;
+
+   [view setNeedsTrackingAreaUpdate:YES];
+
+   n = mulle_pointerarray_get_count( &_enteredAreas);
+   if( ! n)
+      return;
+
+   mulle_pointerarray_init( &areas, 
+                            n, 
+                            MulleObjCInstanceGetAllocator( self));
+
+   mulle_pointerarray_for( &_enteredAreas, area)
    {
-        abort();
-      //mulle_pointerarray_remove( &_trackingViews, view);
-      [view autorelease];
+      if( [area owner] == view)
+         [area autorelease];
+      else
+         mulle_pointerarray_add( &areas, area);
    }
+
+   mulle_pointerarray_reset( &_enteredAreas);
+   mulle_pointerarray_absorb( &_enteredAreas, &areas);
+   mulle_pointerarray_done( &areas);
 }
 
 
@@ -192,26 +253,34 @@
 {
    NSUInteger              i;
    NSUInteger              n;
-   struct UITrackingArea   *area;
+   UITrackingArea          *area;
    CGRect                  rect;
    CGRect                  converted;
 
    assert( ! view || [view isKindOfClass:[UIView class]]);
    assert( [view window] == self || ! [view window]);
 
-   // don't track hidden view ..
-   if( [view mulleIsEffectivelyHidden])
-      return;
+   // do this as a "service" for the UIView
+   if( [view needsTrackingAreaUpdate])
+   {
+      [view updateTrackingAreas];
+      [view setNeedsTrackingAreaUpdate:NO];
+   }
 
    n = [view numberOfTrackingAreas];
    for( i = 0; i < n; i++)
    {
-      area      = [view trackingAreaAtIndex:i];
-      rect      = UITrackingAreaGetRect( area);
+      area = [view trackingAreaAtIndex:i];
+      rect = [area rect];
+      // if the rect is zero sized, there is nothing to track
+      if( CGRectGetArea( rect) == 0.0)
+         continue;
+
       converted = [self convertRect:rect
                            fromView:view];
+                        
       assert( _quadtree);
-      mulle_quadtree_insert( _quadtree, converted, view);
+      mulle_quadtree_insert( _quadtree, converted, area);
    }
 }
 
@@ -226,7 +295,10 @@
    struct mulle_pointerarrayenumerator   rover;
    UIView                                *view;
 
+
    bounds = [self bounds];
+
+   // TODO: not used, as limits are hardcoded
    extent = round( bounds.size.width < bounds.size.height ? bounds.size.width : bounds.size.height);
    level  = 0;
    while( extent > 2)
@@ -254,27 +326,53 @@
 }
 
 
-static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
+- (void *) quadtree
 {
-   struct mulle_pointerarray   *array = userinfo;
-   UIView                      *view = payload;
-
-   _mulle_pointerarray_add( array, view);
+   if( ! _quadtree || _quadtreeNeedsSetup)
+   {
+     [self setupQuadtree];
+     _quadtreeNeedsSetup = NO;
+   }
+   return( _quadtree);
 }
 
 
-- (UIEvent *) handleMouseMotionEvent:(UIMouseMotionEvent *) event
+static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
+{
+   struct mulle_pointerarray   *array = userinfo;
+   UITrackingArea              *area = payload;
+
+   _mulle_pointerarray_add( array, area);
+}
+
+
+
+//
+// Cursors: We don't stack cursors. We have in our quadtree for each area, 
+// the cursor, which should be in effect. So we don't have to stack anything
+// we just ask again. 
+//
+// Global cursor changes (like for drag and drop)
+//
+- (void) handleTrackingAreaForInputEvent:(UIInputEvent *) event
+                                  inDrag:(BOOL) inDrag
 {
    CGRect                                rect;
    CGPoint                               point;
+   struct mulle_pointerarray             areas;
    struct mulle_pointerarray             views;
    struct mulle_pointerarray             remaining;
    struct mulle_pointerarrayenumerator   rover;
    UIView                                *view;
+   UITrackingArea                        *area;
    unsigned int                          n;
    BOOL                                  isDrag;
-
-   _mulle_pointerarray_init( &views, 16, NULL);
+   struct mulle_allocator                *allocator;
+   UICursor                              *cursor;
+   UICursor                              *areaCursor;
+   NSUInteger                            oldCursorGenerationCount;
+   NSUInteger                            options;
+   void                                  *quadtree;
 
    point = [event locationInWindow];
 
@@ -283,65 +381,131 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    // without tracking areas (...). But we only handle these events if
    // a button is pressed. We don't send mouseMoved: then though (useful ?)
    //
-   isDrag = [(UIMouseMotionEvent *) event buttonStates] != 0;
-   n      = mulle_quadtree_find_point( _quadtree,
-                                       point,
-                                       collect_hit_views,
-                                       &views);
+   _mulle_pointerarray_init( &areas, 16, NULL);
+   quadtree = [self quadtree];
+   n        = mulle_quadtree_find_point( quadtree, 
+                                         point, 
+                                         collect_hit_areas, 
+                                         &areas);
+
+#ifdef DEBUG
+   MulleUILog( "handle tracking areas %u of %u", n, mulle_quadtree_count( quadtree));
+#endif
+
+   // we set the cursor shape for the tracking rectangle now, so that
+   // mouseEntered: mouseExited: can override later
+   oldCursorGenerationCount = _cursorGenerationCount;
+   cursor                   = NULL;
+
    //
-   // if we have no entered views and nothing is hit, then there is nothing
+   // if we have *no* entered views and *nothing* is hit, then there is nothing
    // to do
    //
-   if( n || mulle_pointerarray_get_count( &_enteredViews))
+   if( n || mulle_pointerarray_get_count( &_enteredAreas))
    {
+      if( !_reusableTrackingEvent)
+         _reusableTrackingEvent = [UIMouseTrackingEvent new];
+      [_reusableTrackingEvent updateWithInputEvent:event];
+
       // first remove all views from enteredViews which are not in views
       // and send them a MouseExited event
       // send MouseMoved: events to all remaining enteredViews
 
-      _mulle_pointerarray_init( &remaining, 16, _mulle_pointerarray_get_allocator( &_enteredViews));
+      allocator = _mulle_pointerarray_get_allocator( &_enteredAreas);
+      _mulle_pointerarray_init( &remaining, 16, allocator);
 
-      rover = mulle_pointerarray_enumerate( &_enteredViews);
-       while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
+      mulle_pointerarray_for( &_enteredAreas, area)
       {
-         if( _mulle_pointerarray_find( &views, view) == mulle_not_found_e)
+         options = [area options];
+         if( _mulle_pointerarray_find( &areas, area) == mulle_not_found_e)
          {
-            [view mouseExited:event];
+            if( ! (options & UITrackingIgnoreMouseEnteredAndExited))
+            {
+               [_reusableTrackingEvent updateTrackingArea:area
+                                                   type:UIMouseTrackingExitedEventType];
+               [[area owner] mouseExited:_reusableTrackingEvent];
+            }
          }
          else
          {
             // will be sent later by regular event handling code anyway
-            if( ! isDrag)
-               [view mouseMoved:event];
-            _mulle_pointerarray_add( &remaining, view);
+            if( ! inDrag)
+            {
+               if( options & UITrackingMouseMoved)
+               {
+                  [_reusableTrackingEvent updateTrackingArea:area
+                                                        type:UIMouseTrackingExitedEventType];
+                  [[area owner] mouseMoved:_reusableTrackingEvent];
+               }
+            }
+
+            // need to get cursors of active regions
+            if( options & UITrackingSetCursor)
+               cursor = [area cursor];
+
+            // this tracking area is already retained by _enteredAreas
+            _mulle_pointerarray_add( &remaining, area);
          }
       }
-      mulle_pointerarrayenumerator_done( &rover);
 
-      // remaining are now the remaining active enteredViews
-
-      rover = mulle_pointerarray_enumerate( &views);
-      while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
+      //
+      // remaining are now the remaining active enteredAreas, where we don't 
+      // need to do anything really, because we already sent "entered", 
+      // all others get an event
+      //
+      mulle_pointerarray_for( &areas, area)
       {
-         if( _mulle_pointerarray_find( &remaining, view) == mulle_not_found_e)
+         if( _mulle_pointerarray_find( &remaining, area) != mulle_not_found_e)
+            continue;
+
+         options = [area options];
+         if( ! (options & UITrackingIgnoreMouseEnteredAndExited))
          {
-            [view mouseEntered:event];
-            _mulle_pointerarray_add( &remaining, view);
+            // prefer recently entered regions
+            if( options & UITrackingSetCursor)
+               cursor = [area cursor];
+            [_reusableTrackingEvent updateTrackingArea:area
+                                                  type:UIMouseTrackingEnteredEventType];
+            [[area owner] mouseEntered:_reusableTrackingEvent];
          }
+
+         _mulle_pointerarray_add( &remaining, area);
       }
-      mulle_pointerarrayenumerator_done( &rover);
 
-      // now move remaining to _enteredViews and switch to remaining
-      mulle_pointerarray_done( &_enteredViews);
-      memcpy( &_enteredViews, &remaining, sizeof( struct mulle_pointerarray));
+      // release old ones, retain new ones
+      mulle_pointerarray_autorelease_all( &_enteredAreas);
+      mulle_pointerarray_retain_all( &remaining);
+
+      mulle_pointerarray_reset( &_enteredAreas);
+      mulle_pointerarray_absorb( &_enteredAreas, &remaining);
    }
-   mulle_pointerarray_done( &views);
 
-   if( ! isDrag)
-      return( nil);
+   mulle_pointerarray_done( &areas);
 
-   return( event);
+   // if we have no cursor changes due to callbacks 
+   // then we set the cursor 
+   if( oldCursorGenerationCount == _cursorGenerationCount)
+   {
+      if( cursor == NULL)
+         cursor = [self defaultCursor];
+      [self setCursor:cursor];
+   }
 }
 
+
+- (UIMouseMotionEvent *) handleMouseMotionEvent:(UIMouseMotionEvent *) event
+{
+   BOOL   inDrag;
+
+   if( _trackingAreasEnabled)
+   {
+      inDrag = [(UIMouseMotionEvent *) event buttonStates] != 0;
+      [self handleTrackingAreaForInputEvent:event
+                                     inDrag:inDrag];
+
+   }
+   return( event);
+}
 
 
 /*
@@ -414,7 +578,6 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 }
 
 
-
 //
 // Discard events queue for the window. This has to be called by the window
 // thread.
@@ -448,6 +611,47 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 
 
 
+
+- (UIKeyboardEvent *) handleDebugKeyboardEvent:(UIKeyboardEvent *) keyEvent
+{
+   if( [keyEvent action] == UIEventButtonActionDown)
+   {
+      // F12 key: 301
+      switch( [keyEvent key])
+      {
+      case UIEventKeyF12 :
+         if( [self respondsToSelector:@selector( dump)])
+         {
+            [self performSelector:@selector( dump)];
+            return( nil);
+         }
+         break;
+
+      case UIEventKeyF11 :
+         if( [self respondsToSelector:@selector( dumpRenderQueue)])
+         {
+            [self performSelector:@selector( dumpRenderQueue)
+                        withObject:(id) &_drawingQueue];
+            return( nil);
+         }
+         break;
+
+      case UIEventKeyF10 :
+         if( [self respondsToSelector:@selector( writeScreenshotToPNGUTF8String:)])
+         {
+            if( [self performSelector:@selector( writeScreenshotToPNGUTF8String:)
+                        withObject:(id) "screenshot.png"])
+               fprintf( stderr, "Saved \"screenshot.png\"\n");
+            return( nil);
+         }
+         break;
+      }
+   }
+   return( keyEvent);
+}
+
+
+
 - (UIEvent *) responder:(id <UIResponder>) responder
             handleEvent:(UIEvent *) event
 {
@@ -464,13 +668,13 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
          event = [responder handleEvent:event];
          if( ! event)
          {
-#ifdef EVENT_DEBUG
-            fprintf( stderr, "Responder %s consumed event\n", (char *) [responder UTF8String]);
+#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
+            MulleUILog( "Responder %#@ consumed event", responder);
 #endif
             break;
          }
-#ifdef EVENT_DEBUG
-         fprintf( stderr, "Responder %s did not consume event, try next\n", (char *) [responder UTF8String]);
+#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
+         MulleUILog( "Responder %#@ did not consume event, try next", responder);
 #endif
       }
       responder = [responder nextResponder];
@@ -496,53 +700,17 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    assert( event);
 
 #ifdef HANDLE_EVENT_DEBUG
-   MulleUILog( "handle %#@ event", event);
+# ifndef MOUSE_MOTION_CALLBACK_DEBUG
+   if( [event eventType] != UIEventTypeMotion)
+# endif
+      MulleUILog( "handle %#@ event", event);
 #endif
-   event = (*_eventCallback)( self, event);
-
    switch( [event eventType])
    {
    case UIEventTypePresses :
 #ifdef DEBUG
       if( [event eventType] == UIEventTypePresses)
-      {
-         UIKeyboardEvent   *keyEvent;
-
-         keyEvent = (UIKeyboardEvent *) event;
-         if( [keyEvent action] == GLFW_PRESS)
-         {
-            // F12 key: 301
-            switch( [keyEvent key])
-            {
-            case 301 :
-               if( [self respondsToSelector:@selector( dump)])
-               {
-                  [self performSelector:@selector( dump)];
-                  return( nil);
-               }
-               break;
-
-            case 300:
-               if( [self respondsToSelector:@selector( dumpRenderQueue)])
-               {
-                  [self performSelector:@selector( dumpRenderQueue)
-                             withObject:(id) &_drawingQueue];
-                  return( nil);
-               }
-               break;
-
-            case 299:
-               if( [self respondsToSelector:@selector( writeScreenshotToPNGUTF8String:)])
-               {
-                  if( [self performSelector:@selector( writeScreenshotToPNGUTF8String:)
-                             withObject:(id) "screenshot.png"])
-                     fprintf( stderr, "Saved \"screenshot.png\"\n");
-                  return( nil);
-               }
-               break;
-            }
-         }
-      }
+         event = [self handleDebugKeyboardEvent:(UIKeyboardEvent *) event];
 #endif
       break;
 
@@ -574,13 +742,13 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
 //   if( [event isKindOfClass:[UIMouseScrollEvent class]])
 //      [self dump];
 
-   event = [self responder:[self firstResponder]
-               handleEvent:event];
+   responder = [self firstResponder];
+   event     = [self responder:responder
+                   handleEvent:event];
    if( ! event)
    {
-#ifdef EVENT_DEBUG
-      fprintf( stderr, "First Responder handled event: %s\n",
-                     (char *) [responder UTF8String]);
+#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
+      MulleUILog( "First Responder %#@ handled event", responder);
 #endif
       return( event);
    }
@@ -589,7 +757,13 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    // pass down input events to the views
    //
    if( [event isInputEvent])
-      event = [self handleInputEvent:(UIInputEvent *) event];
+   {
+      CGPoint   location;
+
+      location = [(UIInputEvent *) event locationInWindow];
+      event    = [self handleInputEvent:(UIInputEvent *) event
+                               location:location];
+   }
    return( event);
 }
 
@@ -642,6 +816,9 @@ static void   collect_hit_views( CGRect rect, void *payload, void *userinfo)
    UIEvent   *event;
 
    event = [[UIWindowFramebufferGeometryEvent alloc] initWithWindowInfo:info];
+
+   // TODO: sendRetainedEvent is superflous no ? As handleRetainedEvent will
+   // call wakeupWindowThread if needed
    [self sendRetainedEvent:event];
 }
 

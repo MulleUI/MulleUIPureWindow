@@ -17,13 +17,13 @@
    return( [window pasteboard]);
 }
 
-- (char *) cString
+- (char *) textUTF8String
 {
    return( (char *) [_window pasteboardCString]);
 }
 
 
-- (void) setCString:(char *) s
+- (void) setTextUTF8String:(char *) s
 {
    [_window setPasteboardCString:s];
 }

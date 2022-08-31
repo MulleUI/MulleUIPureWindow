@@ -86,7 +86,7 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
    /** Our animatable properties
        subclasses might want to add more
     **/
-   [self animatePropertiesWithSnapshot:_snapshot
+   [self generateAnimationsForPropertiesWithSnapshot:_snapshot
                         animationGroup:group];
 
    [(NSObject *) _snapshot autorelease];

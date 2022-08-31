@@ -8,8 +8,9 @@
 #import "UIView+RenderQueue.h"
 #import "CGFrameInfo+UTF8String.h"
 
-#define RENDER_DEBUG
-#define RENDER_DEBUG_VERBOSE
+//#define RENDER_DEBUG
+//#define RENDER_DEBUG_VERBOSE
+//#define RENDER_FRAMEINFO_DEBUG
 
 // #define DRAW_FRAMEBUFFER_ID_RECT
 
@@ -50,7 +51,7 @@
 //                       |
 //                       v
 //  .-----------------------------------------.
-//  | CGContext drawObjects:                |
+//  | CGContext drawObjects:                  |
 //  '-----------------------------------------'
 //
 // glitch hunt:
@@ -87,16 +88,34 @@
 }
 
 
+static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
+{
+   mulle_relativetime_t    animationRate;
+   mulle_relativetime_t    fastestFrameRate;
+   struct UIOSWindowInfo   windowInfo;
+
+   [self->_OSWindow getOSWindowInfo:&windowInfo];
+   fastestFrameRate   = UIOSWindowInfoGetFastestFrameRate( &windowInfo);
+
+   animationRate = fastestFrameRate;
+   if( animationRate == UIWindowFrameRateAsync)
+      animationRate = self->_asyncAnimationRate;
+   return( animationRate);
+}
+
+
 - (BOOL) preLayoutAnimations:(struct CGFrameInfo *) info
              graphicsContext:(id <UIGraphicsContext>) context
 {
-   BOOL   didAnimate;
+   BOOL                   didAnimate;
+   mulle_relativetime_t   animationRate;
 
 #ifdef RENDER_DEBUG
    MulleUILogThisMethod();
 #endif
-   didAnimate = [_preLayoutAnimator animateWithAbsoluteTime:info->now];
-
+   animationRate = determineAnimationRate( self);
+   didAnimate    = [_preLayoutAnimator animateWithAbsoluteTime:info->now
+                                                 animationRate:animationRate];
    if( _didAnimateCallback)
       (*_didAnimateCallback)( self, context, info, 0);
 
@@ -107,18 +126,27 @@
 - (BOOL) postLayoutAnimations:(struct CGFrameInfo *) info
              graphicsContext:(id <UIGraphicsContext>) context
 {
-   BOOL   didAnimate;
+   BOOL                   didAnimate;
+   mulle_relativetime_t   animationRate;
 
 #ifdef RENDER_DEBUG
    MulleUILogThisMethod();
 #endif
 
-   didAnimate = [_postLayoutAnimator animateWithAbsoluteTime:info->now];
-
+   animationRate = determineAnimationRate( self);
+   didAnimate    = [_postLayoutAnimator animateWithAbsoluteTime:info->now
+                                                  animationRate:animationRate];
    if( _didAnimateCallback)
       (*_didAnimateCallback)( self, context, info, 1);
 
    return( didAnimate);
+}
+
+
+- (void) layout 
+{
+   [super layout];
+   _quadtreeNeedsSetup = YES;
 }
 
 
@@ -152,7 +180,8 @@
 - (BOOL) animateFrame:(struct CGFrameInfo *) info
       graphicsContext:(id <UIGraphicsContext>) context
 {
-   BOOL   didAnimate;
+   BOOL                   didAnimate;
+   mulle_relativetime_t   animationRate;
 
 #ifdef RENDER_DEBUG
    MulleUILogThisMethod();
@@ -162,8 +191,10 @@
     * Animate
     */
    //
-   didAnimate = [CAAnimation animateObjects:&_drawingQueue
-                               absoluteTime:info->now];
+   animationRate = determineAnimationRate( self);
+   didAnimate    = [CAAnimation animateObjects:&_drawingQueue
+                                  absoluteTime:info->now
+                                 animationRate:animationRate];
    //
    // can animations add and subtract layers and views ?
    // they may, but they won't show up this render
@@ -178,12 +209,40 @@
 }
 
 
-- (void) drawFrame:(struct CGFrameInfo *) info
-   graphicsContext:(id <UIGraphicsContext>) context
+- (void) clearFrame:(struct CGFrameInfo *) info
+    graphicsContext:(id <UIGraphicsContext>) context
 {
    BOOL          clearFramebuffer;
    BOOL          clearColorFramebuffer;
    NSUInteger    framebufferBits;
+
+   if( _willClearCallback)
+   {
+      clearFramebuffer = (*_willClearCallback)( self, context, info);
+      if( ! clearFramebuffer)
+         return;
+   }
+
+   clearColorFramebuffer = info->alpha == 1.0 && ([self isOpaque] ? NO : YES);
+#ifdef RENDER_DEBUG_VERBOSE
+   MulleUILog( "clearing framebuffer color=%btd", clearColorFramebuffer);
+#endif
+      // we have to clear some of the framebuffer for nanovg anyway
+      // like the stencil bits
+   if( clearColorFramebuffer)
+      [context clearFramebufferWithColor:[self backgroundColor]];
+   else
+      [context clearFramebufferNoColor];
+
+#ifdef RENDER_DEBUG_VERBOSE
+   MulleUILog( "cleared framebuffer");
+#endif
+}
+
+
+- (void) drawFrame:(struct CGFrameInfo *) info
+   graphicsContext:(id <UIGraphicsContext>) context
+{
 #ifdef RENDER_DEBUG
    MulleUILog( "%s", CGFrameInfoUTF8String( info));
 #endif
@@ -196,36 +255,14 @@
 
 //   _renderInfo.lastStartTime = _renderInfo.startTime;
 //   _renderInfo.startTime     = info->now;
-
-
-   clearFramebuffer = YES;
-
    [context beginRender:info];
    {
-      if( _willClearCallback)
-         clearFramebuffer = (*_willClearCallback)( self, context, info);
-
-      if( clearFramebuffer)
-      {
-         clearColorFramebuffer = info->alpha == 1.0 && ([self isOpaque] ? NO : YES);
-#ifdef RENDER_DEBUG_VERBOSE
-         MulleUILog( "clearing framebuffer color=%btd", clearColorFramebuffer);
-#endif
-         // we have to clear some of the framebuffer for nanovg anyway
-         // like the stencil bits
-         if( clearColorFramebuffer)
-            [context clearFramebufferWithColor:[self backgroundColor]];
-         else
-            [context clearFramebufferNoColor];
-
-#ifdef RENDER_DEBUG_VERBOSE
-         MulleUILog( "cleared framebuffer");
-#endif
-      }
+      [self clearFrame:info 
+      graphicsContext:context];
 
       [self->_frameDelegate window:self
                      willDrawFrame:info
-                   graphicsContext:context];
+                  graphicsContext:context];
 
       if( _willDrawCallback)
          (*_willDrawCallback)( self, context, info);
@@ -251,29 +288,28 @@
          rect.origin = CGPointZero;
          rect.size   = info->window.frame.size;
          [context strokeRect:CGRectInset( rect, 24, 24)
-                       color:CGColorMakeWithHexColor( 0xE04020FF)
-                       width:4.0];
+                        color:CGColorMakeWithHexColor( 0xE04020FF)
+                        width:4.0];
       }
 
       [self->_frameDelegate window:self
-                      didDrawFrame:info
-                   graphicsContext:context];
-   }
-#ifdef RENDER_DEBUG
-   [self renderFrameInfo:info
-                 atPoint:CGPointMake( 20, 20)
-                   color:CGColorMakeRed()
-         graphicsContext:context];
+                        didDrawFrame:info
+                     graphicsContext:context];
+#ifdef RENDER_FRAMEINFO_DEBUG
+      [self renderFrameInfo:info
+                  atPoint:CGPointMake( 20, 20)
+                     color:CGColorMakeRed()
+            graphicsContext:context];
 #endif
 
-   [context suspendRender];
+      [context suspendRender];
 
    // context is still active though and framebuffer is bound
-   if( _didDrawCallback)
-      (*_didDrawCallback)( self, context, info);
-
+      if( _didDrawCallback)
+         (*_didDrawCallback)( self, context, info);
+   }
 //   _renderInfo.lastFrameInfo = *info;
-//   _renderInfo.numberOfRenderedFrames++;
+//   _renderInfo.numberOfFrames++;
 
    [context _endRender];
    //
@@ -337,21 +373,22 @@
       mulle_buffer_add_byte( &buffer, 0);
 
       [context drawAtPoint:point
-                UTF8String:mulle_buffer_get_bytes( &buffer)
-                  fontName:NULL
+            textUTF8String:mulle_buffer_get_bytes( &buffer)
+        fontNameUTF8String:NULL
                   fontSize:12.0
                      color:color];
    }
    mulle_buffer_done( &buffer);
 }
 
+
 //
 // this is default renderFrame callback
 //
-BOOL   UIWindowDefaultFrameCallback( UIWindow *self,
-                                     id <UIGraphicsContext> context,
-                                     struct CGFrameInfo *info,
-                                     NSUInteger displayBits)
+BOOL   UIWindowDefaultRawFrameCallback( UIWindow *self,
+                                        id <UIGraphicsContext> context,
+                                        struct CGFrameInfo *info,
+                                        NSUInteger displayBits)
 {
    BOOL   didAnimate;
 
@@ -359,54 +396,79 @@ BOOL   UIWindowDefaultFrameCallback( UIWindow *self,
    MulleUILog( "(0x%tx)", displayBits);
 #endif
 
-   if( self->_frameDelegate)
-      [self->_frameDelegate window:self
-                    willBeginFrame:info
-                   graphicsContext:context];
+   {
+      if( self->_frameDelegate)
+         [self->_frameDelegate window:self
+                       willBeginFrame:info
+                      graphicsContext:context];
 
-   [self willRenderWithAbsoluteTime:info->now];
+      if( self->_frameCallback)
+      {
+         [context beginRender:info];
+         {
+            [self clearFrame:info
+            graphicsContext:context];
 
-   didAnimate = [self preLayoutAnimations:info
+            [self->_frameDelegate window:self
+                           willDrawFrame:info
+                        graphicsContext:context];
+
+            (*self->_frameCallback)( self, context, info);
+
+            [self->_frameDelegate window:self
+                           didDrawFrame:info
+                        graphicsContext:context];
+         }
+         [context endRender];
+         didAnimate = YES;
+      }
+      else 
+      {
+         [self willRenderWithAbsoluteTime:info->now];
+
+         didAnimate = [self preLayoutAnimations:info
+                                graphicsContext:context];
+
+         if( displayBits & UIWindowNeedsLayout)
+         {
+            [self layoutFrame:info
+            graphicsContext:context];
+            displayBits |= UIWindowNeedsRedraw;
+         }
+
+         didAnimate |= [self postLayoutAnimations:info
+                                  graphicsContext:context];
+
+         //
+         // create the renderQueue. This will set the transforms for all
+         // the layer and calculate the actual opacity, which is then stored
+         // in layer transform and layer alpha.
+         //
+         [self createDrawingQueueForFrame:info
+                        graphicsContext:context];
+
+         //
+         // this animateFrame: runs unconditonally over the displayQueue
+         // that will be then also be used by drawFrame:
+         //
+         didAnimate |= [self animateFrame:info
                           graphicsContext:context];
 
-   if( displayBits & UIWindowNeedsLayout)
-   {
-      [self layoutFrame:info
-        graphicsContext:context];
-      displayBits |= UIWindowNeedsRedraw;
+         if( didAnimate)
+            displayBits |= UIWindowNeedsRedraw;
+
+         // drawFrame: does beginRender/endRender...
+         if( displayBits & UIWindowNeedsRedraw)
+         {
+            [self drawFrame:info
+            graphicsContext:context];
+         }
+      }
+
+      [self->_frameDelegate window:self
+                       didEndFrame:info
+                   graphicsContext:context];
    }
-
-   didAnimate |= [self postLayoutAnimations:info
-                            graphicsContext:context];
-
-   //
-   // create the renderQueue. This will set the transforms for all
-   // the layer and calculate the actual opacity, which is then stored
-   // in layer transform and layer alpha.
-   //
-   [self createDrawingQueueForFrame:info
-                    graphicsContext:context];
-
-   //
-   // this animateFrame: runs unconditonally over the displayQueue
-   // that will be then also be used by drawFrame:
-   //
-   didAnimate |= [self animateFrame:info
-                    graphicsContext:context];
-
-   if( didAnimate)
-      displayBits |= UIWindowNeedsRedraw;
-
-   // drawFrame: does beginRender/endRender...
-   if( displayBits & UIWindowNeedsRedraw)
-   {
-      [self drawFrame:info
-      graphicsContext:context];
-   }
-
-   [self->_frameDelegate window:self
-                    didEndFrame:info
-                graphicsContext:context];
 
    return( didAnimate);
 }

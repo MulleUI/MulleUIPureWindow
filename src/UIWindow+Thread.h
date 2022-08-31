@@ -14,7 +14,7 @@
 
 @interface UIWindow( Thread)
 
-- (void) initWindowThreadMainIfNeeded;
+- (void) startWindowThreadMainIfNeeded;
 - (void) finalizeWindowThread;
 - (void) wakeupWindowThread;
 - (mulle_relativetime_t) windowThreadTimeoutIsAnimating:(BOOL) flag;
