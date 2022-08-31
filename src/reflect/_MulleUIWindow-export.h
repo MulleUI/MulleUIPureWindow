@@ -20,6 +20,7 @@
 #import "UIView+UIResponder.h"
 #import "UIView+UIWindow.h"
 #import "UIWindow+Frame.h"
+#import "UIWindow+NSTimer.h"
 #import "UIWindow+OneFrame.h"
 #import "UIWindow+Render.h"
 #import "UIWindow+Thread.h"

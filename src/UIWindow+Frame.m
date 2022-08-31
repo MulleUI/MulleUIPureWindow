@@ -14,9 +14,9 @@
 
 
 //#define LAYOUT_ANIMATIONS
-#define SWAP_DEBUG
-#define RENDERINFO_DEBUG
-
+//#define SWAP_DEBUG
+//#define RENDERINFO_DEBUG
+//#define SWAPPED_BUFFERS_DEBUG
 
 @interface UIWindow( Private)
 
@@ -109,20 +109,26 @@
 {
    Class   osGraphicsContextClass;
 
+#ifdef SWAP_DEBUG
+   MulleUILog( "window context");
+#endif
+
    [_OSWindow os_activateGraphicsContext];
 
    if( ! _context)
    {
       osGraphicsContextClass = [[self class] osGraphicsContextClass];
       _context               = [[osGraphicsContextClass alloc] initWithEdgeAntialiasing:(_styleMask & UIWindowStyleEdgeAntialias)
-                                                                      useStencilStrokes:(_styleMask & UIWindowStyleStencilStrokes)];
+                                                                      useStencilStrokes:(_styleMask & UIWindowStyleStencilStrokes)
+                                                                                shareID:[_OSWindow shareID]
+                                                                                backend:[_OSWindow backend]];
       [_context setOSWindow:_OSWindow];
+#ifdef SWAP_DEBUG
+      MulleUILog( "context %#@ created for OSWindow %#@", _context, _OSWindow);
+#endif      
    }
    [_context setActive:YES];
 
-#ifdef SWAP_DEBUG
-   MulleUILog( "window context");
-#endif
    return( _context);
 }
 
@@ -146,9 +152,14 @@
    {
       cls               = [[self class] osGraphicsContextClass];
       _offscreenContext = [[cls alloc] initWithEdgeAntialiasing:(_offscreenStyleMask & UIWindowStyleEdgeAntialias)
-                                              useStencilStrokes:(_offscreenStyleMask & UIWindowStyleStencilStrokes)];
+                                              useStencilStrokes:(_offscreenStyleMask & UIWindowStyleStencilStrokes)
+                                                        shareID:[_offscreenOSWindow shareID]
+                                                        backend:[_offscreenOSWindow backend]];
       [_offscreenContext setRendersOffScreen:YES];
       [_context setOSWindow:_offscreenOSWindow];
+#ifdef SWAP_DEBUG
+      MulleUILog( "context %#@ created for offscreen OSWindow %#@", _offscreenContext, _offscreenOSWindow);
+#endif      
    }
    [_offscreenContext setActive:YES];                        // just a flag
 
@@ -159,7 +170,7 @@
 }
 
 
-- (void) deactivateContext:(id <UIGraphicsContext>) context
+- (void) deactivateGraphicsContext:(id <UIGraphicsContext>) context
 {
    assert( context);
 
@@ -190,12 +201,7 @@
    struct UIOSWindowInfo   tmp;
 
    assert( info);
-   assert( [NSThread mulleIsMainThread]);
 
-   //
-   // assumption is, the optimizing compiler will inline this with -O3
-   // and then combine with settings
-   //
    [_OSWindow getOSWindowInfo:&tmp];
 
    info->window        = tmp.base;
@@ -247,17 +253,16 @@
          displayBits |= UIWindowNeedsLayout;
       }
 
-      // This is usually UIWindowDefaultFrameCallback (UIWindow+Render.m)
-      didAnimate = (*self->_renderFrameCallback)( self, context, info, displayBits);
+      // This is usually UIWindowDefaultRawFrameCallback (UIWindow+Render.m)
+      didAnimate = (*self->_rawFrameCallback)( self, context, info, displayBits);
    }
-   [self deactivateContext:context];
+   [self deactivateGraphicsContext:context];
    return( didAnimate);
 }
 
 
 - (void) changeSwapIntervalIfNeeded
 {
-   id <UIGraphicsContext>   context;
    NSUInteger               swapInterval;
    BOOL                     changeSwapInterval;
    mulle_absolutetime_t     now;
@@ -280,11 +285,7 @@
    // we'd lock and that's bad. Changing the swapInterval on the fly
    // is probably a feature noone will ever use
 
-   context = [self activateWindowGraphicsContext];
-   {
-      [_OSWindow os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
-   }
-   [self deactivateContext:context];
+   [_OSWindow os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
 }
 
 //
@@ -294,20 +295,23 @@
 //
 - (void) swapBuffers
 {
+   id <UIGraphicsContext>   context;
+
 #ifdef SWAP_DEBUG
    MulleUILog( "swap");
 #endif
 
-   [self changeSwapIntervalIfNeeded];
-   [_OSWindow os_swapBuffers];
+   context = [self activateWindowGraphicsContext];
+   {
+      [self changeSwapIntervalIfNeeded];
+      [_OSWindow os_swapBuffers];
+   }
+   [self deactivateGraphicsContext:context];
 
    //
    // from here on CGImages should be safe to be reaped by autorelease pool
    // or ?
    //
-#ifdef SWAP_DEBUG
-   MulleUILog( "\033[1mswapped buffers\033[0m");
-#endif
 }
 
 
@@ -333,7 +337,7 @@
                                             inFlight:(BOOL) inFlight
                                            allocator:allocator];
    }
-   [self deactivateContext:context];
+   [self deactivateGraphicsContext:context];
 
    return( fb);
 }
@@ -362,7 +366,7 @@
      fb = [context lastRenderedOffscreenFramebufferBitmapType:type
                                                     allocator:allocator];
    }
-   [self deactivateContext:context];
+   [self deactivateGraphicsContext:context];
 
    return( fb);
 }
@@ -404,7 +408,7 @@
       [context drawBitmap:&fb];
       [context endRender];
    }
-   [self deactivateContext:context];
+   [self deactivateGraphicsContext:context];
 
    CGFramebufferBitmapDone( &fb);
 }

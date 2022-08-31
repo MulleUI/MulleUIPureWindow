@@ -2,27 +2,18 @@
 
 #import "UIWindow.h"
 
-#import "UIWindow+UIEvent.h"
 #import "UIWindow+Frame.h"
 #import "UIWindow+Render.h"
 #import "UIWindow+Thread.h"
+#import "UIWindow+NSTimer.h"
+#import "UIWindow+UIEvent.h"
 #import "UIWindow+UIWindow.h"
 
 #import "import-private.h"
 
 
 //#define RENDER_DEBUG
-#define FLAG_DEBUG
-
-
-@implementation NSObject ( UIWindow)
-
-- (BOOL) __isUIWindow
-{
-   return( NO);
-}
-
-@end
+//#define FLAG_DEBUG
 
 
 @interface UIWindow ( SetFrame)
@@ -32,14 +23,40 @@
 @end
 
 
+PROTOCOLCLASS_IMPLEMENTATION( UIWindowFrameDelegate)
+
+- (void) window:(UIWindow *) window
+ willBeginFrame:(struct CGFrameInfo *) info
+graphicsContext:(id <UIGraphicsContext>) context
+{
+}
+
+- (void) window:(UIWindow *) window
+    didEndFrame:(struct CGFrameInfo *) info
+graphicsContext:(id <UIGraphicsContext>) context
+{
+}
+
+- (void)  window:(UIWindow *) window
+   willDrawFrame:(struct CGFrameInfo *) info
+ graphicsContext:(id <UIGraphicsContext>) context
+{
+}
+
+- (void)  window:(UIWindow *) window
+    didDrawFrame:(struct CGFrameInfo *) info
+ graphicsContext:(id <UIGraphicsContext>) context
+{
+}
+
+PROTOCOLCLASS_END()
+
 
 #define MulleObjCNSLockProtectedAssignReadAccessor( ivar, lockIvar, rval) \
    ( [lockIvar lock], rval = ivar, [lockIvar unlock], rval)
 
 #define MulleObjCNSLockProtectedAssignWriteAccessor( ivar, lockIvar, value) \
    ( [lockIvar lock], ivar = (value), [lockIvar unlock], ivar)
-
-
 
 
 static void   *MulleObjCAtomicPointerReadClearIfSet( mulle_atomic_pointer_t *pointer)
@@ -135,10 +152,13 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    if( ! (autoresizingMask & ~UIViewAutoresizingFlexible))
       [view setAutoresizingMask:autoresizingMask|UIViewAutoresizingStickToCenter];
 
+   // hein ? CAOpenGLLayer can set here its preference for a OpenGL3 layer
+   // with no forwarding
+   styleMask  |= [[view layer] windowStyleMaskBits];
    rect.origin = CGPointZero;
    window      = [UIWindow windowWithFrame:rect
-                                  titleUTF8String:title ? title : "Demo"
-                                        styleMask:styleMask];
+                           titleUTF8String:title ? title : "Demo"
+                                 styleMask:styleMask];
    [[window contentPlane] addSubview:view];
    return( window);
 }
@@ -174,7 +194,6 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
 
 + (Class) osGraphicsContextClass
-
 {
    abort();
 }
@@ -216,24 +235,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 //
 // No OSWindow calls in here
 //
-- (instancetype) _initWithFrame:(CGRect) frame
+- (void) setupContentPlanesInRect:(CGRect) frame 
 {
-   NSUInteger   i;
-   char         *s;
-
-   // UIView init
-   [super initWithFrame:frame];
-
-   _frame = frame;
-   s      = getenv( "UIWindowDebugEnabled");
-   if( s)
-      _debugEnabled = strtol( s, NULL, 0);
-
-   assert( frame.size.height == _frame.size.height);
-   assert( frame.size.width == _frame.size.width);
-
-   // initialize various plane for the future, currently only
-   // _contentPlane can be used
    frame.origin  = CGPointZero;
    _contentPlane = [UIView viewWithFrame:frame];
 
@@ -269,6 +272,37 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    [_alertPlane setClipsToBounds:NO];
    [_alertPlane setHidden:YES];
    [self addSubview:_alertPlane];
+}
+
+
+- (BOOL) isWindowPlane:(UIView *) view
+{
+   return( view == _contentPlane || 
+           view == _alertPlane || 
+           view == _menuPlane || 
+           view == _dragAndDropPlane || 
+           view == _toolTipPlane);
+}
+
+
+- (instancetype) _initWithFrame:(CGRect) frame
+{
+   NSUInteger   i;
+   char         *s;
+
+   // UIView init
+   [super initWithFrame:frame];
+
+   _frame = frame;
+   s      = getenv( "UIWindowDebugEnabled");
+   if( s)
+      _debugEnabled = strtol( s, NULL, 0);
+
+   assert( frame.size.height == _frame.size.height);
+   assert( frame.size.width == _frame.size.width);
+
+   // initialize various plane for the future, currently only
+   // _contentPlane can be used
 
    _mulle_pointerarray_init( &_drawingQueue, 128, MulleObjCInstanceGetAllocator( self));
    _mulle_pointerarray_init( &_delegateViews, 8, MulleObjCInstanceGetAllocator( self));
@@ -278,22 +312,26 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    _mulle_atomic_pointer_nonatomic_write( &_needsDisplay, (void *) ~0);
 
    _oldSwapInterval     = NSIntegerMax;
-   _renderFrameCallback = UIWindowDefaultFrameCallback;
+   _rawFrameCallback    = UIWindowDefaultRawFrameCallback;
 
    // its kinda pointless to inherit clipRects down for views, that are full
    // window size
    _clipsToBounds       = NO;
    _backgroundColor     = CGColorMakeWithHexColor( 0xFFFFFFFF);
    _refreshContentMode  = CGContentModeTopLeft;
-
+   _asyncAnimationRate  = 1.0 / 60.0;
    _windowEventCallback = defaultWindowEventCallback;
+
+   _trackingAreasEnabled = YES;
 
    // preset with some useable values
    UIWindowDisplayFrameStatisticsInit( &_windowThreadStatistics);
    UIWindowDisplayFrameStatisticsInit( &_mainThreadStatistics);
 
    ui_window_pointer_fifo_init( &_eventQueue);
+   ui_window_pointer_fifo_init( &_timerQueue);
 
+   [self setupContentPlanesInRect:frame];
    return( self);
 }
 
@@ -341,8 +379,6 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
       [_OSWindow os_initEvents];
       [_OSWindow setWindowEventsReceiver:self];
       [_OSWindow setEventsReceiver:self];
-
-      [self initWindowThreadMainIfNeeded];
    }
 
    return( self);
@@ -456,6 +492,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    MulleUILogThisMethod();
 #endif
 
+   [self discardPendingTimers];
    [self discardPendingEvents];
    _mulle_atomic_pointer_write( &_needsDisplay, (void *) 0);
 
@@ -477,7 +514,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    _OSWindow = nil;
 
    _firstResponder = nil;
-   [super finalize];
+
+    [super finalize];
 }
 
 
@@ -488,15 +526,18 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    [_postLayoutAnimator release];
    [_preLayoutAnimator release];
 
+   [_reusableTrackingEvent release];
+
    mulle_pointerarray_release_all( &_trackingViews);
    mulle_pointerarray_done( &_trackingViews);
-   mulle_pointerarray_release_all( &_enteredViews);
-   mulle_pointerarray_done( &_enteredViews);
+   mulle_pointerarray_release_all( &_enteredAreas);
+   mulle_pointerarray_done( &_enteredAreas);
    mulle_pointerarray_done( &_delegateViews);
    mulle_pointerarray_done( &_drawingQueue);
 
    mulle_quadtree_destroy( _quadtree);
 
+   ui_window_pointer_fifo_done( &_timerQueue);
    ui_window_pointer_fifo_done( &_eventQueue);
 
    // TODO: delete window ?
@@ -504,6 +545,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 }
 
 
+// defined by UIView actually
 - (BOOL) __isUIWindow
 {
    return( YES);
@@ -519,6 +561,18 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    return( mulle_objc_object_call_variablemethodid_inline( _OSWindow,
                                                           (mulle_objc_methodid_t) _cmd,
                                                           param));
+}
+
+
+- (void) applicationDidAddWindow
+{
+   [self startWindowThreadMainIfNeeded];
+}
+
+
+- (void) applicationDidRemoveWindow
+{
+   [self mullePerformFinalize];
 }
 
 
@@ -797,6 +851,26 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 }
 
 
+- (void) windowPropertySet:(SEL) sel
+                parameters:(void *) param
+                       bit:(NSUInteger) bit
+{
+   BOOL   changed;
+
+   changed = NO;    
+   [_windowPropertyLock lock];
+   {
+      changed = (BOOL) (intptr_t) MulleObjCObjectPerformSelector( self, sel, param);
+      if( changed)
+         setPropertyChangesBit( self, bit);
+   }
+   [_windowPropertyLock unlock];
+
+   if( changed)
+      [UIEvent sendEmptyEvent];
+}
+
+
 // returns an autoreleased copy of the title string
 - (char *) titleUTF8String
 {
@@ -811,35 +885,82 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 }
 
 
+- (BOOL) unlocked_setTitleUTF8String:(char *) s
+{
+   if( _titleUTF8String == s)
+      return( NO);
+
+   if( s && _titleUTF8String && ! strcmp( s, _titleUTF8String))
+      return( NO);
+
+   MulleObjCObjectSetDuplicatedUTF8String( self, &_titleUTF8String, s);
+   return( YES);
+}
+
+
 - (void) setTitleUTF8String:(char *) s
 {
-   [_windowPropertyLock lock];
-   {
-      if( _titleUTF8String != s)
-      {
-         if( ! s || ! _titleUTF8String || strcmp( s, _titleUTF8String))
-         {
-            MulleObjCObjectSetDuplicatedUTF8String( self, &_titleUTF8String, s);
-            setPropertyChangesBit( self, UIWindowPropertyChangeTitle);
-         }
-      }
-   }
-   [_windowPropertyLock unlock];
+   [self windowPropertySet:@selector( unlocked_setTitleUTF8String:)
+               parameters:s
+                       bit:UIWindowPropertyChangeTitle];
+}
+
+
+- (CGRect) frame
+{
+   CGRect   rval;
+
+   MulleObjCNSLockProtectedAssignReadAccessor( _frame, _windowPropertyLock, rval);
+   return( rval);
+}
+
+
+- (BOOL) unlocked_setFrame:(CGRect) frame
+{
+   if( CGRectEqualToRect( _frame, frame))
+      return( NO);
+
+   _frame       = frame;
+   _bounds.size = frame.size;
+   setPropertyChangesBit( self, UIWindowPropertyChangeFrame);
+   return( YES);
 }
 
 
 - (void) setFrame:(CGRect) frame
 {
-   [_windowPropertyLock lock];
-   {
-      if( ! CGRectEqualToRect( _frame, frame))
-      {
-         _frame       = frame;
-         _bounds.size = frame.size;
-         setPropertyChangesBit( self, UIWindowPropertyChangeFrame);
-      }
-   }
-   [_windowPropertyLock unlock];
+   [self windowPropertySet:@selector( unlocked_setFrame:)
+                parameters:_param
+                       bit:UIWindowPropertyChangeFrame];
+}
+
+
+- (UICursor *) cursor
+{
+   UICursor   *rval;
+
+   MulleObjCNSLockProtectedAssignReadAccessor( _cursor, _windowPropertyLock, rval);
+   return( rval);
+}
+
+
+- (BOOL) unlocked_setCursor:(UICursor *) cursor
+{
+   ++_cursorGenerationCount;
+
+   if( _cursor == cursor)
+      return( NO);
+
+   _cursor = cursor;
+   return( YES);
+}
+
+
+- (void) setCursor:(UICursor *) cursor
+{
+   [self windowPropertySet:@selector( unlocked_setCursor:)
+                parameters:cursor
+                       bit:UIWindowPropertyChangeCursor];
 }
 
 
@@ -847,14 +968,18 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 {
    CGColor   rval;
 
-   MulleObjCNSLockProtectedAssignReadAccessor( _backgroundColor, _windowPropertyLock, rval);
+   MulleObjCNSLockProtectedAssignReadAccessor( _backgroundColor, 
+                                               _windowPropertyLock, 
+                                               rval);
    return( rval);
 }
 
 
 - (void) setBackgroundColor:(CGColor) color
 {
-   MulleObjCNSLockProtectedAssignWriteAccessor( _backgroundColor, _windowPropertyLock, color);
+   MulleObjCNSLockProtectedAssignWriteAccessor( _backgroundColor, 
+                                                _windowPropertyLock, 
+                                                color);
 }
 
 
@@ -862,14 +987,18 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 {
    CGContentMode   rval;
 
-   MulleObjCNSLockProtectedAssignReadAccessor( _refreshContentMode, _windowPropertyLock, rval);
+   MulleObjCNSLockProtectedAssignReadAccessor( _refreshContentMode, 
+                                               _windowPropertyLock, 
+                                               rval);
    return( rval);
 }
 
 
 - (void) setRefreshContentMode:(CGContentMode) contentMode
 {
-   MulleObjCNSLockProtectedAssignWriteAccessor( _refreshContentMode, _windowPropertyLock, contentMode);
+   MulleObjCNSLockProtectedAssignWriteAccessor( _refreshContentMode, 
+                                                _windowPropertyLock, 
+                                                contentMode);
 }
 
 
@@ -884,19 +1013,6 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 /*
  *
  */
-- (CGRect) frame
-{
-   CGRect         frame;
-
-   [_windowPropertyLock lock];
-   {
-      frame = _frame;
-   }
-   [_windowPropertyLock unlock];
-
-   return( frame);
-}
-
 
 - (CGRect) bounds
 {
@@ -908,7 +1024,7 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 }
 
 
-- (void) addLayer:(CALayer *) layer
+- (void) addLayer:(id <UILayer>) layer
 {
    abort();
 }

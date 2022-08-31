@@ -1,7 +1,7 @@
 #import "import.h"
 
 
-// A UIFont is a fontName + fontSize (and maybe other attributes)
+// A UIFont is a fontNameUTF8String + fontSize (and maybe other attributes)
 // the actual font will be available during rendering only as a CGFont
 // that's maintained by the CGContext.
 //
@@ -14,7 +14,7 @@
 
 // for the built-in fonts there will be no data or ?
 
-@property( assign) char *   fontName;
+@property( assign) char *   fontNameUTF8String;
 @property( assign) CGFloat  pointSize;
 
 
@@ -22,7 +22,7 @@
 + (instancetype) fontWithNameUTF8String:(char *) name;
 
 + (instancetype) fontWithNameUTF8String:(char *) name
-                                size:(CGFloat) pointSize;
+                                   size:(CGFloat) pointSize;
 
 + (instancetype) boldSystemFontOfSize:(CGFloat) pointSize;
 

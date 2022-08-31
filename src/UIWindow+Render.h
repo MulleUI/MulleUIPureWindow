@@ -12,10 +12,14 @@
 #import "import.h"
 
 
-extern BOOL   UIWindowDefaultFrameCallback( UIWindow *self,
-                                            id <UIGraphicsContext> context,
-                                            struct CGFrameInfo *info,
-                                            NSUInteger displayBits);
+
+//
+// this callback does the UIView layout, animation unless _frameCallback is set
+//
+extern BOOL   UIWindowDefaultRawFrameCallback( UIWindow *self,
+                                               id <UIGraphicsContext> context,
+                                               struct CGFrameInfo *info,
+                                               NSUInteger displayBits);
 
 @interface UIWindow( Render)
 

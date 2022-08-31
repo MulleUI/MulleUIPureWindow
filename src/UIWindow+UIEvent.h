@@ -1,6 +1,25 @@
 #import "UIWindow.h"
 
 
+enum 
+{
+   UIMouseTrackingEnteredEventType  = 0,
+   UIMouseTrackingExitedEventType   = 1,
+   UIMouseTrackingMovedEventType    = 2
+};
+
+@interface UIMouseTrackingEvent : UIInputEvent
+
+@property( assign) NSUInteger       type;
+@property( assign) UITrackingArea   *area;
+
+- (void) updateWithInputEvent:(UIInputEvent *) event;
+- (void) updateTrackingArea:(UITrackingArea *) area
+                       type:(NSUInteger) type;
+
+@end
+
+
 @interface UIWindow( UIEvent) <UIEventReceiver>
 
 - (id) _firstResponder;
@@ -11,6 +30,15 @@
 // -[UIWindow addTrackingView:] eventually
 - (void) addTrackingView:(UIView *) view;
 - (void) removeTrackingView:(UIView *) view;
+
+// this forgets previously recognized "entered" rectangles, so you will
+// likely get mouseEntered: if cursor is in area fairly soon after this 
+- (void) invalidateTrackingAreasForView:(UIView *) view;
+
+- (void) handleTrackingAreaForInputEvent:(UIInputEvent *) event
+                                  inDrag:(BOOL) inDrag;
+
+//                             
 
 - (void) discardPendingEvents;
 

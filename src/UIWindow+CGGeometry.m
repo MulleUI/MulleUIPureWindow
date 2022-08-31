@@ -9,7 +9,7 @@
 
 @implementation UIWindow ( CGGeometry)
 
-- (CGPoint) translatedPoint:(CGPoint) point
+- (CGPoint) contentLocationForLocation:(CGPoint) point
 {
    return( point);
 }

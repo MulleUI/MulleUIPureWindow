@@ -6,6 +6,7 @@
 
 #import "UIWindow+Frame.h"
 #import "UIWindow+Thread.h"
+#import "UIWindow+NSTimer.h"
 #import "UIWindow+UIEvent.h"
 #import "UIWindow+UIResponder.h"
 #import "UIWindow+UIWindow.h"
@@ -75,6 +76,7 @@
       if( isMainThread)
          [UIEvent os_waitEventsWithTimeout:diff];
 
+      // mask |= [self handleTimerQueue];
       mask |= [self handleEventQueue];
       if( mask && returnsEarly)
       {
@@ -213,7 +215,7 @@
    bitmap = [context readFramebufferBitmap:rect
                      framebufferBitmapType:CGFramebufferRGBABytes
                                  allocator:NULL];
-   [self deactivateContext:context];
+   [self deactivateGraphicsContext:context];
 
    return( bitmap);
 }
@@ -248,7 +250,6 @@
       // as the context has been detached from this thread
       [self setupQuadtree];
       [_OSWindow getOSWindowInfo:&windowInfo];
-      // slowest seems right or ?
       [self eventHandlingWithFrameRate:UIOSWindowInfoGetSlowestFrameRate( &windowInfo)];
       [self writeOSWindowPropertyChangesIfNeeded];
    }
