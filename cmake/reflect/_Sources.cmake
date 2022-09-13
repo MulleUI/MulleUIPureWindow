@@ -21,6 +21,7 @@ src/UIView+UIResponder.m
 src/UIView+UIWindow.m
 src/UIWindow+CGGeometry.m
 src/UIWindow+Frame.m
+src/UIWindow+NSTimer.m
 src/UIWindow+OneFrame.m
 src/UIWindow+Render.m
 src/UIWindow+Thread.m

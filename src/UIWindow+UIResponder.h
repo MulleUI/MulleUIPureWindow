@@ -6,7 +6,10 @@
 //
 @interface UIWindow (UIResponder)
 
-- (id<UIResponder>)firstResponder;
-- (BOOL)makeFirstResponder:(id<UIResponder>)responder;
+- (id<UIResponder>) firstResponder;
+- (BOOL) makeFirstResponder:(id<UIResponder>)responder;
+
+- (id <UIResponder>) modalResponder;
+- (BOOL) makeModalResponder:(id <UIResponder>) responder;
 
 @end

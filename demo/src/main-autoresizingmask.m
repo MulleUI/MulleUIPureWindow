@@ -47,7 +47,7 @@ void   setupScene( UIWindowPlane *contentPlane)
    view  = [UIView viewWithFrame:frame];
    [view setDebugNameUTF8String:"parent"];
    [view setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
-   [view setBackgroundColor:CGColorMakeRGBA( 0.0, 1.0, 0.0, 1.0)];
+   [view setBackgroundColor:CGColorMakeWithRGBA( 0.0, 1.0, 0.0, 1.0)];
    [view setPadding:UIEdgeInsetsMake( 4.0, 4.0, 4.0, 4.0)];
 
    [contentPlane addSubview:view];
@@ -78,7 +78,7 @@ int   main()
     * window and app
     */
    window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800, 600)];
-   [window setBackgroundColor:CGColorMakeRGBA( 1.0, 1.0, 1.0, 1.0)];
+   [window setBackgroundColor:CGColorMakeWithRGBA( 1.0, 1.0, 1.0, 1.0)];
 
    setupScene( [window contentPlane]);
 

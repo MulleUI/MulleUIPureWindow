@@ -7,6 +7,7 @@
 #import "UIWindow+Frame.h"
 #import "UIWindow+Thread.h"
 #import "UIWindow+UIResponder.h"
+#import "UIView+UIResponder.h"
 #import "UIView+UIWindow.h"
 
 
@@ -18,6 +19,52 @@
 //#define PROCESS_EVENT_DEBUG
 //#define WINDOW_EVENT_CALLBACK_DEBUG
 //#define FIRST_RESPONDER_DEBUG
+//#define TRACKING_DEBUG
+
+@implementation UIEvent( UIResponder)
+
+- (BOOL) isFirstResponderEvent
+{
+   return( NO);
+}
+
+@end 
+
+
+//
+// TODO: will need a menu event too, I suppose
+//
+@implementation UIUnicodeEvent( UIResponder)
+
+- (BOOL) isFirstResponderEvent
+{
+   return( YES);
+}
+
+@end
+
+
+@implementation UIKeyboardEvent( UIResponder)
+
+- (BOOL) isFirstResponderEvent
+{
+   return( YES);
+}
+
+@end 
+
+
+@implementation UIUserEvent( UIResponder)
+
+- (BOOL) isFirstResponderEvent
+{
+   return( YES);
+}
+
+@end 
+
+
+
 
 @implementation UIMouseTrackingEvent
 
@@ -27,6 +74,7 @@
    _area = area;
    _type = type;
 }
+
 
 - (void) updateWithInputEvent:(UIInputEvent *) event
 {
@@ -81,18 +129,12 @@
 //- (void) _setPosition:(CGPoint) position;
 //- (void) _setSize:(CGSize) size;
 - (void) _setFrame:(CGRect) rect;
-//- (void) _setFramebufferSize:(struct CGBitmapSize) size;
+//- (void) _setFramebufferSize:(struct MulleIntegerSize) size;
 
 @end
 
 
 @implementation UIWindow( UIEvent)
-
-- (id) _firstResponder
-{
-   return( _firstResponder);
-}
-
 
 /*
  * Window events are special. They don't come in over the queue but are
@@ -131,7 +173,7 @@
       return( nil);
 
    case UIWindowEventTypeResize :
-      // [self _setSize:CGBitmapSizeGetSize( [(UIWindowResizeEvent *) event size])];
+      // [self _setSize:MulleIntegerSizeGetSize( [(UIWindowResizeEvent *) event size])];
       _isResizing = YES;
 
       [self setNeedsDisplayBit:~0];
@@ -142,7 +184,7 @@
    // but we always get a refresh afterwards, so don't do it twice
    // But how sure is that ?
    case UIWindowEventTypeMove :
-      // [self _setPosition:CGBitmapPointGetPoint( [(UIWindowMoveEvent *) event origin])];
+      // [self _setPosition:MulleIntegerPointGetPoint( [(UIWindowMoveEvent *) event origin])];
       return( nil);
       // fall thru
 
@@ -185,7 +227,7 @@
 {
    assert( view);
    assert( [view isKindOfClass:[UIView class]]);
-   assert( [view window] == self || ! [view window]);
+   assert( [view window] == (id <UIWindow>) self || ! [view window]);
 
    // adding a view a second time is OK, but it won't stak
    if( _mulle_pointerarray_find( &_trackingViews, view) != mulle_not_found_e)
@@ -258,7 +300,7 @@
    CGRect                  converted;
 
    assert( ! view || [view isKindOfClass:[UIView class]]);
-   assert( [view window] == self || ! [view window]);
+   assert( [view window] == (id <UIWindow>) self || ! [view window]);
 
    // do this as a "service" for the UIView
    if( [view needsTrackingAreaUpdate])
@@ -346,7 +388,6 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
 }
 
 
-
 //
 // Cursors: We don't stack cursors. We have in our quadtree for each area, 
 // the cursor, which should be in effect. So we don't have to stack anything
@@ -388,7 +429,7 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
                                          collect_hit_areas, 
                                          &areas);
 
-#ifdef DEBUG
+#ifdef TRACKING_DEBUG
    MulleUILog( "handle tracking areas %u of %u", n, mulle_quadtree_count( quadtree));
 #endif
 
@@ -493,13 +534,13 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
 }
 
 
-- (UIMouseMotionEvent *) handleMouseMotionEvent:(UIMouseMotionEvent *) event
+- (UIInputEvent *) handleMouseMotionEvent:(UIMouseMotionEvent *) event
 {
    BOOL   inDrag;
 
    if( _trackingAreasEnabled)
    {
-      inDrag = [(UIMouseMotionEvent *) event buttonStates] != 0;
+      inDrag = [event buttonStates] != 0;
       [self handleTrackingAreaForInputEvent:event
                                      inDrag:inDrag];
 
@@ -610,9 +651,7 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
 }
 
 
-
-
-- (UIKeyboardEvent *) handleDebugKeyboardEvent:(UIKeyboardEvent *) keyEvent
+- (UIInputEvent *) handleDebugKeyboardEvent:(UIKeyboardEvent *) keyEvent
 {
    if( [keyEvent action] == UIEventButtonActionDown)
    {
@@ -651,10 +690,11 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
 }
 
 
-
 - (UIEvent *) responder:(id <UIResponder>) responder
             handleEvent:(UIEvent *) event
 {
+   UIEvent   *newEvent;
+
 #ifdef EVENT_DEBUG
    fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, (char *) [responder UTF8String]);
 #endif
@@ -694,8 +734,11 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
    UIView                                *view;
    unsigned int                          n;
    BOOL                                  isDrag;
+   id <UIResponder>                      firstResponder;
+   id <UIResponder>                      modalResponder;
    id <UIResponder>                      responder;
    struct CGWindowInfo                   windowInfo;
+   NSUInteger                            eventType;
 
    assert( event);
 
@@ -705,6 +748,7 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
 # endif
       MulleUILog( "handle %#@ event", event);
 #endif
+   eventType = [event eventType];
    switch( [event eventType])
    {
    case UIEventTypePresses :
@@ -714,8 +758,26 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
 #endif
       break;
 
+   case UIEventTypeTouches :
+      // the suppression delay can be changed by the responder later in
+      // its event handler routine 
+      if( [(UIMouseButtonEvent *) event action] == UIEventButtonActionDown)
+      {
+         _clickOrDrag._suppressStartTimestamp      = [event timestamp];
+         _clickOrDrag._mouseMotionSuppressionDelay = 0.1;
+      }
+      break;
+
    case UIEventTypeMotion :
       event = [self handleMouseMotionEvent:(UIMouseMotionEvent *) event];
+
+      // this filters out drag events until some time has passed
+      // but the rectangle thing in handleMouseMotionEvent has to be done 
+      if( [(UIMouseMotionEvent *) event buttonStates] && 
+          _clickOrDrag._suppressStartTimestamp + _clickOrDrag._mouseMotionSuppressionDelay > [event timestamp])
+      {
+         return( nil); // 
+      }
       break;
 
    case UIEventTypeWindow :
@@ -735,22 +797,33 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
       break;
    }
 
-
    if( ! event)
+   {
+#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
+      MulleUILog( "Window handled event itself");
+#endif
       return( event);
+   }
+
+   // don't walk the chain for modalResponder ?
+   modalResponder = [self modalResponder];
+   event          = [self responder:modalResponder
+                        handleEvent:event]; 
 
 //   if( [event isKindOfClass:[UIMouseScrollEvent class]])
 //      [self dump];
 
-   responder = [self firstResponder];
-   event     = [self responder:responder
-                   handleEvent:event];
-   if( ! event)
+   // The first responder ... receives key events, motion events, 
+   // and action messages, among others. (Mouse events and multitouch events 
+   // first go to the view that is under the mouse pointer or finger)
+   if( [event isFirstResponderEvent])
    {
-#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
-      MulleUILog( "First Responder %#@ handled event", responder);
-#endif
-      return( event);
+      firstResponder = [self firstResponder];
+      if( firstResponder != modalResponder)
+      {
+         event = [self responder:firstResponder
+                     handleEvent:event];
+      }
    }
 
    //
@@ -759,11 +832,28 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
    if( [event isInputEvent])
    {
       CGPoint   location;
+      CGPoint   contentLocation;
+      UIView    *view;
 
-      location = [(UIInputEvent *) event locationInWindow];
-      event    = [self handleInputEvent:(UIInputEvent *) event
-                               location:location];
+   // from UIView+CGGeometry
+      location        = [(UIInputEvent *) event locationInWindow];
+      contentLocation = [self contentLocationForLocation:location];
+#ifdef EVENT_DEBUG_VERBOSE
+      MulleUILog( "translated: %s -> %s [c=%s]\n",
+                  CGPointUTF8String( location),
+                  CGPointUTF8String( contentLocation),
+                  CGRectUTF8String( [self contentRect]));
+#endif
+
+      // hit test should filter out hidden
+      view  = [self hitTest:contentLocation
+                  withEvent:event];
+      event = [self responder:view
+                  handleEvent:event];
    }
+   else
+      event = [self handleOtherEvent:event];
+
    return( event);
 }
 
@@ -799,6 +889,7 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
    }
    return( mask);
 }
+
 
 - (void) sendRetainedEvent:(UIEvent *) event
 {

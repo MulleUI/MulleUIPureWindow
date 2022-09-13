@@ -32,7 +32,7 @@
 #if 0
 // this will activate the window context!
 - (struct CGBitmap)
-   lastRenderedFramebufferBitmapType:(enum CGFramebufferBitmapType) type
+   lastRenderedFramebufferBitmapType:(CGFramebufferBitmapType) type
                             inFlight:(BOOL) inFlight
                            allocator:(struct mulle_allocator *) allocator;
 #endif

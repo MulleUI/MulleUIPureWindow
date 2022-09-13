@@ -9,9 +9,9 @@ static const GLfloat   vertices[4][2] =
     {  0.5f, -0.5f }
 };
 
-#define BLAU   CGColorMakeRGBA( 0.1, 0.1, 0.4, 1.0)
-#define GRUEN  CGColorMakeRGBA( 0.1, 0.4, 0.1, 1.0)
-#define WEISS  CGColorMakeRGBA( 1.0, 1.0, 1.0, 1.0)
+#define BLAU   CGColorMakeWithRGBA( 0.1, 0.1, 0.4, 1.0)
+#define GRUEN  CGColorMakeWithRGBA( 0.1, 0.4, 0.1, 1.0)
+#define WEISS  CGColorMakeWithRGBA( 1.0, 1.0, 1.0, 1.0)
 
 #define R   { 0xFF, 0, 0, 0xFF }
 #define G   { 0, 0xFF, 0, 0xFF }
@@ -132,7 +132,7 @@ static void  drawStuff( CALayer *layer, CGContext *context)
 
    drawPrettyBackground( layer, context);
 
-   options = CGDrawableOptionsMake( 0.0, 1.0, 0.0, YES);
+   options = CGDrawableOptionsMakeScaleToFit();
 
    if( ! cgImage[ 0])
    {

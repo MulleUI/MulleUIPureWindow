@@ -6,8 +6,8 @@
 //#define RANDOM_SLEEP_DURING_DRAW
 
 
-#define BLAU   CGColorMakeRGBA( 0.1, 0.1, 0.4, 1.0)
-#define WEISS  CGColorMakeRGBA( 1.0, 1.0, 1.0, 1.0)
+#define BLAU   CGColorMakeWithRGBA( 0.1, 0.1, 0.4, 1.0)
+#define WEISS  CGColorMakeWithRGBA( 1.0, 1.0, 1.0, 1.0)
 
 
 //
@@ -107,11 +107,11 @@ int   main( int argc, char *argv[])
 
       // CGContentModeTopLeft is the default, the window will extend with
       // borders in background color until the drawing thread is done
-      //[window setRefreshContentMode:CGContentModeTopLeft];
+      [window setRefreshContentMode:CGContentModeTopLeft];
 
       // CGContentModeScaleToFill will use the previous contents and scale
       // them, until the drawing thread is done.
-      [window setRefreshContentMode:CGContentModeScaleToFill];
+      // [window setRefreshContentMode:CGContentModeScaleToFill];
 
       setupSceneInView( [window contentPlane]);
 

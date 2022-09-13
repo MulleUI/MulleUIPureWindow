@@ -1,6 +1,6 @@
 # 🛸 MulleUIWindow
 
-#### 🛸 MulleUIWindow provides UIViews and UIWindow
+#### 🛸 MulleUIWindow provides UIWindow and extends UIView functionality
 
 ![](mulle-tiny-logo-255x256.png)
 
@@ -12,6 +12,15 @@ See live on stream how it progresses: [https://www.twitch.tv/mulle_kybernetik_tv
 There is no actual "drawing" code in MulleUIWindow. Use "MulleGraphics" for
 drawing. See "MulleUIControl" for widgets.
 
+
+## Tracking Areas
+
+Tracking areas are attached to their UIView. They are called upon by the
+UIWindow on demand. 
+
+So add your UIView to the trackingViews to a window, and then wait for getting 
+called to provide the rectangles.
+ 
 
 ### You are here
 

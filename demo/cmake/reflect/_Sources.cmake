@@ -13,14 +13,17 @@ endif()
 set( SOURCES
 src/main-autoresizingmask.m
 src/main-candycrash.m
+src/main-cursor.m
 src/main-demo.m
 src/main-demo-resizable.m
 src/main-fps.m
 src/main-frames.m
 src/main-glfw-sharing.m
 src/main-glfw-texture.m
+src/main-oswindow-draw-simple.m
 src/main-shared.m
 src/main-swapinterval.m
 src/main-window-buffered.m
+src/main-window-draw-simple.m
 src/main-window-unbuffered.m
 )

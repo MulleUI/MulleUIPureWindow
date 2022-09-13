@@ -45,7 +45,7 @@ typedef UIView   UIWindowPlane;
 // UIWindowBackingStoreVolatile is just Window (which should be double
 // buffered).
 //
-enum UIWindowBackingStoreType
+typedef NS_ENUM( NSUInteger, UIWindowBackingStoreType)
 {
    UIWindowBackingStoreRetainedOnMainThread, // useful for debugging only
    UIWindowBackingStoreRetained,  // safe default
@@ -102,7 +102,7 @@ typedef NSUInteger   UIWindowBackingStoreType;
 #define ui_window_pointer_fifo_read_barrier   _mulle__pointerfifo128_read_barrier
 
 
-enum UIWindowFramePhase
+typedef NS_OPTIONS( NSUInteger, UIWindowFramePhase)
 {
    UIWindowLayoutPhase    = 0x1,
    UIWindowAnimationPhase = 0x2,
@@ -176,7 +176,7 @@ static inline void   UIWindowDisplayFrameStatisticsInit( struct UIWindowFrameSta
 
 
 
-enum UIWindowNeedsDisplay
+typedef NS_OPTIONS( NSUInteger, UIWindowNeedsDisplay)
 {
    UIWindowNeedsRedraw    = 0x1,   // needs immediate attention
    UIWindowNeedsLayout    = 0x2,   // needs immediate attention, forces redraw
@@ -184,7 +184,7 @@ enum UIWindowNeedsDisplay
 };
 
 
-enum UIWindowPropertyChange
+typedef NS_OPTIONS( NSUInteger, UIWindowPropertyChange)
 {
    UIWindowPropertyChangeFrame  = 0x1,
    UIWindowPropertyChangeTitle  = 0x2,
@@ -192,12 +192,20 @@ enum UIWindowPropertyChange
 //   UIWindowPropertyChangeIcon  = 0x4
 };
 
-enum UIWindowDebugBit
+typedef NS_OPTIONS( NSUInteger, UIWindowDebugBit)
 {
    UIWindowDrawFramebufferIdRect = 0x1
 };
 
 @class UIMouseTrackingEvent;
+
+
+struct MulleClickDragDifferentiator
+{
+   mulle_relativetime_t   _mouseMotionSuppressionDelay;  // config value
+
+   mulle_absolutetime_t   _suppressStartTimestamp;
+};
 
 
 //
@@ -226,12 +234,12 @@ enum UIWindowDebugBit
    NSInteger                       _oldSwapInterval;
    id <UILayer>                    _lastOffscreenFrambuffer;
 
+
 // These ivars are used by the rendering thread only to manage the view
 // hierarchy, layout, handle events and draw stuff. If there is no windowThread
 // then the mainThread can access this
 //
 @protected
-   id                              _firstResponder;
    void                            *_quadtree;
    BOOL                            _quadtreeNeedsSetup;
    UIMouseTrackingEvent            *_reusableTrackingEvent;
@@ -263,6 +271,11 @@ enum UIWindowDebugBit
    // written to by the window thread and read by the main thread and pushed
    // into OS_Window, we need a lock (if the changes can't be done atomically)
    NSLock                          *_windowPropertyLock;
+
+   struct MulleClickDragDifferentiator     _clickOrDrag;
+   id                              _firstResponder;
+   id                              _modalResponder;
+
 
 
 // atomic variables accessed by both threads
@@ -482,7 +495,7 @@ enum UIWindowDebugBit
 
 //
 // needs Display is a combination of needsLayout and needsRedraw, needsAnimation
-// bits defined in enum UIWindowNeedsDisplay
+// bits defined in UIWindowNeedsDisplay
 //
 - (void) setNeedsDisplay;  // sets all bits
 - (void) setNeedsDisplayBit:(NSUInteger) value;
@@ -508,7 +521,7 @@ enum UIWindowDebugBit
 - (BOOL) isWindowThread;
 
 - (CGFloat) pixelRatio;
-- (struct CGBitmapSize) framebufferSize;
+- (struct MulleIntegerSize) framebufferSize;
 
 - (CAAnimator *) preLayoutAnimator;
 - (CAAnimator *) postLayoutAnimator;

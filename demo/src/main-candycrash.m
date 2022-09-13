@@ -60,7 +60,7 @@ static id    balls[ numBalls];
 
    hue              = CGFloatMakeRandom();
 //   printf( "hue: %.2f\n", hue);
-   _fillColor       = CGColorMakeHSL( hue, 1, 0.5);
+   _fillColor       = CGColorMakeWithHSL( hue, 1, 0.5);
 
    for( i = 0; i < _numSegment; i++)
    {
@@ -69,7 +69,7 @@ static id    balls[ numBalls];
 //      _path.add(new Point());
       rad                  = CAAngleDegreesToRadians( 360.0 / _numSegment * i);
       x                    = CAPolarPointMake( 1.0f, rad);
-      _sidePoints[ i]      = CAPolarPointAsPoint( x);
+      _sidePoints[ i]      = CAPolarPointGetPoint( x);
    }
    return( self);
 }
@@ -268,9 +268,9 @@ static void  drawStuff( CALayer *layer, CGContext *context)
    NSUInteger   j;
    static int   rounds;
 
-#ifdef DEBUG
-   mulle_fprintf( stderr, "%s\n", __PRETTY_FUNCTION__);
-#endif
+//#ifdef DEBUG
+//   mulle_fprintf( stderr, "%s\n", __PRETTY_FUNCTION__);
+//#endif
 
 #ifdef DUMP
    [balls[ 0] dump:"a (before)"];
@@ -350,7 +350,7 @@ int   main( int argc, char *argv[])
 
       // If alpha is 0.0 balls lose contour ?
       // If color is white, nothing is shown
-      [window setBackgroundColor:CGColorMakeRGBA( 0.0, 0.0, 0.0, 1.0)];
+      [window setBackgroundColor:CGColorMakeWithRGBA( 0.0, 0.0, 0.0, 1.0)];
 
       [window setFrameRateHz:60.0];
 
@@ -364,16 +364,6 @@ int   main( int argc, char *argv[])
 
    return( [app run]);
 }
-
-
-
-
-
-
-
-
-
-
 
 
 //

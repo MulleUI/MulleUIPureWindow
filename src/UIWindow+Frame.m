@@ -23,7 +23,7 @@
 //- (void) _setPosition:(CGPoint) position;
 //- (void) _setSize:(CGSize) size;
 - (void) _setFrame:(CGRect) rect;
-//- (void) _setFramebufferSize:(struct CGBitmapSize) size;
+//- (void) _setFramebufferSize:(struct MulleIntegerSize) size;
 
 @end
 
@@ -205,7 +205,7 @@
    [_OSWindow getOSWindowInfo:&tmp];
 
    info->window        = tmp.base;
-   info->viewportFrame = CGBitmapRectMake( 0,
+   info->viewportFrame = MulleIntegerRectMake( 0,
                                            0,
                                            info->window.framebufferSize.width,
                                            info->window.framebufferSize.height);
@@ -321,7 +321,7 @@
 
 #if 0
 - (struct CGBitmap)
-   lastRenderedFramebufferBitmapType:(enum CGFramebufferBitmapType) type
+   lastRenderedFramebufferBitmapType:(CGFramebufferBitmapType) type
                             inFlight:(BOOL) inFlight
                            allocator:(struct mulle_allocator *) allocator
 {
@@ -352,7 +352,7 @@
 
 
 - (struct CGBitmap)
-   lastRenderedOffscreenFramebufferBitmapType:(enum CGFramebufferBitmapType) type
+   lastRenderedOffscreenFramebufferBitmapType:(CGFramebufferBitmapType) type
                                     allocator:(struct mulle_allocator *) allocator
 {
    id <UIGraphicsContext>     context;

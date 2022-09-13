@@ -192,7 +192,7 @@ static void   timerCallback( NSTimer *timer, id userInfo)
 // This is new.
 static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
-   struct CGBitmapSize   size;
+   struct MulleIntegerSize   size;
 
    switch( [event windowEventType])
    {
@@ -241,8 +241,9 @@ int   main( int argc, char *argv[])
                                                    repeatInterval:delay/1000.0
                                                          callback:timerCallback
                                                          userInfo:nil] autorelease];
-      [app addTimer:timer];
-
+      [app addTimer:timer
+   forTimerReceiver:app];   
+   
 //    glutTimerFunc(delay, timer, 0);
 
       [window os_activateGraphicsContext];

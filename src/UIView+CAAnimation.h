@@ -1,7 +1,7 @@
 #import "import.h"
 
 
-enum UIViewAnimationCurve
+typedef NS_ENUM( NSUInteger, UIViewAnimationCurve)
 {
    UIViewAnimationCurveEaseInOut = CAAnimationCurveEaseInOut,
    UIViewAnimationCurveEaseIn    = CAAnimationCurveEaseIn,
