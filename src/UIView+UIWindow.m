@@ -17,6 +17,7 @@
 
 @implementation UIView ( UIWindow)
 
+/*
 - (UIWindow *) window
 {
    UIView   *view;
@@ -30,7 +31,7 @@
       return( (UIWindow *) view);
    return( nil);
 }
-
+*/
 
 // this is really quite conservative, maybe too conservative
 - (UIWindowPlane *) windowPlane
@@ -60,7 +61,7 @@
    struct UIScreenInfo   info;
 
    memset( &info, 0, sizeof( info));
-   screen = [[self window] screenOrPrimaryScreen:YES];
+   screen = [(UIWindow *) [self window] screenOrPrimaryScreen:YES];
    [screen getScreenInfo:&info];
 
    // UIScreenInfoGetPPI will return 72.0 if info is zero
@@ -93,7 +94,7 @@
    if( ! [item owner])
       [item setOwner:self];
    return( [self addTrackingArea:item 
-                        toWindow:[self window]]);
+                        toWindow:(UIWindow *) [self window]]);
 }
 
 
@@ -110,7 +111,7 @@
    mulle_pointerarray_remove_in_range( &_trackingAreas, mulle_range_make( index, 1));
 //   if( mulle_pointerarray_get_count( &_trackingAreas) == 0)
 //   {
-//      window = [self window];
+//      window = (UIWindow *) [self window];
 //      assert( window);
 //      [window removeTrackingView:self];
 //   }
@@ -125,7 +126,7 @@
    mulle_pointerarray_reset( &_trackingAreas);
 
    // not necessarily wanted though
-   // window = [self window];
+   // window = (UIWindow *) [self window];
    // assert( window);
    // [window removeTrackingView:self];
 }
@@ -133,15 +134,13 @@
 
 - (void) updateTrackingAreas
 {
-   struct mulle_pointerarrayenumerator   rover;
-   UITrackingArea                        *area;
-   CGRect                                rect;
+   UITrackingArea   *area;
+   CGRect           rect;
 
    //
    // go through tracking areas, if we have autoresize ones treat them
    // 
-   rover = mulle_pointerarray_enumerate( &_trackingAreas);
-   while( _mulle__pointerarrayenumerator_next( &rover, (void **) area))
+   mulle_pointerarray_for( &_trackingAreas, area)
    {
       // gotta keep them alive (can't toss it if NULL)
       rect = CGRectZero;
@@ -156,7 +155,7 @@
 {
    UIWindow   *window;
 
-   window = [self window];
+   window = (UIWindow *) [self window];
 #ifdef DEBUG
    if( ! window)
       MulleUILog( @"%@ has no window, so setNeedsDisplay does nothing");
@@ -170,7 +169,7 @@
 {
    UIWindow   *window;
 
-   window = [self window];
+   window = (UIWindow *) [self window];
    assert( window);
    return( [window needsLayout]);
 }
@@ -182,7 +181,7 @@
 {
    UIWindow   *window;
 
-   window = [self window];
+   window = (UIWindow *) [self window];
    assert( window);
 //   UIView   *view;
 //   UIView   *next;

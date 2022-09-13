@@ -23,10 +23,10 @@ int   main( void)
       fprintf( stderr, "viewWithFrame: failed\n");
       exit( 1);
    }
-   [view addTrackingAreaWithRect:CGRectMake( 0, 0, 8, 8)
-                        toWindow:window
-                        userInfo:nil];
    [window addSubview:view];
+
+   rect = [UITrackingArea trackingAreaWithRect:CGRectMake( 0, 0, 8, 8)];
+   [view addTrackingArea:area];   
 
    [app addWindow:window];
    [app terminate];

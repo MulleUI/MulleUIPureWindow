@@ -12,14 +12,14 @@
 
 @interface UIView( UIWindow)
 
-- (UIWindow *) window;
+//- (UIWindow *) window;
 - (UIWindowPlane *) windowPlane;
 - (CGFloat) pixelsPerInchOfCurrentScreen;
 
 - (void) addTrackingArea:(UITrackingArea *) item
                 toWindow:(UIWindow *) window;
 
-// this convenience will use [self window] as the target window and will
+// this convenience will use (UIWindow *) [self window] as the target window and will
 // set [item owner] to self, if not already set
 - (void) addTrackingArea:(UITrackingArea *) area;
 

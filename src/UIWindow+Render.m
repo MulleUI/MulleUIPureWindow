@@ -65,7 +65,7 @@
 // context from the window context, with all the delegate calls intact.
 //
 // A window must not run two renderFrames concurrently!
-// A view calling [[self window] context] could get the wrong context
+// A view calling [(UIWindow *) [self window] context] could get the wrong context
 // though. Maybe need a -renderContext ?
 // Or should
 //
@@ -339,7 +339,7 @@ static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
 // typedef struct CGFrameInfo
 // {
 //    struct CGWindowInfo    window;
-//    struct CGBitmapRect    viewportFrame;    // used for the viewport (use: 0, 0, frameSize)
+//    struct MulleIntegerRect    viewportFrame;    // used for the viewport (use: 0, 0, frameSize)
 //    CGFloat                alpha;            // set to 1.0
 //    mulle_absolutetime_t   now;              // mulle_absolutetime_t
 // } CGFrameInfo;
@@ -347,7 +347,7 @@ static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
 // typedef struct CGWindowInfo
 // {
 //    CGRect                 frame;            // window coordinates frame
-//    struct CGBitmapSize    framebufferSize;  // actual pixels (frameSize * pixelRatio)
+//    struct MulleIntegerSize    framebufferSize;  // actual pixels (frameSize * pixelRatio)
 //    CGVector               UIScale;
 //    CGFloat                pixelRatio;
 // } CGWindowInfo;
@@ -364,10 +364,10 @@ static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
    mulle_buffer_init( &buffer, NULL);
    {
       mulle_buffer_sprintf( &buffer, "frame           : %s\n",   CGRectUTF8String( info->window.frame));
-      mulle_buffer_sprintf( &buffer, "framebufferSize : %s\n",   CGBitmapSizeUTF8String( info->window.framebufferSize));
+      mulle_buffer_sprintf( &buffer, "framebufferSize : %s\n",   MulleIntegerSizeUTF8String( info->window.framebufferSize));
       mulle_buffer_sprintf( &buffer, "UIScale         : %s\n",   CGVectorUTF8String( info->window.UIScale));
       mulle_buffer_sprintf( &buffer, "pixelRatio      : %.3f\n", info->window.pixelRatio);
-      mulle_buffer_sprintf( &buffer, "viewportFrame   : %s\n",   CGBitmapRectUTF8String( info->viewportFrame));
+      mulle_buffer_sprintf( &buffer, "viewportFrame   : %s\n",   MulleIntegerRectUTF8String( info->viewportFrame));
       mulle_buffer_sprintf( &buffer, "alpha           : %.3f\n", info->alpha);
       mulle_buffer_sprintf( &buffer, "now             : %.6f\n", info->now);
       mulle_buffer_add_byte( &buffer, 0);

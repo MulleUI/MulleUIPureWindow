@@ -1,8 +1,8 @@
 #import "import.h"
 
 
-#define BLAU    CGColorMakeRGBA( 0.1, 0.1, 0.4, 1.0)
-#define WEISS   CGColorMakeRGBA( 0.99, 0.97, 0.95, 1.0)
+#define BLAU    CGColorMakeWithRGBA( 0.1, 0.1, 0.4, 1.0)
+#define WEISS   CGColorMakeWithRGBA( 0.99, 0.97, 0.95, 1.0)
 
 
 int   main( int argc, char *argv[])

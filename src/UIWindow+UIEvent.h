@@ -22,8 +22,6 @@ enum
 
 @interface UIWindow( UIEvent) <UIEventReceiver>
 
-- (id) _firstResponder;
-
 - (void) setupQuadtree;
 
 // Use -[UIView addTrackingAreaWithRect:toWindow:userInfo:]. It will call

@@ -65,6 +65,7 @@ src/UIView+Render.h
 src/UIView+UIResponder.h
 src/UIView+UIWindow.h
 src/UIWindow+Frame.h
+src/UIWindow+NSTimer.h
 src/UIWindow+OneFrame.h
 src/UIWindow+Render.h
 src/UIWindow+Thread.h

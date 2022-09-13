@@ -316,12 +316,12 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    // its kinda pointless to inherit clipRects down for views, that are full
    // window size
-   _clipsToBounds       = NO;
-   _backgroundColor     = CGColorMakeWithHexColor( 0xFFFFFFFF);
-   _refreshContentMode  = CGContentModeTopLeft;
-   _asyncAnimationRate  = 1.0 / 60.0;
-   _windowEventCallback = defaultWindowEventCallback;
-
+   _clipsToBounds        = NO;
+   _backgroundColor      = CGColorMakeWithHexColor( 0xFFFFFFFF);
+   _refreshContentMode   = CGContentModeTopLeft;
+   _asyncAnimationRate   = 1.0 / 60.0;
+   _windowEventCallback  = defaultWindowEventCallback;
+   _window               = self;
    _trackingAreasEnabled = YES;
 
    // preset with some useable values
@@ -514,8 +514,9 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    _OSWindow = nil;
 
    _firstResponder = nil;
+   _modalResponder = nil;
 
-    [super finalize];
+   [super finalize];
 }
 
 
@@ -588,7 +589,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 }
 
 
-- (struct CGBitmapSize) framebufferSize
+- (struct MulleIntegerSize) framebufferSize
 {
    struct UIOSWindowInfo   info;
 
@@ -824,7 +825,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 //    [_windowPropertyLock unlock];
 // }
 //
-// - (void) _setFramebufferSize:(struct CGBitmapSize) size
+// - (void) _setFramebufferSize:(struct MulleIntegerSize) size
 // {
 //    MulleObjCNSLockProtectedAssignWriteAccessor( _framebufferSize, _windowPropertyLock, size);
 // }

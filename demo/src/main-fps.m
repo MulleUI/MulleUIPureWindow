@@ -106,7 +106,7 @@ static void  drawStuff( CALayer *layer, CGContext *context)
                    rect.origin.y,
                    diameter,
                    diameter,
-                   [context numberOfRenderedFrames]);
+                   [context numberOfFrames]);
 
 #if 0
    {
@@ -130,7 +130,7 @@ static void   setupSceneInView( UIView *contentPlane)
    frame = UIEdgeInsetsInsetRect( frame, UIEdgeInsetsMake( 40, 40, 40, 40));
 
    view  = [[[UIView alloc] initWithFrame:frame] autorelease];
-   [view setBackgroundColor:CGColorMakeRGBA( 0.0, 0.0, 0.0, 1.0)];
+   [view setBackgroundColor:CGColorMakeWithRGBA( 0.0, 0.0, 0.0, 1.0)];
    [(CALayer *) [view layer] setDrawCallback:drawStuff];
    [contentPlane addSubview:view];
 }
@@ -175,7 +175,7 @@ int   main( int argc, char *argv[])
       window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
       assert( window);
 
-      [window setBackgroundColor:CGColorMakeRGBA( 1.0, 1.0, 1.0, 1.0)];
+      [window setBackgroundColor:CGColorMakeWithRGBA( 1.0, 1.0, 1.0, 1.0)];
 
       [window setFrameRate:rate];
       setupSceneInView( [window contentPlane]);

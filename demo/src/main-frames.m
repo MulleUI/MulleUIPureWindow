@@ -93,13 +93,13 @@ static void   drawStuff( CALayer *layer, CGContext *context)
 
 
    nvgFontSize( vg, LARGE_FONT);
-   sprintf( buf, "%td frames", [context numberOfRenderedFrames]);
+   sprintf( buf, "%td frames", [context numberOfFrames]);
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), buf, NULL);
 
    sprintf( buf, "%.3f s", [context secondsSinceFirstRender]);
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT + 8, buf, NULL);
 
-   sprintf( buf, "%.2f FPS", [context numberOfRenderedFrames] / [context secondsSinceFirstRender]);
+   sprintf( buf, "%.2f FPS", [context numberOfFrames] / [context secondsSinceFirstRender]);
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 2 + 8, buf, NULL);
 
 //   sprintf( buf, "%.6f display+refresh", [window displayAndRefreshRate]);
@@ -130,7 +130,7 @@ static void   setupSceneInWindow( UIWindow *window)
    frame = [contentPlane contentRect];
 
    view  = [UIView viewWithFrame:frame];
-   [view setBackgroundColor:CGColorMakeRGBA( 1.0, 1.0, 1.0, 1.0)];
+   [view setBackgroundColor:CGColorMakeWithRGBA( 1.0, 1.0, 1.0, 1.0)];
    [(CALayer *) [view layer] setDrawCallback:(CALayerDrawCallback_t *) drawStuff];
    [view setUserInteractionEnabled:YES];
    [contentPlane addSubview:view];

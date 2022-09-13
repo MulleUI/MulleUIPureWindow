@@ -20,7 +20,7 @@
 // this writes out a PNG for each frame
 // #define REFRESH_IMAGE_DEBUG
 // catch race conditions (only works if picture drawn is not empty)
-//#define MISSING_BARRIER_DEBUG
+#define MISSING_BARRIER_DEBUG
 //#define RANDOM_SLEEP_DURING_DRAW
 
 
@@ -420,6 +420,8 @@
    assert( [NSThread mulleIsMainThread]);
    assert( _backingStore != UIWindowBackingStoreVolatile);
 
+   // TODO: voodoo barrier, should be useless
+   [_offscreenContext barrier];
    layer = [_offscreenContext acquireOffscreenFramebuffer];
    if( ! layer)
    {
@@ -464,6 +466,8 @@
    {
       [self getFrameInfo:&frameInfo];
 
+      // TODO: voodoo barrier, possibly useless
+      [context barrier];
       [context beginRender:&frameInfo];
 
       refreshContentMode = [self refreshContentMode];

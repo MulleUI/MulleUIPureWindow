@@ -202,13 +202,13 @@
    id <UIGraphicsContext>   context;
    struct CGBitmap          bitmap;
    struct CGFrameInfo       frameInfo;
-   struct CGBitmapRect      rect;
+   struct MulleIntegerRect      rect;
 
    context = [self activateWindowGraphicsContext];
 
    [self getFrameInfo:&frameInfo];
 
-   rect  = CGBitmapRectMake( 0,
+   rect  = MulleIntegerRectMake( 0,
                              0,
                              frameInfo.window.framebufferSize.width,
                              frameInfo.window.framebufferSize.height);

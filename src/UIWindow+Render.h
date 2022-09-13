@@ -43,3 +43,11 @@ extern BOOL   UIWindowDefaultRawFrameCallback( UIWindow *self,
    graphicsContext:(id <UIGraphicsContext>) context;
 
 @end
+
+
+@interface UIEvent( UIResponder)
+
+- (BOOL) isFirstResponderEvent;
+
+@end 
+
