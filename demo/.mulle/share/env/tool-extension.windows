@@ -14,9 +14,10 @@ pgocvt.exe;optional
 pgosweep.exe;optional
 xdcmake.exe;optional
 mulle-clang;remove
-mulle-lldb;remove
+mulle-scan-build;remove
 mulle-clang-cl.exe
-mulle-lldb.exe;optional
+scan-build.exe;optional
+mulle-gdb.exe;optional
 cmake;remove
 cmake.exe
 ninja.exe;optional

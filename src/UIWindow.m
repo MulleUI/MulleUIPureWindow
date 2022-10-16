@@ -8,6 +8,7 @@
 #import "UIWindow+NSTimer.h"
 #import "UIWindow+UIEvent.h"
 #import "UIWindow+UIWindow.h"
+#import "UIWindow+InvocationQueue.h"
 
 #import "import-private.h"
 
@@ -107,8 +108,6 @@ static void   MulleObjCAtomicPointerClearBit( mulle_atomic_pointer_t *pointer, u
 }
 
 
-
-
 @implementation UIWindow
 
 MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
@@ -139,7 +138,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    NSUInteger   autoresizingMask;
    UIWindow     *window;
 
-   styleMask = UIWindowStyleMaskDefault;
+   styleMask        = UIWindowStyleMaskDefault;
    autoresizingMask = [view autoresizingMask];
    if( autoresizingMask & UIViewAutoresizingFlexible)
       styleMask |= UIWindowStyleResizable;
@@ -156,9 +155,9 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    // with no forwarding
    styleMask  |= [[view layer] windowStyleMaskBits];
    rect.origin = CGPointZero;
-   window      = [UIWindow windowWithFrame:rect
-                           titleUTF8String:title ? title : "Demo"
-                                 styleMask:styleMask];
+   window      = [self windowWithFrame:rect
+                       titleUTF8String:title ? title : "Demo"
+                             styleMask:styleMask];
    [[window contentPlane] addSubview:view];
    return( window);
 }
@@ -171,6 +170,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    UIView          *view;
    CGRect          frame;
    UIEdgeInsets    margins;
+
 
    // convenience
    frame   = [layer frame];
@@ -189,12 +189,14 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
 + (Class) osWindowClass
 {
+   fprintf( stderr, "Someone needs to override %s to provide a OS window\n", __FUNCTION__);
    abort();
 }
 
 
 + (Class) osGraphicsContextClass
 {
+   fprintf( stderr, "Someone needs to override %s to provide a OS graphics context\n", __FUNCTION__);
    abort();
 }
 
@@ -324,12 +326,16 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    _window               = self;
    _trackingAreasEnabled = YES;
 
+   UIInputStateInit( &_inputState, CGPointMake( -1, -1), 0, 0);
+
    // preset with some useable values
    UIWindowDisplayFrameStatisticsInit( &_windowThreadStatistics);
    UIWindowDisplayFrameStatisticsInit( &_mainThreadStatistics);
 
    ui_window_pointer_fifo_init( &_eventQueue);
    ui_window_pointer_fifo_init( &_timerQueue);
+
+   [self _initInvocationQueues];
 
    [self setupContentPlanesInRect:frame];
    return( self);
@@ -367,7 +373,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    }
 
    // setup initial values while still single threaded
-   [self _getFrameInfo:&info];
+   [self getFrameInfo:&info];
    _currentWindowInfo  = info.window;
    _previousWindowInfo = info.window;
 
@@ -434,7 +440,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
       //
       _offscreenStyleMask &= ~(UIWindowStyleResizable);
       _offscreenStyleMask |= UIWindowStyleInvisible|UIWindowStyleOffscreen|UIWindowStyleBare;
-      _offscreenStyleMask |= UIWindowStyleSingleBuffer; // save some memory from bogus buffer
+//      _offscreenStyleMask |= UIWindowStyleSingleBuffer; // save some memory from bogus buffer
       offscreenWindow      = [[[osWindowClass alloc] initWithFrame:CGRectMake( 0, 0, 32, 32)
                                                    titleUTF8String:"OffScreen"
                                                          styleMask:_offscreenStyleMask
@@ -455,7 +461,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
                         : UIWindowBackingStoreRetained;
 
       // reduce styleMask for main window
-      styleMask &= ~(UIWindowStyleEdgeAntialias|UIWindowStyleStencilStrokes|UIWindowStyleSingleBuffer);
+      styleMask &= ~(UIWindowStyleEdgeAntialias|UIWindowStyleStencilStrokes);
    }
 
    _styleMask = styleMask;
@@ -492,29 +498,63 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    MulleUILogThisMethod();
 #endif
 
+   // if we have a window thread, we need to bring it down
+   if( _windowThread)
+      [self finalizeWindowThread];
+
    [self discardPendingTimers];
    [self discardPendingEvents];
+   [self discardAllInvocationQueues];
+
    _mulle_atomic_pointer_write( &_needsDisplay, (void *) 0);
 
-   // if we have a main thread, we need to bring it down
-   [self finalizeWindowThread];
+   // do it again, in case we are
 
-   // probably need to activate _OSWindow context one more time here
-   [_lastOffscreenFrambuffer mullePerformFinalize];
-   [_lastOffscreenFrambuffer autorelease];
-   _lastOffscreenFrambuffer = nil;
+   if( _offscreenContext)
+   {
+      if( ! [_offscreenContext isActive])
+      {
+         [_offscreenOSWindow os_activateGraphicsContext];
+         [_offscreenContext setActive:YES];
+      }
+
+      [_lastOffscreenFramebuffer mullePerformFinalize];
+
+      [_offscreenContext mullePerformFinalize];
+      [_offscreenOSWindow os_deactivateGraphicsContext];
+      [_offscreenContext setActive:NO];
+   }
+   [_offscreenContext autorelease];
+   _offscreenContext = nil;
+
+   [_lastOffscreenFramebuffer autorelease];
+   _lastOffscreenFramebuffer = nil;
+
+   if( _context)
+   {
+      if( ! [_context isActive])
+      {
+         [_OSWindow os_activateGraphicsContext];
+         [_context setActive:YES];
+      }
+      [_context mullePerformFinalize];
+      [_OSWindow os_deactivateGraphicsContext];
+      [_context setActive:NO];
+   }
+   [_context autorelease];
+   _context = nil;
 
    // TODO: delete window ?
    //       remove from screen ?
    [_offscreenOSWindow mullePerformFinalize];
    [_offscreenOSWindow autorelease];
    _offscreenOSWindow = nil;
+
    [_OSWindow mullePerformFinalize];
    [_OSWindow autorelease];
    _OSWindow = nil;
 
    _firstResponder = nil;
-   _modalResponder = nil;
 
    [super finalize];
 }
@@ -540,6 +580,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    ui_window_pointer_fifo_done( &_timerQueue);
    ui_window_pointer_fifo_done( &_eventQueue);
+   
+   [self _doneInvocationQueues];
 
    // TODO: delete window ?
    [super dealloc];
@@ -565,15 +607,17 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 }
 
 
-- (void) applicationDidAddWindow
+- (void) applicationDidAddWindow:(UIApplication *) app
 {
+   _application = app;
    [self startWindowThreadMainIfNeeded];
 }
 
 
-- (void) applicationDidRemoveWindow
+- (void) applicationDidRemoveWindow:(UIApplication *) app
 {
    [self mullePerformFinalize];
+   _application = nil;
 }
 
 
@@ -585,7 +629,25 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (BOOL) shouldClose
 {
-   return( [_OSWindow os_windowShouldClose] ? YES : NO);
+   return( [_OSWindow os_windowShouldClose]);
+}
+
+
+- (CGPoint) mouseLocation
+{
+   return( _inputState.locationInWindow);
+}
+
+
+- (NSUInteger) mouseButtonStates
+{
+   return( _inputState.buttonStates);
+}
+
+
+- (NSUInteger) keyModifiers
+{
+   return( _inputState.keyModifiers);
 }
 
 
@@ -724,9 +786,9 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
  */
 - (BOOL) isWindowThread
 {
-   if( ! _thread)
+   if( ! _windowThread)
       return( [NSThread mulleIsMainThread]);
-   return( [NSThread currentThread] == _thread);
+   return( [NSThread currentThread] == _windowThread);
 }
 
 //

@@ -1,19 +1,16 @@
 #import "UIWindow+UIResponder.h"
 
 
-#define FIRST_RESPONDER_DEBUG
+#import "UIView+UIResponder.h"
+#import "UIView+UIResponderSearch.h"
 
+#define FIRST_RESPONDER_DEBUG
 
 @implementation UIWindow( UIResponder)
 
 - (id <UIResponder>) firstResponder
 {
    return( _firstResponder);
-}
-
-- (id <UIResponder>) modalResponder
-{
-   return( _modalResponder);
 }
 
 
@@ -32,20 +29,77 @@
    return( YES);
 }
 
-- (BOOL) makeModalResponder:(id <UIResponder>) responder
+
+- (id <UIResponder>) firstResponderSearchInPrimaryDirection:(CGDirection) primaryDirection
+                                         secondaryDirection:(CGDirection) secondaryDirection
 {
-   // the original _firstResponder if present must have resigned before
-   // we can set any non-nil value
-   assert( ! responder || ! _modalResponder);
+   struct UIResponderSearch   search;
+   id <UIResponder>           best;
 
-#ifdef FIRST_RESPONDER_DEBUG
-   if( responder != _modalResponder)
-      MulleUILog( "change modalResponder to %#@", responder);
-#endif
-
-   _modalResponder = responder;
-   return( YES);
+   UIResponderSearchInit( &search, _firstResponder, primaryDirection, secondaryDirection);
+   [[self contentPlane] _firstResponderSearch:&search];
+   best = UIResponderSearchGetResult( &search);
+   UIResponderSearchDone( &search);
+   
+   return( best);
 }
 
+
+- (id <UIResponder>) previousFirstResponder
+{
+   id <UIResponder>  responder;
+
+   if( [_firstResponder respondsToSelector:_cmd])
+   {
+      responder = [(id) _firstResponder previousFirstResponder];
+      if( responder)
+         return( responder);
+   }
+
+   return( [self firstResponderSearchInPrimaryDirection:CGDirectionTop
+                                     secondaryDirection:CGDirectionLeft]);
+}
+
+
+- (id <UIResponder>) nextFirstResponder
+{
+   id <UIResponder>  responder;
+
+   if( [_firstResponder respondsToSelector:_cmd])
+   {
+      responder = [(id) _firstResponder nextFirstResponder];
+      if( responder)
+         return( responder);
+   }
+   return( [self firstResponderSearchInPrimaryDirection:CGDirectionBottom
+                                     secondaryDirection:CGDirectionRight]);
+}
+
+
+- (UIInputEvent *) handleKeyboardEvent:(UIKeyboardEvent *) event
+{
+   NSUInteger   key;
+   NSUInteger   modifiers;
+
+#ifdef DEBUG
+   MulleUILog( "key: %ld scanCode: %ld modifiers: %ld", 
+                        (long) [event key], 
+                        (long) [event scanCode],
+                        (long) [event keyModifiers]);
+#endif 
+
+   key       = [event key];
+   modifiers = [event keyModifiers];
+   switch( key)
+   {
+   case 258  : // TAB
+      if( modifiers & UIEventKeyModifierShift)
+         [[self previousFirstResponder] becomeFirstResponder];
+      else
+         [[self nextFirstResponder] becomeFirstResponder];
+      return( nil);
+   }
+   return( event);
+}
 
 @end

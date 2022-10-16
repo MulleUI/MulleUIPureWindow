@@ -7,9 +7,12 @@
 @interface UIWindow (UIResponder)
 
 - (id<UIResponder>) firstResponder;
-- (BOOL) makeFirstResponder:(id<UIResponder>)responder;
 
-- (id <UIResponder>) modalResponder;
-- (BOOL) makeModalResponder:(id <UIResponder>) responder;
+//
+// You usually don't call this method, as it's too lowlevel.
+// Use [responder becomeFirstResponder] and [responder resignFirstResponder]
+// so that callback methods are properly triggered
+//
+- (BOOL) makeFirstResponder:(id<UIResponder>)responder;
 
 @end

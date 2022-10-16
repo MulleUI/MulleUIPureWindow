@@ -13,14 +13,14 @@
 #import "UIWindow+UIEvent.h"
 #import "UIView+RenderQueue.h"
 
-//#define THREAD_DEBUG
+#define THREAD_DEBUG
 //#define THREAD_DEBUG_VERBOSE
-//#define SWAP_DEBUG
+#define SWAP_DEBUG
 
 // this writes out a PNG for each frame
 // #define REFRESH_IMAGE_DEBUG
 // catch race conditions (only works if picture drawn is not empty)
-#define MISSING_BARRIER_DEBUG
+//#define MISSING_BARRIER_DEBUG
 //#define RANDOM_SLEEP_DURING_DRAW
 
 
@@ -33,8 +33,12 @@
 /*
  * UIWindowBackingStoreRetained :: threaded drawing
  */
+#ifdef DEBUG
+# define RENDER_THREAD_GRACE_PERIOD  240.0 // seconds
+#else
+# define RENDER_THREAD_GRACE_PERIOD  2.0 // seconds
+#endif
 
-#define RENDER_THREAD_GRACE_PERIOD  2.0 // seconds
 
 - (void) startWindowThreadMainIfNeeded
 {
@@ -78,8 +82,7 @@
 {
    NSTimeInterval   timeout;
 
-   if( ! _windowThread)
-      return;
+   assert( _windowThread && [NSThread mulleIsMainThread]);
 
 #ifdef THREAD_DEBUG
    MulleUILogThisMethod();
@@ -150,6 +153,7 @@
    MulleUILog( "\033[1mwindow thread stopped\033[0m");
 #endif
 }
+
 
 //
 // When the window thread is idle, it's 1. If we set to 2 the window thread
@@ -230,7 +234,8 @@
    mulle_absolutetime_t   now;
    mulle_relativetime_t   remainingFrameTime;
    double                 frameRate;
-
+   NSAutoreleasePool      *pool;
+   
    thread = [NSThread currentThread];
    [thread mulleSetNameUTF8String:"UIWindowThread"];
 
@@ -257,6 +262,7 @@
    haveLock   = YES;
    timeout    = INFINITY;
    didAnimate = NO;
+   pool       = [NSAutoreleasePool new];
 
    assert( [self needsDisplay]);
 
@@ -268,7 +274,7 @@
                   [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED",
                   timeout);
 #endif
-
+      [pool mulleReleaseAllObjects];
       haveLock = [_windowThreadLock mulleLockWhenCondition:2
                                                    timeout:timeout];
 
@@ -284,7 +290,7 @@
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
 #endif
-               return;
+               goto done;
             }
 
             // if we don't have the lock (curious), we can't clearly
@@ -297,6 +303,7 @@
 #endif
             break;
          }
+
          //
          // same code really as UIWindow( UIWindow) #159
          // check that in a frequency dependent mode, we draw stuff
@@ -321,11 +328,12 @@
             displayBits |= UIWindowNeedsRedraw;
 
 #ifdef THREAD_DEBUG
-         MulleUILog( "displayBits = 0x%tx frameRate=%.6f remainingFrameTime=%.6f didAnimate=%btd)",
+         MulleUILog( "displayBits = 0x%tx frameRate=%.6f remainingFrameTime=%.6f didAnimate=%btd, mask=0x%tx)",
                      displayBits,
                      windowInfo.frameRate,
                      remainingFrameTime,
-                     didAnimate);
+                     didAnimate,
+                     mask);
 #endif
 
          if( displayBits)
@@ -365,8 +373,10 @@
                 [self setNeedsAnimation];
          }
 
-         mask  = [self handleTimerQueue];
-         mask |= [self handleEventQueue];
+         [self pollInvocationQueues];
+
+         mask  = [self executeTimerQueue];
+         mask |= [self executeEventQueue];
       }
       while( mask);
 
@@ -396,6 +406,9 @@
       if( timeout > remainingFrameTime)
          timeout = remainingFrameTime;
    }
+
+done:
+   [pool release];
 }
 
 
@@ -420,36 +433,37 @@
    assert( [NSThread mulleIsMainThread]);
    assert( _backingStore != UIWindowBackingStoreVolatile);
 
-   // TODO: voodoo barrier, should be useless
-   [_offscreenContext barrier];
-   layer = [_offscreenContext acquireOffscreenFramebuffer];
-   if( ! layer)
+   @autoreleasepool
    {
-      // if we still have a layer, use it
-      layer = _lastOffscreenFrambuffer;
+      // TODO: voodoo barrier, should be useless
+      // [_offscreenContext barrier];
+      layer = [_offscreenContext acquireOffscreenFramebuffer];
       if( ! layer)
       {
-         mulle_fprintf( stderr, "%#@ has nothing to display (yet ?)\n", self);
-         return;
+         // if we still have a layer, use it
+         layer = _lastOffscreenFramebuffer;
+         if( ! layer)
+         {
+            mulle_fprintf( stderr, "%#@ has nothing to display (yet ?)\n", self);
+            return;
+         }
+#ifdef SWAP_DEBUG
+         MulleUILog( "Reuse previously acquired offscreen framebuffer layer %#@", layer);
+#endif
       }
+      else
+      {
 #ifdef SWAP_DEBUG
-      MulleUILog( "Reuse previously acquired offscreen framebuffer layer %#@", layer);
+         MulleUILog( "Acquired freshly drawn layer %#@, recycling layer %#@", layer, _lastOffscreenFramebuffer);
 #endif
-   }
-   else
-   {
-#ifdef SWAP_DEBUG
-      MulleUILog( "Acquire freshly drawn offscreen framebuffer layer %#@", layer);
-#endif
-      // recycle our old framebuffer
-      assert( _lastOffscreenFrambuffer != layer);
+         // recycle our old framebuffer
+         assert( _lastOffscreenFramebuffer != layer);
 
-      [_offscreenContext recycleFramebuffer:_lastOffscreenFrambuffer];
-      [_lastOffscreenFrambuffer autorelease];
+         [_offscreenContext recycleFramebuffer:_lastOffscreenFramebuffer];
+         [_lastOffscreenFramebuffer autorelease];
 
-      _lastOffscreenFrambuffer = [layer retain];
-   }
-
+         _lastOffscreenFramebuffer = [layer retain];
+      }
 
 //  // hack, because render thread could be active
 //  context = [self activateRenderGraphicsContext];
@@ -462,69 +476,79 @@
 //  }
 //  [self deactivateGraphicsContext:context];
 
-   context = [self activateWindowGraphicsContext];
-   {
-      [self getFrameInfo:&frameInfo];
-
-      // TODO: voodoo barrier, possibly useless
-      [context barrier];
-      [context beginRender:&frameInfo];
-
-      refreshContentMode = [self refreshContentMode];
-      isScaling          = CGContentModeIsScaling( refreshContentMode);
-      if( ! isScaling)
+      context = [self activateWindowGraphicsContext];
       {
-         color = [self backgroundColor];
-         [context clearFramebufferWithColor:color];
-      }
+         [self getFrameInfo:&frameInfo];
 
-      rect.origin = CGPointZero;
-      rect.size   = frameInfo.window.frame.size;
+#ifdef SWAP_DEBUG
+         MulleUILog( "Begin render");
+#endif
+         // TODO: voodoo barrier, possibly useless
+         // [context barrier];
+         [context beginRender:&frameInfo];
 
-      image       = [_offscreenContext shareImage:layer
-                                      withContext:context];
-      assert( image);
+         refreshContentMode = [self refreshContentMode];
+         isScaling          = CGContentModeIsScaling( refreshContentMode);
+         if( ! isScaling)
+         {
+            color = [self backgroundColor];
+            [context clearFramebufferWithColor:color];
+         }
 
-      imageSize   = [image size];
-      imageFrame  = CGSizePlaceInRect( imageSize, rect, refreshContentMode);
+         rect.origin = CGPointZero;
+         rect.size   = frameInfo.window.frame.size;
+
+#ifdef SWAP_DEBUG
+         MulleUILog( "Acquire image");
+#endif
+         image       = [_offscreenContext shareImage:layer
+                                         withContext:context];
+         assert( image);
+
+         imageSize   = [image size];
+         imageFrame  = CGSizePlaceInRect( imageSize, rect, refreshContentMode);
 
 #ifdef MISSING_BARRIER_DEBUG
-      {
-         id   bitmapImage;
-
-         bitmapImage = [image bitmapImage];
-         if( [bitmapImage isFullyTransparent])
          {
-            fprintf( stderr, "missing barrier ?\n");
-            abort();
-         }
-      }
-#endif
-      [context drawRect:imageFrame
-                  image:image
-                  scale:isScaling];
+            id   bitmapImage;
 
-      if( _debugEnabled & UIWindowDrawFramebufferIdRect)
-      {
-         [context strokeRect:CGRectInset( rect, 20, 20)
-                       color:CGColorMakeWithHexColor( 0x20A080FF)
-                       width:4.0];
-      }
+            bitmapImage = [image bitmapImage];
+            if( [bitmapImage isFullyTransparent])
+            {
+               fprintf( stderr, "missing barrier ?\n");
+               abort();
+            }
+         }
+#endif
+#ifdef SWAP_DEBUG
+         MulleUILog( "Refresh with image %#@", image);
+#endif
+         [context drawRect:imageFrame
+                     image:image
+                     scale:isScaling];
+
+         if( _debugEnabled & UIWindowDrawFramebufferIdRect)
+         {
+            [context strokeRect:CGRectInset( rect, 20, 20)
+                        color:CGColorMakeWithHexColor( 0x20A080FF)
+                        width:4.0];
+         }
 
 #ifdef REFRESH_IMAGE_DEBUG
-      MulleUIWriteImageToPNGFileSequenceAsync( image, "refresh-image");
+         MulleUIWriteImageToPNGFileSequenceAsync( image, "refresh-image");
 #endif
 
 #ifdef SWAP_DEBUG
-      MulleUILog( "drew image %#@ of size %.1f %.1f into %.1f %.1f %.1f %.1f for refresh",
-                        image,
-                        imageSize.width, imageSize.height,
-                        imageFrame.origin.x, imageFrame.origin.y,
-                        imageFrame.size.width, imageFrame.size.height);
+         MulleUILog( "Drew image %#@ of size %.1f %.1f into %.1f %.1f %.1f %.1f for refresh",
+                           image,
+                           imageSize.width, imageSize.height,
+                           imageFrame.origin.x, imageFrame.origin.y,
+                           imageFrame.size.width, imageFrame.size.height);
 #endif
-      [context endRender];
+         [context endRender];
+      }
+      [self deactivateGraphicsContext:context]; 
    }
-   [self deactivateGraphicsContext:context];
 }
 
 @end

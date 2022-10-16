@@ -7,9 +7,22 @@
 
 @implementation UIView( UIResponder)
 
+- (BOOL) isUserInteractionEnabled
+{
+   if( [self isHidden])
+      return( NO);
+   return( [super isUserInteractionEnabled]);
+}
+
+
 - (id <UIResponder>) nextResponder
 {
    return( _superview);  // AppKit also does direct reads here
+}
+
+
+- (void) didBecomeFirstResponder
+{
 }
 
 
@@ -34,8 +47,13 @@
       if( ! [firstResponder resignFirstResponder])
          return( NO);
    }
-   [window makeFirstResponder:self];
-   return( YES);
+   
+   if( [(UIWindow *) _window makeFirstResponder:self])
+   {
+      [self didBecomeFirstResponder];
+      return( YES);
+   }
+   return( NO);
 }
 
 
@@ -64,55 +82,15 @@
 }
 
 
-- (BOOL) becomeModalResponder
+- (id <UIResponder>) previousFirstResponder
 {
-   UIWindow           *window;
-   id <UIResponder>   modalResponder;
-
-   // I think calling this too often is not good, as it does too much
-   // (later: not so much now)
-   if( [self isFirstResponder])
-      return( YES);
-   
-   window         = (UIWindow *) _window;
-   modalResponder = [window modalResponder];
-   if( modalResponder)
-   {   
-      if( modalResponder == self)
-         return( YES);
-      if( ! [modalResponder canResignModalResponder])
-         return( NO);
-      if( ! [modalResponder resignModalResponder])
-         return( NO);
-   }
-   [window makeModalResponder:self];
-   return( YES);
+   return( nil);
 }
 
 
-- (void) didResignModalResponder
+- (id <UIResponder>) nextFirstResponder
 {
+   return( nil);
 }
-
-
-- (BOOL) resignModalResponder
-{
-   if( [(UIWindow *) _window makeModalResponder:nil])
-   {
-      [self didResignModalResponder];
-      return( YES);
-   }
-   return( NO);
-}
-
-
-- (BOOL) isModalResponder
-{
-   id    responder;
-
-   responder = [(UIWindow *) _window modalResponder];
-   return( responder == self);
-}
-
 
 @end

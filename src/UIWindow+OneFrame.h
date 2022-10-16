@@ -22,7 +22,7 @@
 
 // returns NO, if windows should close
 // does event handling after renderAndSwapOneFrame
-- (BOOL) processOneFrame;
+- (BOOL) processOneFrame:(CGFloat) frameRate;
 
 // as processOneFrame
 - (void) renderAndSwapOneFrame;

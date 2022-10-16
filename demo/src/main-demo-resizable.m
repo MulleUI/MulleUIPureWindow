@@ -100,7 +100,9 @@ int   main( int argc, char *argv[])
 
    app = [UIApplication sharedInstance];
    {
-      window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
+      window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)
+                         titleUTF8String:"Demo"
+                               styleMask:UIWindowStyleMaskDefault];
       assert( window);
 
       [window setBackgroundColor:CGColorMakeChartreuse()];

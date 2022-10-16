@@ -41,14 +41,14 @@ enum
 - (void) discardPendingEvents;
 
 // hardcore event handling
-- (void) handleRetainedEvent:(UIEvent *) event;
+- (void) receiveRetainedEvent:(UIEvent *) event;
 
 
 - (BOOL) willDiscardEvent:(UIEvent *) event;
 - (BOOL) willDiscardOverflowEvent:(UIEvent *) event;
 - (BOOL) willDiscardPendingEvent:(UIEvent *) event;
 
-- (NSUInteger) handleEventQueue;
+- (NSUInteger) executeEventQueue;
 
 - (void) sendWindowFramebufferGeometryEvent:(struct CGWindowInfo *) info;
 

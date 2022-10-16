@@ -45,9 +45,3 @@ extern BOOL   UIWindowDefaultRawFrameCallback( UIWindow *self,
 @end
 
 
-@interface UIEvent( UIResponder)
-
-- (BOOL) isFirstResponderEvent;
-
-@end 
-

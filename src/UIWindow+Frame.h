@@ -13,14 +13,16 @@
 //
 @interface UIWindow( Frame)
 
-- (void) _getFrameInfo:(struct CGFrameInfo *) info; // does not send event
 - (void) getFrameInfo:(struct CGFrameInfo *) info;
+- (void) syncFrameInfo:(struct CGFrameInfo *) info;
 - (void) swapBuffers;
+- (void) swapBuffersImmediately;
 - (BOOL) renderWithFrameInfo:(struct CGFrameInfo *) info
                  displayBits:(NSUInteger) displayBits;  // assorted UIWindowNeedsDislay bits
 
 - (id <UIGraphicsContext>) activateWindowGraphicsContext;
 - (id <UIGraphicsContext>) activateRenderGraphicsContext;
+- (id <UIGraphicsContext>) activateOffscreenGraphicsContext;
 
 - (void) deactivateGraphicsContext:(id <UIGraphicsContext>) context;
 
