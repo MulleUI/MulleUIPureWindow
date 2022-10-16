@@ -19,7 +19,7 @@
 
 - (BOOL) willDiscardOverflowTimer:(NSTimer *) timer
 {
-   fprintf( stderr, "*** windows %p (%p) discards timer due to queue overflow\n", self, self->_thread);
+   fprintf( stderr, "*** windows %p (%p) discards timer due to queue overflow\n", self, self->_windowThread);
 #ifdef ABORT_ON_EVENT_OVERFLOW
    abort();
 #endif
@@ -96,7 +96,7 @@
 // Execute all events in the queue until empty. This has to be called by the
 // Windows thread. Returns OR of eventType
 //
-- (NSUInteger) handleTimerQueue
+- (NSUInteger) executeTimerQueue
 {
    NSTimer      *timer;
    NSUInteger   mask;
@@ -128,28 +128,28 @@
 
 - (void) addTimer:(NSTimer *) timer
 {
-   [UIApp addTimer:timer
+   [_application addTimer:timer
    forTimerReceiver:self];
 }
 
 
 - (void) removeTimer:(NSTimer *) timer
 {
-   [UIApp removeTimer:timer
+   [_application removeTimer:timer
      forTimerReceiver:self];
 }
 
 
 - (void) resetTimer:(NSTimer *) timer
 {
-   [UIApp resetTimer:timer];
+   [_application resetTimer:timer];
 }
 
 
 - (void) removeAllTimers
 {
-   [UIApp removeTimer:nil
-     forTimerReceiver:self];
+   [_application removeTimer:nil
+            forTimerReceiver:self];
 }
 
 @end 

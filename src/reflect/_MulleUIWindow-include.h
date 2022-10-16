@@ -16,37 +16,37 @@
 
 // You can tweak the following #include with these commands.
 // (Use 148522C7-9709-4A0B-8D63-AC57AD5E520C instead of mulle-quadtree if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark mulle-quadtree no-header`
-//    rename:             `mulle-sde dependency|library set mulle-quadtree include whatever.h`
-//    reorder:            `mulle-sde dependency move mulle-quadtree <up|down>`
+//    remove #include:: `mulle-sde dependency mark mulle-quadtree no-header`
+//    rename:              `mulle-sde dependency|library set mulle-quadtree include whatever.h`
+//    reorder:             `mulle-sde dependency move mulle-quadtree <up|down>`
 //    toggle #include:    `mulle-sde dependency mark mulle-quadtree [no-]import`
-//    toggle public:      `mulle-sde dependency mark mulle-quadtree [no-]public`
-//    toggle optional:    `mulle-sde dependency mark mulle-quadtree [no-]require`
-//    remove for platform:`mulle-sde dependency mark mulle-quadtree no-platform-<uname>`
+//    toggle public:       `mulle-sde dependency mark mulle-quadtree [no-]public`
+//    toggle optional:     `mulle-sde dependency mark mulle-quadtree [no-]require`
+//    remove for platform: `mulle-sde dependency mark mulle-quadtree no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #include <mulle-quadtree/mulle-quadtree.h>   // mulle-quadtree
 
 // You can tweak the following #include with these commands.
 // (Use 554cb551-8992-4382-a794-e5e8c3242817 instead of mulle-fifo if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark mulle-fifo no-header`
-//    rename:             `mulle-sde dependency|library set mulle-fifo include whatever.h`
-//    reorder:            `mulle-sde dependency move mulle-fifo <up|down>`
+//    remove #include:: `mulle-sde dependency mark mulle-fifo no-header`
+//    rename:              `mulle-sde dependency|library set mulle-fifo include whatever.h`
+//    reorder:             `mulle-sde dependency move mulle-fifo <up|down>`
 //    toggle #include:    `mulle-sde dependency mark mulle-fifo [no-]import`
-//    toggle public:      `mulle-sde dependency mark mulle-fifo [no-]public`
-//    toggle optional:    `mulle-sde dependency mark mulle-fifo [no-]require`
-//    remove for platform:`mulle-sde dependency mark mulle-fifo no-platform-<uname>`
+//    toggle public:       `mulle-sde dependency mark mulle-fifo [no-]public`
+//    toggle optional:     `mulle-sde dependency mark mulle-fifo [no-]require`
+//    remove for platform: `mulle-sde dependency mark mulle-fifo no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #include <mulle-fifo/mulle-fifo.h>   // mulle-fifo
 
 // You can tweak the following #include with these commands.
 // (Use B5E27755-9A50-4C10-92BC-21596B68CDA5 instead of mulle-layout if there are duplicate entries)
-//    remove:             `mulle-sde dependency mark mulle-layout no-header`
-//    rename:             `mulle-sde dependency|library set mulle-layout include whatever.h`
-//    reorder:            `mulle-sde dependency move mulle-layout <up|down>`
+//    remove #include:: `mulle-sde dependency mark mulle-layout no-header`
+//    rename:              `mulle-sde dependency|library set mulle-layout include whatever.h`
+//    reorder:             `mulle-sde dependency move mulle-layout <up|down>`
 //    toggle #include:    `mulle-sde dependency mark mulle-layout [no-]import`
-//    toggle public:      `mulle-sde dependency mark mulle-layout [no-]public`
-//    toggle optional:    `mulle-sde dependency mark mulle-layout [no-]require`
-//    remove for platform:`mulle-sde dependency mark mulle-layout no-platform-<uname>`
+//    toggle public:       `mulle-sde dependency mark mulle-layout [no-]public`
+//    toggle optional:     `mulle-sde dependency mark mulle-layout [no-]require`
+//    remove for platform: `mulle-sde dependency mark mulle-layout no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #include <mulle-layout/mulle-layout.h>   // mulle-layout
 

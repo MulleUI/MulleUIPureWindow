@@ -212,24 +212,28 @@ static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
 - (void) clearFrame:(struct CGFrameInfo *) info
     graphicsContext:(id <UIGraphicsContext>) context
 {
-   BOOL          clearFramebuffer;
-   BOOL          clearColorFramebuffer;
-   NSUInteger    framebufferBits;
+   BOOL   doClearFramebufferColor;
 
-   if( _willClearCallback)
+   if( _willClearCallback && ! (*_willClearCallback)( self, context, info))
+      return;
+
+   //
+   // if window is Opaque, clear is superflous, except if this is the very
+   // first frame of a new or corrupted framebuffer
+   if( [self uninitializedFramebuffer])
    {
-      clearFramebuffer = (*_willClearCallback)( self, context, info);
-      if( ! clearFramebuffer)
-         return;
+      doClearFramebufferColor = YES;
+      [self setUninitializedFramebuffer:NO];
    }
+   else
+      doClearFramebufferColor = info->alpha == 1.0 && ! [self isOpaque];
 
-   clearColorFramebuffer = info->alpha == 1.0 && ([self isOpaque] ? NO : YES);
 #ifdef RENDER_DEBUG_VERBOSE
-   MulleUILog( "clearing framebuffer color=%btd", clearColorFramebuffer);
+   MulleUILog( "clearing framebuffer color=%btd", doClearFramebufferColor);
 #endif
-      // we have to clear some of the framebuffer for nanovg anyway
-      // like the stencil bits
-   if( clearColorFramebuffer)
+   // we have to clear some of the framebuffer for nanovg anyway
+   // like the stencil bits
+   if( doClearFramebufferColor)
       [context clearFramebufferWithColor:[self backgroundColor]];
    else
       [context clearFramebufferNoColor];
@@ -256,9 +260,9 @@ static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
 //   _renderInfo.lastStartTime = _renderInfo.startTime;
 //   _renderInfo.startTime     = info->now;
    [context beginRender:info];
-   {
+   { 
       [self clearFrame:info 
-      graphicsContext:context];
+       graphicsContext:context];
 
       [self->_frameDelegate window:self
                      willDrawFrame:info
@@ -413,14 +417,13 @@ BOOL   UIWindowDefaultRawFrameCallback( UIWindow *self,
                            willDrawFrame:info
                         graphicsContext:context];
 
-            (*self->_frameCallback)( self, context, info);
+            didAnimate = (*self->_frameCallback)( self, context, info);
 
             [self->_frameDelegate window:self
                            didDrawFrame:info
                         graphicsContext:context];
          }
          [context endRender];
-         didAnimate = YES;
       }
       else 
       {

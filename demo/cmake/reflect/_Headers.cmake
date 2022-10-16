@@ -54,6 +54,7 @@ src/include.h
 #
 set( PUBLIC_HEADERS
 src/demos-version.h
+src/draw-flag.inc
 src/gl.h
 src/khrplatform.h
 src/linmath.h

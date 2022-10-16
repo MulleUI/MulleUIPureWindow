@@ -10,6 +10,7 @@
  *      mulle-sde environment set MULLE_MATCH_TO_C_RUN DISABLE
  */
 #include "demos-version.h"
+#include "draw-flag.inc"
 #include "gl.h"
 #include "khrplatform.h"
 #include "linmath.h"

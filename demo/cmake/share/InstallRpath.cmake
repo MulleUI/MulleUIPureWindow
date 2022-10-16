@@ -18,7 +18,7 @@ endif()
 # but this is usually counterproductive, since lib will be really in
 # ../../dependency/lib
 #
-# CMAKE_INSTALL_RPATH must be defined before add_exectutable or add_library
+# CMAKE_INSTALL_RPATH must be defined before add_executable or add_library
 #
 if( NOT MULLE_NO_CMAKE_INSTALL_RPATH)
    if( APPLE)
@@ -30,3 +30,9 @@ if( NOT MULLE_NO_CMAKE_INSTALL_RPATH)
       set( CMAKE_INSTALL_RPATH "\$ORIGIN/../lib")
    endif()
 endif()
+
+
+# extension : mulle-sde/cmake
+# directory : project/all
+# template  : .../InstallRpath.cmake
+# Suppress this comment with `export MULLE_SDE_GENERATE_FILE_COMMENTS=NO`

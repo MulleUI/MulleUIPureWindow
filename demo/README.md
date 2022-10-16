@@ -56,6 +56,16 @@ commandline (0-3).
 [source](src/main-swapinterval.m)
 
 
+
+#### star
+
+Another pretty demo just being pretty.
+
+![](star.gif)
+
+[source](src/main-starg.m)
+
+
 #### glfw-sharing
 
 Share a GPU texture between three windows.

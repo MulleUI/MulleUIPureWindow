@@ -112,7 +112,6 @@ typedef NS_OPTIONS( NSUInteger, UIWindowFramePhase)
 #define UIWindowFrameAllPhases   (~0)
 
 
-
 // mulle addition
 PROTOCOLCLASS_INTERFACE0( UIWindowFrameDelegate)
 
@@ -175,7 +174,6 @@ static inline void   UIWindowDisplayFrameStatisticsInit( struct UIWindowFrameSta
 }
 
 
-
 typedef NS_OPTIONS( NSUInteger, UIWindowNeedsDisplay)
 {
    UIWindowNeedsRedraw    = 0x1,   // needs immediate attention
@@ -232,8 +230,9 @@ struct MulleClickDragDifferentiator
    BOOL                            _isResizing;       // obsolete yet in use (?) in OneFrame
    BOOL                            _shouldClose;      // obsolete yet in use (?) in OneFrame
    NSInteger                       _oldSwapInterval;
-   id <UILayer>                    _lastOffscreenFrambuffer;
+   id <UILayer>                    _lastOffscreenFramebuffer;
 
+   UIApplication                   *_application;
 
 // These ivars are used by the rendering thread only to manage the view
 // hierarchy, layout, handle events and draw stuff. If there is no windowThread
@@ -244,9 +243,10 @@ struct MulleClickDragDifferentiator
    BOOL                            _quadtreeNeedsSetup;
    UIMouseTrackingEvent            *_reusableTrackingEvent;
    
-   struct mulle_pointerarray       _trackingViews;   // views with tracking areas
-   struct mulle_pointerarray       _enteredAreas;    // areas with mouseEntered: sent
-   struct mulle_pointerarray       _delegateViews;   // views with need willRender: sent
+   struct mulle_pointerarray       _trackingViews;    // views with tracking areas
+   struct mulle_pointerarray       _enteredAreas;     // areas with mouseEntered: sent
+   struct mulle_pointerarray       _delegateViews;    // views with need willRender: sent
+   struct mulle_map                _invocationQueueMap;  
 
    CAAnimator                      *_preLayoutAnimator;
    CAAnimator                      *_postLayoutAnimator;
@@ -256,8 +256,7 @@ struct MulleClickDragDifferentiator
    //
    // 8Khz at 60fps = 133 events, 256 should be ample
    // The queue is single consumer/single producer thread. The producer is
-   // ALWAYS the main thread. The consumer is _thread. (can also be the
-   // main thread)
+   // ALWAYS the main thread. 
    //
    struct ui_window_pointer_fifo   _eventQueue;
    struct ui_window_pointer_fifo   _timerQueue;
@@ -273,10 +272,10 @@ struct MulleClickDragDifferentiator
    NSLock                          *_windowPropertyLock;
 
    struct MulleClickDragDifferentiator     _clickOrDrag;
-   id                              _firstResponder;
-   id                              _modalResponder;
+   id <UIResponder>                 _firstResponder;
 
-
+   // 0: unchecked 1:found -1:non found
+   int                              _initialFirstResponderState; 
 
 // atomic variables accessed by both threads
 @private
@@ -288,7 +287,7 @@ struct MulleClickDragDifferentiator
    mulle_atomic_pointer_t          _propertyChanges;
 
    NSUInteger                      _cursorGenerationCount;
-   
+
 //   struct UIWindowRenderInfo       _renderInfo;
 
    // these values are only accessible to the window thread
@@ -323,8 +322,10 @@ struct MulleClickDragDifferentiator
 
 @property( assign, getter=areTrackingAreasEnabled) BOOL   trackingAreasEnabled;
 
-// TODO: not the same as _windowThread, obsolete ?
-@property( assign) NSThread                        *thread;
+@property( assign, readonly) struct UIInputState   inputState;
+@property( dynamic, assign, readonly) CGPoint      mouseLocation;
+@property( dynamic, assign, readonly) NSUInteger   mouseButtonStates;
+@property( dynamic, assign, readonly) NSUInteger   keyModifiers;
 
 // used for MulleUIPerformance
 @property( assign) id <UIWindowFrameDelegate>      frameDelegate;
@@ -374,14 +375,16 @@ struct MulleClickDragDifferentiator
                                       struct CGFrameInfo *frameInfo,
                                       NSUInteger displayBits);
 
+//
 // If this callback is set, then UIViews and CAAnimatons are ignored and this 
 // callback will be used for drawing, the context is already setup for 
 // rendering.  UIWindowFrameDelegate methods will be sent but other callbacks
-// won't.
+// won't. Return '1' if you are animating and need to break out of async for 
+// a while.
 //
-@property void   (*frameCallback)( UIWindow *window,
-                                   id <UIGraphicsContext> context,
-                                   struct CGFrameInfo *frameInfo);
+@property int   (*frameCallback)( UIWindow *window,
+                                  id <UIGraphicsContext> context,
+                                  struct CGFrameInfo *frameInfo);
 
 // These callbacks will be called in this sequence for every frame.
 // It should be obvious, that you don't do any system calls in these callbacks
@@ -448,6 +451,8 @@ struct MulleClickDragDifferentiator
 @property( readonly, assign) UIWindowPlane   *menuPlane;
 @property( readonly, assign) UIWindowPlane   *toolTipPlane;
 @property( readonly, assign) UIWindowPlane   *contentPlane;
+
+@property( assign) id <UIResponder>          initialFirstResponder;
 
 + (instancetype) windowWithFrame:(CGRect) frame;
 
@@ -534,8 +539,8 @@ struct MulleClickDragDifferentiator
 - (void) addToDelegateViews:(UIView *) view;
 - (void) removeFromDelegateViews:(UIView *) view;
 
-- (void) applicationDidAddWindow;
-- (void) applicationDidRemoveWindow;
+- (void) applicationDidAddWindow:(UIApplication *) app;
+- (void) applicationDidRemoveWindow:(UIApplication *) app;
 
 - (BOOL) isWindowPlane:(UIView *) view;
 

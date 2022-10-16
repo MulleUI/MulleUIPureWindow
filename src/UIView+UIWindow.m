@@ -164,7 +164,6 @@
 }
 
 
-
 - (BOOL) needsLayout
 {
    UIWindow   *window;

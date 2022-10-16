@@ -13,7 +13,7 @@
 - (BOOL) willDiscardOverflowTimer:(NSTimer *) timer;
 - (BOOL) willDiscardPendingTimer:(NSTimer *) timer;
 
-- (NSUInteger) handleTimerQueue;
+- (NSUInteger) executeTimerQueue;
 
 - (void) addTimer:(NSTimer *) timer;
 - (void) resetTimer:(NSTimer *) timer;

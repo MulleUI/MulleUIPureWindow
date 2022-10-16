@@ -14,7 +14,7 @@
 
 
 //#define LAYOUT_ANIMATIONS
-//#define SWAP_DEBUG
+#define SWAP_DEBUG
 //#define RENDERINFO_DEBUG
 //#define SWAPPED_BUFFERS_DEBUG
 
@@ -107,7 +107,8 @@
 
 - (id <UIGraphicsContext>) activateWindowGraphicsContext
 {
-   Class   osGraphicsContextClass;
+   Class        osGraphicsContextClass;
+   NSUInteger   options;
 
 #ifdef SWAP_DEBUG
    MulleUILog( "window context");
@@ -118,10 +119,12 @@
    if( ! _context)
    {
       osGraphicsContextClass = [[self class] osGraphicsContextClass];
-      _context               = [[osGraphicsContextClass alloc] initWithEdgeAntialiasing:(_styleMask & UIWindowStyleEdgeAntialias)
-                                                                      useStencilStrokes:(_styleMask & UIWindowStyleStencilStrokes)
-                                                                                shareID:[_OSWindow shareID]
-                                                                                backend:[_OSWindow backend]];
+      options  = _styleMask & UIWindowStyleEdgeAntialias  ? UIGraphicsEdgeAntialiasing : 0;
+      options |= _styleMask & UIWindowStyleStencilStrokes ? UIGraphicsUseStencilStrokes : 0;
+
+      _context = [[CGContext alloc] initWithBackend:[_OSWindow backend]
+                                            shareID:[_OSWindow shareID]
+                                            options:options];       
       [_context setOSWindow:_OSWindow];
 #ifdef SWAP_DEBUG
       MulleUILog( "context %#@ created for OSWindow %#@", _context, _OSWindow);
@@ -134,27 +137,27 @@
 
 
 // TODO: memo, maybe the context triggers os_activateGraphicsContext ?
-- (id <UIGraphicsContext>) activateRenderGraphicsContext
+- (id <UIGraphicsContext>) activateOffscreenGraphicsContext
 {
    id <UIGraphicsContext>   context;
-   Class                      cls;
+   Class                    cls;
+   NSUInteger               options;
 
    // take renderlock here, relinquish later when wating for events
    // or when someone closes the window
-
-   if( _backingStore == UIWindowBackingStoreVolatile)
-      return( [self activateWindowGraphicsContext]);
 
    assert( _offscreenOSWindow);
 
    [_offscreenOSWindow os_activateGraphicsContext];
    if( ! _offscreenContext)
    {
-      cls               = [[self class] osGraphicsContextClass];
-      _offscreenContext = [[cls alloc] initWithEdgeAntialiasing:(_offscreenStyleMask & UIWindowStyleEdgeAntialias)
-                                              useStencilStrokes:(_offscreenStyleMask & UIWindowStyleStencilStrokes)
-                                                        shareID:[_offscreenOSWindow shareID]
-                                                        backend:[_offscreenOSWindow backend]];
+      cls      = [[self class] osGraphicsContextClass];
+      options  = _offscreenStyleMask & UIWindowStyleEdgeAntialias  ? UIGraphicsEdgeAntialiasing : 0;
+      options |= _offscreenStyleMask & UIWindowStyleStencilStrokes ? UIGraphicsUseStencilStrokes : 0;
+
+      _offscreenContext = [[CGContext alloc] initWithBackend:[_offscreenOSWindow backend]
+                                                     shareID:[_offscreenOSWindow shareID]
+                                                     options:options]; 
       [_offscreenContext setRendersOffScreen:YES];
       [_context setOSWindow:_offscreenOSWindow];
 #ifdef SWAP_DEBUG
@@ -167,6 +170,15 @@
    MulleUILog( "offscreen context");
 #endif
    return( _offscreenContext);
+}
+
+
+// TODO: memo, maybe the context triggers os_activateGraphicsContext ?
+- (id <UIGraphicsContext>) activateRenderGraphicsContext
+{
+   if( _backingStore == UIWindowBackingStoreVolatile)
+      return( [self activateWindowGraphicsContext]);
+   return( [self activateOffscreenGraphicsContext]);
 }
 
 
@@ -196,7 +208,7 @@
 // this will ask the "real" window for its framebuffer size, window size
 // and window position
 //
-- (void) _getFrameInfo:(struct CGFrameInfo *) info
+- (void) getFrameInfo:(struct CGFrameInfo *) info
 {
    struct UIOSWindowInfo   tmp;
 
@@ -214,14 +226,14 @@
 }
 
 
-- (void) getFrameInfo:(struct CGFrameInfo *) info
+- (void) syncFrameInfo:(struct CGFrameInfo *) info
 {
-   [self _getFrameInfo:info];
 #ifdef RENDERINFO_DEBUG
    MulleUILog( "info:%s previous:%s",
                CGWindowInfoUTF8String( &info->window),
                CGWindowInfoUTF8String( &self->_previousWindowInfo));
 #endif
+
    if( ! CGWindowInfoEqualToWindowInfo( &info->window, &self->_previousWindowInfo))
    {
       // this will change the frame and _currentWindowInfo for the render thread
@@ -240,17 +252,32 @@
 {
    id <UIGraphicsContext>   context;
    BOOL                     didAnimate;
+   id <UIResponder>         responder;
 
    context = [self activateRenderGraphicsContext];
    {
 #ifdef RENDERINFO_DEBUG
       MulleUILog( "%s", CGFrameInfoUTF8String( info));
 #endif
+      // for demos
+      [context setMouseLocation:_inputState.locationInWindow];
+      [context setMouseButtonStates:_inputState.buttonStates];
+      [context setKeyModifiers:_inputState.keyModifiers];
+
       // if the window size changed, we need to relayout
       if( ! CGSizeEqualToSize( info->window.frame.size, [self frame].size))
       {
          [self _setFrame:info->window.frame]; // don't trigger property change
          displayBits |= UIWindowNeedsLayout;
+      }
+
+      if( ! _initialFirstResponderState)
+      {
+         responder = _initialFirstResponder;
+         if( ! _initialFirstResponder)
+            responder = [self nextFirstResponder];
+         [responder becomeFirstResponder];
+         _initialFirstResponderState = responder ? 1 : -1;
       }
 
       // This is usually UIWindowDefaultRawFrameCallback (UIWindow+Render.m)
@@ -297,6 +324,12 @@
 {
    id <UIGraphicsContext>   context;
 
+   // NO LONGER WELL SUPPORTED AS WAYLAND / EGL CAN'T DO IT
+   // single buffer framebuffers don't swap.
+   // Flush should have been done already
+   if( _styleMask & UIWindowStyleSingleBuffer)  
+      return;
+
 #ifdef SWAP_DEBUG
    MulleUILog( "swap");
 #endif
@@ -312,6 +345,23 @@
    // from here on CGImages should be safe to be reaped by autorelease pool
    // or ?
    //
+}
+
+- (void) swapBuffersImmediately
+{
+   id <UIGraphicsContext>   context;
+
+#ifdef SWAP_DEBUG
+   MulleUILog( "swap immediately");
+#endif
+
+   context = [self activateWindowGraphicsContext];
+   {
+      [_OSWindow os_setSwapInterval:0]; 
+      [_OSWindow os_swapBuffers];
+      [_OSWindow os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
+   }
+   [self deactivateGraphicsContext:context];
 }
 
 

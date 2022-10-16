@@ -2,6 +2,7 @@
 ### picked up in preference over the one in cmake/share. And it will not get
 ### clobbered with the next upgrade.
 
+
 if( NOT __ENVIRONMENT__CMAKE__)
    set( __ENVIRONMENT__CMAKE__ ON)
 
@@ -11,14 +12,18 @@ if( NOT __ENVIRONMENT__CMAKE__)
       message( STATUS "# Include \"${CMAKE_CURRENT_LIST_FILE}\"" )
    endif()
 
+   include( StringCase)
+
    if( NOT PROJECT_IDENTIFIER)
       string( MAKE_C_IDENTIFIER "${PROJECT_NAME}" PROJECT_IDENTIFIER)
    endif()
    if( NOT PROJECT_UPCASE_IDENTIFIER)
-      string( TOUPPER "${PROJECT_IDENTIFIER}" PROJECT_UPCASE_IDENTIFIER)
+      snakeCaseString( "${PROJECT_IDENTIFIER}" PROJECT_UPCASE_IDENTIFIER)
+      string( TOUPPER "${PROJECT_UPCASE_IDENTIFIER}" PROJECT_UPCASE_IDENTIFIER)
    endif()
    if( NOT PROJECT_DOWNCASE_IDENTIFIER)
-      string( TOLOWER "${PROJECT_IDENTIFIER}" PROJECT_DOWNCASE_IDENTIFIER)
+      snakeCaseString( "${PROJECT_IDENTIFIER}" PROJECT_DOWNCASE_IDENTIFIER)
+      string( TOLOWER "${PROJECT_DOWNCASE_IDENTIFIER}" PROJECT_DOWNCASE_IDENTIFIER)
    endif()
 
    if( NOT MULLE_VIRTUAL_ROOT)
@@ -42,11 +47,13 @@ if( NOT __ENVIRONMENT__CMAKE__)
       endif()
    endif()
 
-   # get MULLE_SDK_PATH into cmake list form
-   # MULLE_SDK_PATH is set my mulle-craft and usually looks like the
-   # default set below. But! If you are using --sdk --platform
-   # distictions the paths will be different
    #
+   # MULLE_SDK is dependency/addiction. Not sysroot!
+   #
+   # Get MULLE_SDK_PATH into cmake list form
+   # MULLE_SDK_PATH is set by mulle-craft and usually looks like the
+   # default set below. But! If you are using --sdk --platform
+   # distinctions, the paths will be different
    if( NOT MULLE_SDK_PATH)
       string( REPLACE ":" ";" MULLE_SDK_PATH "$ENV{MULLE_SDK_PATH}")
 
@@ -57,9 +64,11 @@ if( NOT __ENVIRONMENT__CMAKE__)
          )
       endif()
    else()
-      # temporary fix until mulle-objc 0.18 release
-      if( $ENV{MULLE_MAKE_VERSION} VERSION_LESS 0.14.0)
-         string( REPLACE ":" ";" MULLE_SDK_PATH "${MULLE_SDK_PATH}")
+      # temporary fix until mulle-objc 0.16 release
+      if( NOT ("$ENV{MULLE_MAKE_VERSION}" STREQUAL ""))
+         if( "$ENV{MULLE_MAKE_VERSION}" VERSION_LESS 0.14.0)
+            string( REPLACE ":" ";" MULLE_SDK_PATH "${MULLE_SDK_PATH}")
+         endif()
       endif()
    endif()
 
@@ -70,7 +79,7 @@ if( NOT __ENVIRONMENT__CMAKE__)
 
    ###
    ### If you build DEBUG craftorder, but want RELEASE interspersed, so that
-   ### the debugger doesn't trace through too much fluff then set the
+   ### the debugger doesn't trace through too much fluff, then set the
    ### FALLBACK_BUILD_TYPE (for lack of a better name)
    ###
    ### TODO: reenable later
@@ -90,8 +99,8 @@ if( NOT __ENVIRONMENT__CMAKE__)
    # endif()
    message( STATUS "MULLE_SDK_PATH=${MULLE_SDK_PATH}")
 
-   foreach( TMP_SDK_PATH ${MULLE_SDK_PATH})
-      message( STATUS "TMP_SDK_PATH=${TMP_SDK_PATH}")
+   foreach( TMP_MULLE_SDK_PATH ${MULLE_SDK_PATH})
+      message( STATUS "TMP_MULLE_SDK_PATH=${TMP_MULLE_SDK_PATH}")
       #
       # Add build-type includes/libs first
       # Add Release as a fallback afterwards
@@ -103,15 +112,15 @@ if( NOT __ENVIRONMENT__CMAKE__)
       # We always prepend to "override" inherited values, so
       # the order seems reversed
       #
-      if( EXISTS "${TMP_SDK_PATH}")
+      if( EXISTS "${TMP_MULLE_SDK_PATH}")
 
-         set( TMP_PREFIX "${TMP_SDK_PATH}")
+         set( TMP_PREFIX "${TMP_MULLE_SDK_PATH}")
 
          #
          # add build type unconditionally if not Release
          #
          if( CMAKE_BUILD_TYPE)
-            if( NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+            if( NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
                set( TMP_CMAKE_INCLUDE_PATH
                   ${TMP_CMAKE_INCLUDE_PATH}
                   "${TMP_PREFIX}/${CMAKE_BUILD_TYPE}/include"
@@ -188,6 +197,12 @@ if( NOT __ENVIRONMENT__CMAKE__)
       ${CMAKE_FRAMEWORK_PATH}
    )
 
+   # these generate -isystem arguments, that add to the system search path
+   # if we use BEFORE we would need to reverse the order in TMP_INCLUDE_DIRS
+   include_directories( SYSTEM
+      ${TMP_INCLUDE_DIRS}
+   )
+
    message( STATUS "CMAKE_INCLUDE_PATH=\"${CMAKE_INCLUDE_PATH}\"" )
    message( STATUS "CMAKE_LIBRARY_PATH=\"${CMAKE_LIBRARY_PATH}\"" )
    message( STATUS "INCLUDE_DIRS=\"${TMP_INCLUDE_DIRS}\"" )
@@ -195,11 +210,7 @@ if( NOT __ENVIRONMENT__CMAKE__)
    # given from outside
    message( STATUS "CMAKE_PREFIX_PATH=\"${CMAKE_PREFIX_PATH}\"" )
    message( STATUS "CMAKE_INSTALL_PREFIX=\"${CMAKE_INSTALL_PREFIX}\"" )
-
-   # these generate -isystem arguments, that add to the system search path
-   include_directories( BEFORE SYSTEM
-      ${TMP_INCLUDE_DIRS}
-   )
+   # message( STATUS "TMP_INCLUDE_DIRS=\"${TMP_INCLUDE_DIRS}\"" )
 
    # not sure why cmake doesn't do this itself, we only add the custom
    # paths though
@@ -209,6 +220,14 @@ if( NOT __ENVIRONMENT__CMAKE__)
          add_definitions( -F "${TMP_FRAMEWORK_PATH}")
       endforeach()
       unset( TMP_FRAMEWORK_PATH)
+   endif()
+
+
+   #
+   # add "d" to library names on windows MSVC for debugging libraries
+   #
+   if( MSVC AND NOT CMAKE_DEBUG_POSTFIX AND "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+      set( CMAKE_DEBUG_POSTFIX "d")
    endif()
 
    unset( TMP_INCLUDE_DIRS)
@@ -221,3 +240,9 @@ if( NOT __ENVIRONMENT__CMAKE__)
    include( EnvironmentAux OPTIONAL)
 
 endif()
+
+
+# extension : mulle-sde/cmake
+# directory : project/all
+# template  : .../Environment.cmake
+# Suppress this comment with `export MULLE_SDE_GENERATE_FILE_COMMENTS=NO`

@@ -15,55 +15,12 @@
 //#define MOUSE_BUTTON_CALLBACK_DEBUG
 //#define RESIZE_CALLBACK_DEBUG
 //#define ABORT_ON_EVENT_OVERFLOW
-//#define HANDLE_EVENT_DEBUG
+#define RECEIVE_EVENT_DEBUG
 //#define PROCESS_EVENT_DEBUG
-//#define WINDOW_EVENT_CALLBACK_DEBUG
+#define WINDOW_EVENT_CALLBACK_DEBUG
 //#define FIRST_RESPONDER_DEBUG
 //#define TRACKING_DEBUG
-
-@implementation UIEvent( UIResponder)
-
-- (BOOL) isFirstResponderEvent
-{
-   return( NO);
-}
-
-@end 
-
-
-//
-// TODO: will need a menu event too, I suppose
-//
-@implementation UIUnicodeEvent( UIResponder)
-
-- (BOOL) isFirstResponderEvent
-{
-   return( YES);
-}
-
-@end
-
-
-@implementation UIKeyboardEvent( UIResponder)
-
-- (BOOL) isFirstResponderEvent
-{
-   return( YES);
-}
-
-@end 
-
-
-@implementation UIUserEvent( UIResponder)
-
-- (BOOL) isFirstResponderEvent
-{
-   return( YES);
-}
-
-@end 
-
-
+//#define EVENT_DEBUG
 
 
 @implementation UIMouseTrackingEvent
@@ -146,7 +103,8 @@
  */
 - (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event
 {
-   CGRect  frame;
+   CGRect               frame;
+   struct CGFrameInfo   info;
 
    event = (*_windowEventCallback)( self, event);
    if( ! event)
@@ -173,7 +131,7 @@
       return( nil);
 
    case UIWindowEventTypeResize :
-      // [self _setSize:MulleIntegerSizeGetSize( [(UIWindowResizeEvent *) event size])];
+      // [self _setSize:CGSizeMakeWithIntegerSize( [(UIWindowResizeEvent *) event size])];
       _isResizing = YES;
 
       [self setNeedsDisplayBit:~0];
@@ -184,7 +142,7 @@
    // but we always get a refresh afterwards, so don't do it twice
    // But how sure is that ?
    case UIWindowEventTypeMove :
-      // [self _setPosition:MulleIntegerPointGetPoint( [(UIWindowMoveEvent *) event origin])];
+      // [self _setPosition:CGPointMakeWithIntegerPoint( [(UIWindowMoveEvent *) event origin])];
       return( nil);
       // fall thru
 
@@ -201,19 +159,22 @@
          return( nil);
       }
 
+      @autoreleasepool
+      {
 #ifdef WINDOW_EVENT_CALLBACK_DEBUG
       MulleUILog( "%s short circuits refresh and swap",
                   UIWindowEventTypeUTF8String( [event windowEventType]));
 #endif
-      // immediately refresh framebuffer
-      [self setNeedsRefresh:NO];
-      [self refresh];
-      [self swapBuffers];
+//      // immediately refresh framebuffer
+//      [self setNeedsRefresh:NO];
+//      [self refresh];
+//      [self swapBuffersImmediately];
 
       // window thread may want to check if geometry has changed and
       // redraw if needed
-      [self wakeupWindowThread];
-
+         [self getFrameInfo:&info];
+         [self syncFrameInfo:&info];
+      }
       return( nil);
    }
 
@@ -336,7 +297,6 @@
    NSUInteger                            extent;
    struct mulle_pointerarrayenumerator   rover;
    UIView                                *view;
-
 
    bounds = [self bounds];
 
@@ -545,109 +505,8 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
                                      inDrag:inDrag];
 
    }
+
    return( event);
-}
-
-
-/*
- * Event handling of the window. Events undergo the following cycle
- * ----- [main thread]
- * glfw ->
- *    UIWindow C callback ->
- *       UIEvent alloc/reuse ->
- *          UIWindow queueEvent: ->
- * ----- [window thread]
- *             UIWindow pollEvents ->
- *                UIWindow handleEvent: ->
- *                   UIEvent release ->
- *                       UIEvent reuse/dealloc
- * -----
- */
-
-- (BOOL) willDiscardEvent:(UIEvent *) event
-{
-   return( YES);
-}
-
-
-- (BOOL) willDiscardOverflowEvent:(UIEvent *) event
-{
-   fprintf( stderr, "*** windows %p (%p) discards event due to queue overflow\n", self, self->_thread);
-#ifdef ABORT_ON_EVENT_OVERFLOW
-   abort();
-#endif
-   return( [self willDiscardEvent:event]);
-}
-
-
-- (BOOL) willDiscardPendingEvent:(UIEvent *) event
-{
-   return( [self willDiscardEvent:event]);
-}
-
-
-- (void) handleRetainedEvent:(UIEvent *) event
-{
-   assert( [NSThread mulleIsMainThread]);
-   assert( event);
-
-   //
-   // if this is a "bare" mainthread window handle the event immediately
-   // otherwise queue it up
-   //
-   if( ! _windowThread)
-   {
-       assert( _backingStore != UIWindowBackingStoreRetained);
-
-       [self handleEvent:[event autorelease]];
-       return;
-   }
-
-   //
-   // events that can not be queued will have to be discarded
-   //
-   if( ui_window_pointer_fifo_write( &_eventQueue, event))
-   {
-      if( [self willDiscardOverflowEvent:event]) // window can figure out something
-      {                                          // for super important events
-         [event autorelease];
-      }
-      return;
-   }
-
-   [self wakeupWindowThread];
-}
-
-
-//
-// Discard events queue for the window. This has to be called by the window
-// thread.
-//
-- (void) discardPendingEvents
-{
-   NSUInteger   old;
-
-   assert( [self isWindowThread]);
-
-   old = [_OSWindow discardEventsMask];
-   [_OSWindow setDiscardEventsMask:~0];  // discard all
-   {
-      UIEvent   *event;
-
-      @autoreleasepool
-      {
-         for(;;)
-         {
-            event = ui_window_pointer_fifo_read_barrier( &_eventQueue);
-            if( ! event)
-               break;
-
-            if( [self willDiscardPendingEvent:event]) // window can figure out something
-               [event autorelease];
-         }
-      }
-   }
-   [_OSWindow setDiscardEventsMask:old];
 }
 
 
@@ -696,7 +555,10 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
    UIEvent   *newEvent;
 
 #ifdef EVENT_DEBUG
-   fprintf( stderr, "%s %s\n", __PRETTY_FUNCTION__, (char *) [responder UTF8String]);
+# if ! defined( MOUSE_MOTION_CALLBACK_DEBUG)
+   if( [event eventType] != UIEventTypeMotion)
+# endif
+      MulleUILog( "%#@", responder);
 #endif
 
    while( responder)
@@ -705,17 +567,35 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
       //       UIViewController could also be the responder here
       if( responder != (id <UIResponder>) self)
       {
-         event = [responder handleEvent:event];
-         if( ! event)
+         newEvent = [responder handleEvent:event];
+         if( ! newEvent)
          {
 #if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
-            MulleUILog( "Responder %#@ consumed event", responder);
+# if ! defined( MOUSE_MOTION_CALLBACK_DEBUG)
+            if( [event eventType] != UIEventTypeMotion)
+# endif
+               MulleUILog( "Responder %#@ consumed event", responder);
 #endif
-            break;
+            return( newEvent);
          }
+
 #if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
-         MulleUILog( "Responder %#@ did not consume event, try next", responder);
+         if( newEvent != event)
+         {
+# if ! defined( MOUSE_MOTION_CALLBACK_DEBUG)
+            if( [event eventType] != UIEventTypeMotion)
+# endif
+               MulleUILog( "Responder %#@ changed event to %#@", responder, newEvent);
+         }
 #endif
+
+#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
+# if ! defined( MOUSE_MOTION_CALLBACK_DEBUG)
+         if( [event eventType] != UIEventTypeMotion)
+# endif
+            MulleUILog( "Responder %#@ did not consume event, try next", responder);
+#endif
+         event = newEvent;
       }
       responder = [responder nextResponder];
    }
@@ -723,8 +603,59 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
    return( event);
 }
 
+- (UIEvent *) receiveInputEvent:(UIInputEvent *) event
+{
+   CGPoint       location;
+   CGPoint       contentLocation;
+   UIView        *view;
+   UIView        *firstView;
+   UIInputEvent  *newEvent;
 
-- (UIEvent *) handleEvent:(UIEvent *) event
+// from UIView+CGGeometry
+   location        = [(UIInputEvent *) event locationInWindow];
+   contentLocation = [self contentLocationForLocation:location];
+#ifdef EVENT_DEBUG_VERBOSE
+# if ! defined( MOUSE_MOTION_CALLBACK_DEBUG)
+   if( [event eventType] != UIEventTypeMotion)
+# endif
+      MulleUILog( "translated: %s -> %s [c=%s]\n",
+                  CGPointUTF8String( location),
+                  CGPointUTF8String( contentLocation),
+                  CGRectUTF8String( [self contentRect]));
+#endif
+
+   /*
+    * Walk down UIView hierarchy. Let interactive UIViews that are
+    * below the mouse pointer get first crack at the event,
+    * if not consumed (or modified) pass downwards toward subviews.
+    */
+   firstView = [self firstUserInteractionEnabledViewAtPoint:contentLocation
+                                             withInputEvent:event];
+   for( view = firstView;
+        view;
+        view = [view nextUserInteractionEnabledViewAtPoint:[event locationInView:view]
+                                            withInputEvent:event])
+   {
+      newEvent = (UIInputEvent *) [view handleEvent:event];
+      if( ! newEvent)
+         return( newEvent);
+
+      event = newEvent;
+      if( ! [newEvent isInputEvent])
+         break;
+   }
+
+   //
+   // The first view that was hit will then be the start of 
+   // the responder chain, going up.
+   //
+   event = [self responder:firstView
+               handleEvent:event];
+   return( event);
+}
+
+
+- (UIEvent *) receiveEvent:(UIEvent *) event
 {
    CGRect                                rect;
    CGPoint                               point;
@@ -735,21 +666,25 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
    unsigned int                          n;
    BOOL                                  isDrag;
    id <UIResponder>                      firstResponder;
-   id <UIResponder>                      modalResponder;
    id <UIResponder>                      responder;
    struct CGWindowInfo                   windowInfo;
    NSUInteger                            eventType;
 
    assert( event);
 
-#ifdef HANDLE_EVENT_DEBUG
-# ifndef MOUSE_MOTION_CALLBACK_DEBUG
-   if( [event eventType] != UIEventTypeMotion)
-# endif
-      MulleUILog( "handle %#@ event", event);
-#endif
    eventType = [event eventType];
-   switch( [event eventType])
+
+#ifdef RECEIVE_EVENT_DEBUG
+# if ! defined( MOUSE_MOTION_CALLBACK_DEBUG)
+   if( eventType != UIEventTypeMotion)
+# endif
+   {
+      MulleUILog( nil);
+      MulleUILog( "receive %#@ event", event);
+   }
+#endif
+
+   switch( eventType)
    {
    case UIEventTypePresses :
 #ifdef DEBUG
@@ -759,6 +694,12 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
       break;
 
    case UIEventTypeTouches :
+      _inputState = [(UIInputEvent *) event inputState];
+
+      // TODO: if view supports mouseDragged; don't pass down touches unless
+      //       there are no follow up mouse motion events. Would need to
+      //       capture original event though..
+      //
       // the suppression delay can be changed by the responder later in
       // its event handler routine 
       if( [(UIMouseButtonEvent *) event action] == UIEventButtonActionDown)
@@ -769,6 +710,12 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
       break;
 
    case UIEventTypeMotion :
+      _inputState = [(UIInputEvent *) event inputState];
+
+      // TODO: filter out drag events only for views which implement mouseDragged: methods
+      //       or have a callback that makes them interested in these events (as Apple does)
+      //       That way the single button clicks are more responsive
+      //
       event = [self handleMouseMotionEvent:(UIMouseMotionEvent *) event];
 
       // this filters out drag events until some time has passed
@@ -776,6 +723,12 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
       if( [(UIMouseMotionEvent *) event buttonStates] && 
           _clickOrDrag._suppressStartTimestamp + _clickOrDrag._mouseMotionSuppressionDelay > [event timestamp])
       {
+#if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
+# if ! defined( MOUSE_MOTION_CALLBACK_DEBUG)
+         if( [event eventType] != UIEventTypeMotion)
+# endif
+            MulleUILog( "Filtered due to drag detection");
+#endif         
          return( nil); // 
       }
       break;
@@ -800,15 +753,13 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
    if( ! event)
    {
 #if defined( EVENT_DEBUG) || defined( FIRST_RESPONDER_DEBUG)
+# if ! defined( MOUSE_MOTION_CALLBACK_DEBUG)
+   if( [event eventType] != UIEventTypeMotion)
+# endif
       MulleUILog( "Window handled event itself");
 #endif
       return( event);
    }
-
-   // don't walk the chain for modalResponder ?
-   modalResponder = [self modalResponder];
-   event          = [self responder:modalResponder
-                        handleEvent:event]; 
 
 //   if( [event isKindOfClass:[UIMouseScrollEvent class]])
 //      [self dump];
@@ -816,45 +767,92 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
    // The first responder ... receives key events, motion events, 
    // and action messages, among others. (Mouse events and multitouch events 
    // first go to the view that is under the mouse pointer or finger)
-   if( [event isFirstResponderEvent])
-   {
-      firstResponder = [self firstResponder];
-      if( firstResponder != modalResponder)
-      {
-         event = [self responder:firstResponder
-                     handleEvent:event];
-      }
-   }
-
-   //
-   // pass down input events to the views
-   //
-   if( [event isInputEvent])
-   {
-      CGPoint   location;
-      CGPoint   contentLocation;
-      UIView    *view;
-
-   // from UIView+CGGeometry
-      location        = [(UIInputEvent *) event locationInWindow];
-      contentLocation = [self contentLocationForLocation:location];
-#ifdef EVENT_DEBUG_VERBOSE
-      MulleUILog( "translated: %s -> %s [c=%s]\n",
-                  CGPointUTF8String( location),
-                  CGPointUTF8String( contentLocation),
-                  CGRectUTF8String( [self contentRect]));
-#endif
-
-      // hit test should filter out hidden
-      view  = [self hitTest:contentLocation
-                  withEvent:event];
-      event = [self responder:view
+   firstResponder = [self firstResponder];
+   if( [firstResponder isFirstResponderEvent:event])
+      event = [self responder:firstResponder
                   handleEvent:event];
+
+   //
+   // pass down input events to the views, except mouseMotion
+   // TODO: make this configurable though
+   if( [event isInputEvent] && [event eventType] != UIEventTypeMotion)
+   {
+      event = [self receiveInputEvent:(UIInputEvent *) event];
    }
-   else
-      event = [self handleOtherEvent:event];
+
+   // UIResponder now does stuff for UIWindow
+   event = [self handleEvent:event];
 
    return( event);
+}
+
+
+/*
+ * Event handling of the window. Events undergo the following cycle
+ * ----- [main thread]
+ * glfw ->
+ *    UIWindow C callback ->
+ *       UIEvent alloc/reuse ->
+ *          UIWindow queueEvent: ->
+ * ----- [window thread]
+ *             UIWindow pollEvents ->
+ *                UIWindow handleEvent: ->
+ *                   UIEvent release ->
+ *                       UIEvent reuse/dealloc
+ * -----
+ */
+
+- (BOOL) willDiscardEvent:(UIEvent *) event
+{
+   return( YES);
+}
+
+
+- (BOOL) willDiscardOverflowEvent:(UIEvent *) event
+{
+   MulleUILog( "*** discard event due to queue overflow\n");
+#ifdef ABORT_ON_EVENT_OVERFLOW
+   abort();
+#endif
+   return( [self willDiscardEvent:event]);
+}
+
+
+- (BOOL) willDiscardPendingEvent:(UIEvent *) event
+{
+   return( [self willDiscardEvent:event]);
+}
+
+
+//
+// Discard events queue for the window. This has to be called by the window
+// thread.
+//
+- (void) discardPendingEvents
+{
+   NSUInteger   old;
+
+   assert( [self isWindowThread]);
+
+   old = [_OSWindow discardEventsMask];
+   [_OSWindow setDiscardEventsMask:~0];  // discard all
+   {
+      UIEvent   *event;
+
+      @autoreleasepool
+      {
+         for(;;)
+         {
+            event = ui_window_pointer_fifo_read_barrier( &_eventQueue);
+            if( ! event)
+               break;
+
+            if( [self willDiscardPendingEvent:event]) // window can figure out something
+               [event release];  // no need to autorelease or ?
+         }
+      }
+   }
+   [_OSWindow setDiscardEventsMask:old];
 }
 
 
@@ -862,15 +860,18 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
 // Execute all events in the queue until empty. This has to be called by the
 // Windows thread. Returns OR of eventType
 //
-- (NSUInteger) handleEventQueue
+- (NSUInteger) executeEventQueue
 {
-   UIEvent      *event;
-   NSUInteger   mask;
+   UIEvent             *event;
+   NSUInteger          mask;
+   NSAutoreleasePool   *pool;
 
    //
    // the event must be handled by the windowThread, if we have one
    //
    assert( ! _windowThread || [NSThread currentThread] == _windowThread);
+
+   pool = [NSAutoreleasePool new];
 
    mask = 0;
    for(;;)
@@ -879,25 +880,59 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
       if( ! event)
          break;
 
-      @autoreleasepool
-      {
-         [event autorelease];
-         // could time event time spent and then complain if it's too long
-         [self handleEvent:event];
-         mask |= [event eventType];
-      }
+      [event autorelease];
+      // could time event time spent and then complain if it's too long
+      [self receiveEvent:event];
+      mask |= [event eventType];
+
+      [pool mulleReleaseAllObjects];
    }
+   [pool release];
+
    return( mask);
+}
+
+
+- (void) receiveRetainedEvent:(UIEvent *) event
+{
+   assert( [NSThread mulleIsMainThread]);
+   assert( event);
+
+   //
+   // if this is a "bare" mainthread window handle the event immediately
+   // otherwise queue it up
+   //
+   if( ! _windowThread)
+   {
+       assert( _backingStore != UIWindowBackingStoreRetained);
+
+       [self receiveEvent:[event autorelease]];
+       return;
+   }
+
+   //
+   // events that can not be queued will have to be discarded
+   //
+   if( ui_window_pointer_fifo_write( &_eventQueue, event))
+   {
+      if( [self willDiscardOverflowEvent:event]) // window can figure out something
+      {                                          // for super important events
+         [event release]; // don't autorelease, we may not be in a releasepool
+      }
+      return;
+   }
+
+   [self wakeupWindowThread];
 }
 
 
 - (void) sendRetainedEvent:(UIEvent *) event
 {
-#ifdef WINDOW_EVENT_CALLBACK_DEBUG
+#ifdef EVENT_DEBUG
    MulleUILog( "send %@", event);
 #endif
 
-   [self handleRetainedEvent:event];
+   [self receiveRetainedEvent:event];
    [self wakeupWindowThread];
 }
 
@@ -908,7 +943,7 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
 
    event = [[UIWindowFramebufferGeometryEvent alloc] initWithWindowInfo:info];
 
-   // TODO: sendRetainedEvent is superflous no ? As handleRetainedEvent will
+   // TODO: sendRetainedEvent is superflous no ? As receiveRetainedEvent will
    // call wakeupWindowThread if needed
    [self sendRetainedEvent:event];
 }

@@ -2,6 +2,7 @@ cmake_minimum_required( VERSION 3.15)
 
 project( demos C)
 
+set( MULLE_TRACE_INCLUDE ON)
 #
 # Turn an "Executable" into a "Library"
 # * mulle-sde test init
@@ -38,6 +39,10 @@ foreach( MAIN_SOURCE ${SOURCES})
    include( Executable)
    include( InstallExecutable)
    include( FinalOutput OPTIONAL)
+
+   message( STATUS "ALL_LOAD_OS_SPECIFIC_LIBRARIES=\"${ALL_LOAD_OS_SPECIFIC_LIBRARIES}\"")
+   message( STATUS "FORCE_ALL_LOAD_OS_SPECIFIC_LIBRARIES=\"${FORCE_ALL_LOAD_OS_SPECIFIC_LIBRARIES}\"")
+
 # only for Executable
    include( Motd OPTIONAL)
 endforeach()

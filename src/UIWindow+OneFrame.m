@@ -5,6 +5,7 @@
 #import "import-private.h"
 
 #import "UIWindow+Frame.h"
+#import "UIWindow+InvocationQueue.h"
 #import "UIWindow+Thread.h"
 #import "UIWindow+NSTimer.h"
 #import "UIWindow+UIEvent.h"
@@ -76,8 +77,10 @@
       if( isMainThread)
          [UIEvent os_waitEventsWithTimeout:diff];
 
-      // mask |= [self handleTimerQueue];
-      mask |= [self handleEventQueue];
+      [self pollInvocationQueues];
+
+      // mask |= [self executeTimerQueue];
+      mask |= [self executeEventQueue];
       if( mask && returnsEarly)
       {
 #ifdef PROCESS_EVENT_DEBUG
@@ -147,7 +150,7 @@
    // UIWindowFrameRateUnsynced: timout == 0.0  returnsEarly: YES
    // Else timeout: returnsEarly: NO
    if( frameRate == UIWindowFrameRateSynced)
-      timeout = [[[UIApplication sharedInstance] primaryScreen] refreshRate];
+      timeout = [[_application primaryScreen] refreshRate];
    else
       timeout = fabs( frameRate); // deal with softframerate
    return( [self waitForEventsUntil:now + timeout
@@ -209,9 +212,9 @@
    [self getFrameInfo:&frameInfo];
 
    rect  = MulleIntegerRectMake( 0,
-                             0,
-                             frameInfo.window.framebufferSize.width,
-                             frameInfo.window.framebufferSize.height);
+                                 0,
+                                 frameInfo.window.framebufferSize.width,
+                                 frameInfo.window.framebufferSize.height);
    bitmap = [context readFramebufferBitmap:rect
                      framebufferBitmapType:CGFramebufferRGBABytes
                                  allocator:NULL];
@@ -232,13 +235,12 @@
    [self getFrameInfo:&frameInfo];  // retrieve newest geometry
    [self renderWithFrameInfo:&frameInfo
                   displayBits:displayBits];
-
    [self setNeedsRefresh:NO];
    [self swapBuffers];
 }
 
 
-- (BOOL) processOneFrame
+- (BOOL) processOneFrame:(CGFloat) frameRate
 {
    struct UIOSWindowInfo   windowInfo;
 
@@ -250,7 +252,7 @@
       // as the context has been detached from this thread
       [self setupQuadtree];
       [_OSWindow getOSWindowInfo:&windowInfo];
-      [self eventHandlingWithFrameRate:UIOSWindowInfoGetSlowestFrameRate( &windowInfo)];
+      [self eventHandlingWithFrameRate:frameRate];
       [self writeOSWindowPropertyChangesIfNeeded];
    }
 

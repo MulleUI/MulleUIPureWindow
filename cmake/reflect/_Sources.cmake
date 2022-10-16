@@ -17,10 +17,12 @@ src/UIPasteboard.m
 src/UIView+CAAnimation.m
 src/UIView+RenderQueue.m
 src/UIView+Render.m
+src/UIView+UIResponderSearch.m
 src/UIView+UIResponder.m
 src/UIView+UIWindow.m
 src/UIWindow+CGGeometry.m
 src/UIWindow+Frame.m
+src/UIWindow+InvocationQueue.m
 src/UIWindow+NSTimer.m
 src/UIWindow+OneFrame.m
 src/UIWindow+Render.m

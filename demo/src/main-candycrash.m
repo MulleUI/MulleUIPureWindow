@@ -69,7 +69,7 @@ static id    balls[ numBalls];
 //      _path.add(new Point());
       rad                  = CAAngleDegreesToRadians( 360.0 / _numSegment * i);
       x                    = CAPolarPointMake( 1.0f, rad);
-      _sidePoints[ i]      = CAPolarPointGetPoint( x);
+      _sidePoints[ i]      = CGPointMakeWithPolarPoint( x);
    }
    return( self);
 }
@@ -130,7 +130,7 @@ static id    balls[ numBalls];
    {
       tp   = [self getSidePoint:i];
       bLen = [b getBoundOffset:tp];
-      td   = CGPointGetDistanceToPoint( tp, [b point]);
+      td   = CGPointDistanceToPoint( tp, [b point]);
       if(td < bLen)
       {
          _boundOffsetBuff[ i] -= (bLen - td) / 2;
@@ -155,7 +155,7 @@ static id    balls[ numBalls];
    CAPolarPoint   direc;
    CGPoint        diff;
 
-   dist = CGPointGetDistanceToPoint( _point, [b point]);
+   dist = CGPointDistanceToPoint( _point, [b point]);
    assert( dist >= 0.0);
    if( (dist < _radius + [b radius]) && (dist != 0.0))
    {
@@ -350,8 +350,7 @@ int   main( int argc, char *argv[])
 
       // If alpha is 0.0 balls lose contour ?
       // If color is white, nothing is shown
-      [window setBackgroundColor:CGColorMakeWithRGBA( 0.0, 0.0, 0.0, 1.0)];
-
+      [window setBackgroundColor:CGColorMakeBlack()];
       [window setFrameRateHz:60.0];
 
       setupSceneInView( [window contentPlane]);

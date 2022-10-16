@@ -5,6 +5,9 @@
 #import "import.h"
 
 
+struct RenderQueueContext;
+
+
 @interface UIView( RenderQueue)
 
 // all layers (are placed into the render queue, the layers get their
@@ -12,6 +15,11 @@
 - (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue;
 
 - (void) dumpRenderQueue:(struct mulle_pointerarray *) renderQueue;
+
+// Possibly a good time to stuff values into the CALayer
+// You must call super or everything breaks 
+- (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue
+                   context:(struct RenderQueueContext *) ctx;
 
 @end
 
