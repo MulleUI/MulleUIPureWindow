@@ -233,7 +233,6 @@
    struct UIOSWindowInfo  windowInfo;
    mulle_absolutetime_t   now;
    mulle_relativetime_t   remainingFrameTime;
-   double                 frameRate;
    NSAutoreleasePool      *pool;
    
    thread = [NSThread currentThread];

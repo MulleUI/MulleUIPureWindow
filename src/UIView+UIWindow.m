@@ -55,8 +55,6 @@
 
 - (CGFloat) pixelsPerInchOfCurrentScreen
 {
-   UIApplication         *app;
-   UIWindow              *window;
    id <UIScreen>         screen;
    struct UIScreenInfo   info;
 
@@ -100,7 +98,7 @@
 
 - (void) removeTrackingArea:(UITrackingArea *) item
 {
-   UIWindow   *window;
+   // UIWindow   *window;
    uintptr_t  index;
 
    index = mulle_pointerarray_find( &_trackingAreas, item);
@@ -120,7 +118,7 @@
 
 - (void) removeAllTrackingAreas
 {
-   UIWindow   *window;
+   // UIWindow   *window;
 
    mulle_pointerarray_autorelease_all( &_trackingAreas);
    mulle_pointerarray_reset( &_trackingAreas);

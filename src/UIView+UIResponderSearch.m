@@ -222,10 +222,10 @@ static void  UIResponderSearchAddView( struct UIResponderSearch *p,
    // if best is not really best, try to actually make best the worst
    //
    bestIsWorst = NO;
-   if( isWrongDirection( bestY) || isSameLevel( bestY) && isWrongDirection( bestX))
+   if( isWrongDirection( bestY) || (isSameLevel( bestY) && isWrongDirection( bestX)))
    {  
       bestIsWorst = YES;  
-      if( isWorse( y, bestY) || isSame( y, bestY) && isWorse( x, bestX))
+      if( isWorse( y, bestY) || (isSame( y, bestY) && isWorse( x, bestX)))
       {
          p->best            = view;
          p->bestScreenFrame = screenFrame;  

@@ -46,7 +46,6 @@
                      returnsEarly:(BOOL) returnsEarly
 {
    struct timespec        delay;
-   mulle_absolutetime_t   then;
    NSUInteger             mask;
    mulle_absolutetime_t   now;
    mulle_relativetime_t   diff;
@@ -162,7 +161,6 @@
 - (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate
 {
    mulle_absolutetime_t   timestamp;
-   NSUInteger             eventTypes;
    mulle_relativetime_t   usedFrameRate;
 
    assert( [NSThread mulleIsMainThread]);
@@ -189,8 +187,8 @@
 #ifdef PROCESS_EVENT_DEBUG
       fprintf( stderr, "processEvents frameRate: %.4f -> %.4f\n", frameRate, usedFrameRate);
 #endif
-      eventTypes = [self processEvents:timestamp
-                             frameRate:usedFrameRate];
+      [self processEvents:timestamp
+                frameRate:usedFrameRate];
 
       _lastDidProcessEventsTimestamp = mulle_absolutetime_now();
    }

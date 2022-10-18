@@ -69,13 +69,9 @@
 
 - (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now
 {
-   BOOL                    frameRateLimiter;
-   BOOL                    frameTimeReached;
-   BOOL                    needsDisplay;
    BOOL                    needsRefresh;
    double                  fastestFrameRate;
    double                  slowestFrameRate;
-   mulle_absolutetime_t    lastFramebufferSwapTimestamp;
    mulle_relativetime_t    remainingFrameTime;
    NSUInteger              displayBits;
    struct CGFrameInfo      frameInfo;

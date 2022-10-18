@@ -47,13 +47,8 @@
                             frameStatistics:(struct UIWindowFrameStatistics *) stats
                            frameRateLimiter:(BOOL) frameRateLimiter
 {
-   mulle_relativetime_t   diff;
-   mulle_relativetime_t   elapsed;
-   mulle_relativetime_t   avgElapsed;
-   BOOL                   frameTimeReached;
    mulle_relativetime_t   remainingFrameTime;
    mulle_relativetime_t   rate;
-   unsigned int           i;
    NSUInteger             displayBits;
 
    // first run always draw
@@ -107,7 +102,7 @@
 
 - (id <UIGraphicsContext>) activateWindowGraphicsContext
 {
-   Class        osGraphicsContextClass;
+   Class        cls;
    NSUInteger   options;
 
 #ifdef SWAP_DEBUG
@@ -118,13 +113,14 @@
 
    if( ! _context)
    {
-      osGraphicsContextClass = [[self class] osGraphicsContextClass];
+      cls = [[self class] osGraphicsContextClass];
+
       options  = _styleMask & UIWindowStyleEdgeAntialias  ? UIGraphicsEdgeAntialiasing : 0;
       options |= _styleMask & UIWindowStyleStencilStrokes ? UIGraphicsUseStencilStrokes : 0;
 
-      _context = [[CGContext alloc] initWithBackend:[_OSWindow backend]
-                                            shareID:[_OSWindow shareID]
-                                            options:options];       
+      _context = [[cls alloc] initWithBackend:[_OSWindow backend]
+                                      shareID:[_OSWindow shareID]
+                                      options:options];       
       [_context setOSWindow:_OSWindow];
 #ifdef SWAP_DEBUG
       MulleUILog( "context %#@ created for OSWindow %#@", _context, _OSWindow);
@@ -139,9 +135,8 @@
 // TODO: memo, maybe the context triggers os_activateGraphicsContext ?
 - (id <UIGraphicsContext>) activateOffscreenGraphicsContext
 {
-   id <UIGraphicsContext>   context;
-   Class                    cls;
-   NSUInteger               options;
+   Class        cls;
+   NSUInteger   options;
 
    // take renderlock here, relinquish later when wating for events
    // or when someone closes the window
@@ -155,9 +150,9 @@
       options  = _offscreenStyleMask & UIWindowStyleEdgeAntialias  ? UIGraphicsEdgeAntialiasing : 0;
       options |= _offscreenStyleMask & UIWindowStyleStencilStrokes ? UIGraphicsUseStencilStrokes : 0;
 
-      _offscreenContext = [[CGContext alloc] initWithBackend:[_offscreenOSWindow backend]
-                                                     shareID:[_offscreenOSWindow shareID]
-                                                     options:options]; 
+      _offscreenContext = [[cls alloc] initWithBackend:[_offscreenOSWindow backend]
+                                               shareID:[_offscreenOSWindow shareID]
+                                              options:options]; 
       [_offscreenContext setRendersOffScreen:YES];
       [_context setOSWindow:_offscreenOSWindow];
 #ifdef SWAP_DEBUG
@@ -290,9 +285,8 @@
 
 - (void) changeSwapIntervalIfNeeded
 {
-   NSUInteger               swapInterval;
-   BOOL                     changeSwapInterval;
-   mulle_absolutetime_t     now;
+   NSUInteger   swapInterval;
+   BOOL         changeSwapInterval;
 
    changeSwapInterval = NO;
 
