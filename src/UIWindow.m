@@ -92,6 +92,7 @@ static void   MulleObjCAtomicPointerSetBit( mulle_atomic_pointer_t *pointer, uin
 }
 
 
+#if 0
 static void   MulleObjCAtomicPointerClearBit( mulle_atomic_pointer_t *pointer, uintptr_t bit)
 {
    uintptr_t   old;
@@ -106,6 +107,7 @@ static void   MulleObjCAtomicPointerClearBit( mulle_atomic_pointer_t *pointer, u
    }
    while( ! _mulle_atomic_pointer_cas( pointer, (void *) value, (void *) old));
 }
+#endif
 
 
 @implementation UIWindow
@@ -134,7 +136,6 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 {
    NSUInteger   styleMask;
    CGRect       rect;
-   BOOL         change;
    NSUInteger   autoresizingMask;
    UIWindow     *window;
 
@@ -289,8 +290,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (instancetype) _initWithFrame:(CGRect) frame
 {
-   NSUInteger   i;
-   char         *s;
+   char   *s;
 
    // UIView init
    [super initWithFrame:frame];
@@ -346,8 +346,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
                 offscreenOSWindow:(id <UIOSWindow>) osOffscreenWindow
 {
 //CGFloat    primaryMonitorPPI;
-   mulle_absolutetime_t   wait_at_most_until;
-   struct CGFrameInfo     info;
+   struct CGFrameInfo   info;
 
    if( ! osWindow)
    {
@@ -406,7 +405,6 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    id <UIOSWindow>   window;
    id <UIOSWindow>   offscreenWindow;
    NSUInteger        hints;
-   int               core;
    Class             osWindowClass;
    Class             Self;
 
@@ -488,9 +486,6 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (void) finalize
 {
-   CGContext        *context;
-   NSTimeInterval   timeout;
-
    // remove events from window thread and clear display flag
    // this is better than not doing it, but no guarantee that an event isn't
    // processed in the background

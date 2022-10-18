@@ -103,7 +103,6 @@
  */
 - (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event
 {
-   CGRect               frame;
    struct CGFrameInfo   info;
 
    event = (*_windowEventCallback)( self, event);
@@ -220,10 +219,9 @@
 
 - (void) invalidateTrackingAreasForView:(UIView *) view
 {
-   UITrackingArea                        *area;
-   struct mulle_pointerarray             areas;
-   struct mulle_pointerarrayenumerator   rover;
-   unsigned int                          n;
+   UITrackingArea              *area;
+   struct mulle_pointerarray   areas;
+   unsigned int                n;
 
    if( ! view)
       return;
@@ -290,9 +288,7 @@
 
 - (void) setupQuadtree
 {
-   CGRect                                rect;
    CGRect                                bounds;
-   NSUInteger                            i;
    NSUInteger                            level;
    NSUInteger                            extent;
    struct mulle_pointerarrayenumerator   rover;
@@ -358,19 +354,13 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
 - (void) handleTrackingAreaForInputEvent:(UIInputEvent *) event
                                   inDrag:(BOOL) inDrag
 {
-   CGRect                                rect;
    CGPoint                               point;
    struct mulle_pointerarray             areas;
-   struct mulle_pointerarray             views;
    struct mulle_pointerarray             remaining;
-   struct mulle_pointerarrayenumerator   rover;
-   UIView                                *view;
    UITrackingArea                        *area;
    unsigned int                          n;
-   BOOL                                  isDrag;
    struct mulle_allocator                *allocator;
    UICursor                              *cursor;
-   UICursor                              *areaCursor;
    NSUInteger                            oldCursorGenerationCount;
    NSUInteger                            options;
    void                                  *quadtree;
@@ -657,18 +647,8 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
 
 - (UIEvent *) receiveEvent:(UIEvent *) event
 {
-   CGRect                                rect;
-   CGPoint                               point;
-   struct mulle_pointerarray             views;
-   struct mulle_pointerarray             remaining;
-   struct mulle_pointerarrayenumerator   rover;
-   UIView                                *view;
-   unsigned int                          n;
-   BOOL                                  isDrag;
-   id <UIResponder>                      firstResponder;
-   id <UIResponder>                      responder;
-   struct CGWindowInfo                   windowInfo;
-   NSUInteger                            eventType;
+   id <UIResponder>   firstResponder;
+   NSUInteger         eventType;
 
    assert( event);
 
