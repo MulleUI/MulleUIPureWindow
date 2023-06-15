@@ -69,12 +69,12 @@ static void   draw( CALayer *layer, CGContext *context)
    canvas = [layer canvas];
 
    mouse  = [context mouseLocation];
-   state  = [context mouseButtonStates];
+   state  = [context buttonStates];
 
 //  background(237, 34, 93);
 
    [context fillRect:canvas
-               color:CGColorMakeWithRGBBytes( 237, 34, 93)];
+            hexColor:CGHexColorMakeWithColor( CGColorMakeWithRGBBytes( 237, 34, 93))];
 
    // Add the new values to the end of the array
    //  xvals[width - 1] = mouseX;
@@ -90,7 +90,7 @@ static void   draw( CALayer *layer, CGContext *context)
    //   noStroke();
    //   rect(0, height / 3, width, height / 3 + 1);
    [context fillRect:CGRectMake( 0, canvas.size.height / 3.0, canvas.size.width, canvas.size.height / 3 + 1)
-               color:CGColorMakeWithGrayByte( 255)];
+            hexColor:CGHexColorMakeWithColor( CGColorMakeWithGrayByte( 255))];
 
    for( i = 1; i < (unsigned int) canvas.size.width; i++) 
    {
@@ -131,15 +131,15 @@ static void   draw( CALayer *layer, CGContext *context)
    } 
 
 #ifndef ORIGINAL   
-   [context drawPath:path[ 0]
-         strokeWidth:1.5
-               color:CGColorMakeWithGrayByte( 255)];
-   [context drawPath:path[ 1]
-         strokeWidth:1.5
-               color:CGColorMakeWithGrayByte( 0)];
-   [context drawPath:path[ 2]
-         strokeWidth:1.5
-               color:CGColorMakeWithGrayByte( 255)];
+   [context strokePath:path[ 0]
+                 width:1.5
+              hexColor:CGHexColorMakeWithColor( CGColorMakeWithGrayByte( 255))];
+   [context strokePath:path[ 1]
+                 width:1.5
+              hexColor:CGHexColorMakeWithColor( CGColorMakeWithGrayByte( 0))];
+   [context strokePath:path[ 2]
+                 width:1.5
+              hexColor:CGHexColorMakeWithColor( CGColorMakeWithGrayByte( 255))];
    CGPathDestroy( path[ 0]);
    CGPathDestroy( path[ 1]);
    CGPathDestroy( path[ 2]);

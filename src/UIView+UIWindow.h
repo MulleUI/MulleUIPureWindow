@@ -16,22 +16,12 @@
 - (UIWindowPlane *) windowPlane;
 - (CGFloat) pixelsPerInchOfCurrentScreen;
 
-- (void) addTrackingArea:(UITrackingArea *) item
-                toWindow:(UIWindow *) window;
-
-// this convenience will use (UIWindow *) [self window] as the target window and will
-// set [item owner] to self, if not already set
-- (void) addTrackingArea:(UITrackingArea *) area;
-
-- (void) removeTrackingArea:(UITrackingArea *) item;
-- (void) removeAllTrackingAreas;
-
-// default implementation will update tracking areas with 
-// option UITrackingInVisibleRect set and will set rect to zero
-// for all others!
-- (void) updateTrackingAreas;
-
 - (void) setNeedsDisplay;
+
+// calls sizeThatFits:context: with the renderContext of the window,
+// this will abort, if we are not in render/layout phase but the view is
+// part of a window. If there is no window, context will be nil... good luck
+- (CGSize) sizeThatFits:(CGSize) size;
 
 
 // this flag is forwarded to the enclosing UIWindow

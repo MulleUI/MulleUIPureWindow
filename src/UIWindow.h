@@ -8,6 +8,8 @@
 // In UIWindow a "frame" usually does, "layout", "animation", "rendering" in
 // this sequence.
 //
+
+
 struct CGFrameInfo;
 
 typedef UIView   UIWindowPlane;
@@ -211,7 +213,7 @@ struct MulleClickDragDifferentiator
 //
 // UIWindow will forward to _OSWindow, so it implements UIOSWindow
 // protocol UIWindow is implemented by +Frame.h
-@interface UIWindow : UIView
+@interface UIWindow : UIView <MulleUIResourceMap>
 {
 // these ivars are mainthread only
 
@@ -227,6 +229,7 @@ struct MulleClickDragDifferentiator
    // need to setNeedsDisplay to get the renderer out of the lock and start
    // the render. The _contextLock still needs to be observed when
    // attempting to modify the view hierarchy ?
+   BOOL                            _isLayouting;
    BOOL                            _isResizing;       // obsolete yet in use (?) in OneFrame
    BOOL                            _shouldClose;      // obsolete yet in use (?) in OneFrame
    NSInteger                       _oldSwapInterval;
@@ -247,6 +250,7 @@ struct MulleClickDragDifferentiator
    struct mulle_pointerarray       _enteredAreas;     // areas with mouseEntered: sent
    struct mulle_pointerarray       _delegateViews;    // views with need willRender: sent
    struct mulle_map                _invocationQueueMap;  
+   struct MulleUIResourceStorage   _resourceStorage;
 
    CAAnimator                      *_preLayoutAnimator;
    CAAnimator                      *_postLayoutAnimator;
@@ -294,6 +298,11 @@ struct MulleClickDragDifferentiator
 @protected
    struct UIWindowFrameStatistics  _windowThreadStatistics;
 
+@private
+   // each view, that gets a -layout call can add itself here, and then
+   // check that -layout isn't called twice during a layout
+   struct mulle__pointerset        _layoutedViews;    // views with need willRender: sent
+
 // these values are only accessible to the main thread
 @private
    mulle_absolutetime_t            _lastDidProcessEventsTimestamp;
@@ -305,9 +314,13 @@ struct MulleClickDragDifferentiator
    struct CGWindowInfo             _currentWindowInfo;
 }
 
-@property( retain, readonly) id <UIOSWindow>       OSWindow;
+@property( retain, readonly) id <UIOSWindow>         OSWindow;
 
-@property( assign) NSUInteger                      debugEnabled;
+// only available during rendering use for layout code if you need
+// to do font measurements, will abort if nil
+@property( assign, readonly) id <UIGraphicsContext>  renderGraphicsContext;
+
+@property( assign) BOOL                            debugEnabled;
 
 @property( retain) id                              userInfo;
 // TODO: pasteboard is a global resource and is on Application ?
@@ -324,7 +337,7 @@ struct MulleClickDragDifferentiator
 
 @property( assign, readonly) struct UIInputState   inputState;
 @property( dynamic, assign, readonly) CGPoint      mouseLocation;
-@property( dynamic, assign, readonly) NSUInteger   mouseButtonStates;
+@property( dynamic, assign, readonly) NSUInteger   buttonStates;
 @property( dynamic, assign, readonly) NSUInteger   keyModifiers;
 
 // used for MulleUIPerformance
@@ -348,7 +361,7 @@ struct MulleClickDragDifferentiator
 // CGContentModeCenterPoint can be better for non-resizable content
 // Accessed my main thread, therefore both are lock protected
 @property( assign) CGContentMode                    refreshContentMode;
-@property( assign) CGColor                          backgroundColor;
+@property( assign) NSUInteger                       backgroundHexColor;
 
 // what's the difference to alpha ? An alpha value of 1.0 does not mean
 // that all pixels are opaque. This guarantees it. The main benefit of
@@ -356,6 +369,8 @@ struct MulleClickDragDifferentiator
 // color bits, which might save bandwidth
 @property( getter=isOpaque) BOOL                    opaque;
 
+// context switches are expensive, try to minimize with this setting
+@property( assign) BOOL                             keepOSGraphicsContext;
 
 // Rendercallbacks. If the renderer is in its own thread, then all these
 //                  callbacks will appear on the render thread. This thread
@@ -363,9 +378,9 @@ struct MulleClickDragDifferentiator
 //
 
 // This is the "master" callback, if you override this, none of the other
-// render callbacks and delegate methods will be invoked. So in general
-// keep it as UIWindowDefaultRawFrameCallback. DisplayBits are 
-// UIWindowNeedsRedraw et.al.
+// render callbacks and delegate methods will be invoked (except 
+// didRenderFrameCallback). So in general keep it as 
+// UIWindowDefaultRawFrameCallback. DisplayBits are UIWindowNeedsRedraw et.al.
 // Returns YES, if any animations were run.
 //
 // Will be usually either  or 
@@ -375,8 +390,14 @@ struct MulleClickDragDifferentiator
                                       struct CGFrameInfo *frameInfo,
                                       NSUInteger displayBits);
 
+// will be called immediately after rawFrameCallback, before swapBuffers
+@property BOOL   (*didRenderFrameCallback)( UIWindow *window,
+                                            id <UIGraphicsContext> context,
+                                            struct CGFrameInfo *frameInfo,
+                                            BOOL didAnimate);
+
 //
-// If this callback is set, then UIViews and CAAnimatons are ignored and this 
+// If this callback is set, then UIViews and CAAnimations are ignored and this 
 // callback will be used for drawing, the context is already setup for 
 // rendering.  UIWindowFrameDelegate methods will be sent but other callbacks
 // won't. Return '1' if you are animating and need to break out of async for 
@@ -439,6 +460,13 @@ struct MulleClickDragDifferentiator
                                      id <UIGraphicsContext> context,
                                      struct CGFrameInfo *info);
 
+//
+// This can be useful to setup stuff for the next frame. You can't draw here
+// though.
+//
+@property void   (*didSwapBuffersCallback)( UIWindow *window);
+
+
 // low level event taps, generally not used. Get UIEvents in your UIView
 // subclass (otherwise 50% of MulleUI is not really used)
 @property UIWindowEvent  *(*windowEventCallback)( UIWindow *window, UIWindowEvent *event);
@@ -466,10 +494,17 @@ struct MulleClickDragDifferentiator
 // if any axis is < 32 in size, 32 will be used
 //
 + (instancetype) windowWithView:(UIView *) view
+                titleUTF8String:(char *) title               
+                      styleMask:(NSUInteger) styleMask;
++ (instancetype) windowWithView:(UIView *) view
                  titleUTF8String:(char *) title;
 
 // even more convenient, even less configurable, for even more
 // convenience checkout UIApplication+UIWindow
++ (instancetype) windowWithLayer:(id <UILayer>) layer
+                 titleUTF8String:(char *) title
+                       styleMask:(NSUInteger) styleMask;
+                                              
 + (instancetype) windowWithLayer:(id <UILayer>) layer
                  titleUTF8String:(char *) title;
 
@@ -515,7 +550,6 @@ struct MulleClickDragDifferentiator
 // this flag means, that the there are animations running
 - (void) setNeedsAnimation;
 - (BOOL) needsAnimation;
-
 
 // this flag means, that the UIView hierarchy needs to be drawn into
 // the framebuffer

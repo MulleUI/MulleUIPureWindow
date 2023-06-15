@@ -5,7 +5,12 @@
 #import "import.h"
 
 
-struct RenderQueueContext;
+struct UIRenderQueueContext
+{
+   CGAffineTransform   xform;
+   CGRect              clipRect;
+   CGFloat             alpha;
+};
 
 
 @interface UIView( RenderQueue)
@@ -19,7 +24,7 @@ struct RenderQueueContext;
 // Possibly a good time to stuff values into the CALayer
 // You must call super or everything breaks 
 - (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue
-                   context:(struct RenderQueueContext *) ctx;
+                   context:(struct UIRenderQueueContext *) ctx;
 
 @end
 

@@ -94,6 +94,48 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 }
 
 
+- (void) forgetImplicitAnimations
+{
+   id   manager;
+
+   if( ! _snapshot)
+      return;
+
+   // this is called frequently so use C
+   manager = CATransactionGetCurrentTransaction();
+   [manager removeAnimatableObject:self];   
+
+   [_snapshot autorelease];
+   _snapshot = nil;
+}
+
+
+- (void) forgetImplicitAnimations:(UIViewForgetImplicitAnimationsMode) mode
+{
+   id <UILayer>   layer;
+   UIView         *view;
+
+   if( ! (mode & UIViewForgetImplicitAnimationsSkipSelf))
+      [self forgetImplicitAnimations];
+
+   if( ! (mode & UIViewForgetImplicitAnimationsSkipLayers))
+   {
+      [_mainLayer forgetImplicitAnimations];
+      mulle_pointerarray_for( &_layers, layer)
+      {
+         [layer forgetImplicitAnimations];
+      }
+   }
+
+   if( ! (mode & UIViewForgetImplicitAnimationsSkipSubviews))
+   {
+      mulle_pointerarray_for( &_subviews, view)
+      {
+         [view forgetImplicitAnimations:mode & ~UIViewForgetImplicitAnimationsSkipSelf];
+      }
+   }
+}
+
 
 + (void) beginAnimations:(char *) animationID
                  context:(id) context
@@ -102,6 +144,7 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 
    transaction = [CATransaction new];
 
+   // this calls CATransactionSetCurrentTransaction
    [transaction begin];
 
    [transaction setAnimationID:animationID];
@@ -124,7 +167,6 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 
    return( group);
 }
-
 
 
 + (BOOL) areAnimationsEnabled
@@ -205,7 +247,6 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 }
 
 
-
 //
 + (mulle_relativetime_t) animationDelay
 {
@@ -225,7 +266,6 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
    assert( transaction);
    [transaction setAnimationDelay:delay];
 }
-
 
 
 + (mulle_relativetime_t) animationDuration

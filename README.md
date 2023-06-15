@@ -27,5 +27,6 @@ called to provide the rectangles.
 ![Overview](overview.dot.svg)
 
 
-MulleUIWindow is based on [MulleObjCLockFoundation](//github.com/MulleFoundation/MulleObjCFoundation). Foundation datatypes like `NSString` are not available
-through MulleUIWindow.
+MulleUIWindow is based on [MulleObjCLockFoundation](//github.com/MulleFoundation/MulleObjCFoundation). 
+Foundation datatype methods (e.g. `setDebugName:(NSString *)` are added by 
+[MulleUIFoundation](//github.com/MulleUI/MulleUIFoundation).

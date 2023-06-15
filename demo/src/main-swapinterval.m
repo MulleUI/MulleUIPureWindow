@@ -87,13 +87,14 @@ static void   drawColorwheel(NVGcontext* vg, float x, float y, float w, float h,
 }
 
 
-static void  drawStuff( CALayer *layer, CGContext *context)
+static void  drawStuff( CALayer *layer, void *_context)
 {
-   CGFloat   diameter;
-   CGRect    canvas;
-   CGRect    rect;
-   CGPoint   a;
-   CGPoint   b;
+   CGContext  *context = _context;
+   CGFloat    diameter;
+   CGRect     canvas;
+   CGRect     rect;
+   CGPoint    a;
+   CGPoint    b;
 
    canvas      = [layer canvas];
    rect        = UIEdgeInsetsInsetRect( canvas, UIEdgeInsetsMake( 50, 50, 50, 50));

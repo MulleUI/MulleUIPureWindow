@@ -10,6 +10,15 @@ typedef NS_ENUM( NSUInteger, UIViewAnimationCurve)
 };
 
 
+typedef NS_OPTIONS( NSUInteger, UIViewForgetImplicitAnimationsMode)
+{
+   UIViewForgetImplicitAnimationsAll          = 0x0,
+   UIViewForgetImplicitAnimationsSkipSelf     = 0x1,
+   UIViewForgetImplicitAnimationsSkipLayers   = 0x2,
+   UIViewForgetImplicitAnimationsSkipSubviews = 0x4,
+};
+
+
 //
 // Doing it like this is kinda bad, because different windows could have
 // different threads but they couldn't create animations at the same time
@@ -67,6 +76,9 @@ typedef NS_ENUM( NSUInteger, UIViewAnimationCurve)
 + (void) addAnimatableObject:(id <CAImplicitlyAnimatableObject>) object;
 
 - (void) willChange;
+
+// this by default also removes animations from layers and subviews
+- (void) forgetImplicitAnimations:(UIViewForgetImplicitAnimationsMode) mode;
 
 @end
 

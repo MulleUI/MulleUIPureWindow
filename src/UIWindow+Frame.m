@@ -9,12 +9,12 @@
 
 #import "UIWindow+Render.h"
 #import "UIWindow+UIEvent.h"
+#import "UIView+UIResponder.h"
 #import "UIView+RenderQueue.h"
 #import "CGFrameInfo+UTF8String.h"
 
 
-//#define LAYOUT_ANIMATIONS
-#define SWAP_DEBUG
+//#define SWAP_DEBUG
 //#define RENDERINFO_DEBUG
 //#define SWAPPED_BUFFERS_DEBUG
 
@@ -105,9 +105,17 @@
    Class        cls;
    NSUInteger   options;
 
+   assert( [NSThread mulleIsMainThread]);
+
 #ifdef SWAP_DEBUG
-   MulleUILog( "window context");
+   MulleUILog( "window context (%p)", _context);
 #endif
+
+   if( _keepOSGraphicsContext && _context)
+   {
+      [_context setActive:YES];
+      return( _context);
+   }
 
    [_OSWindow os_activateGraphicsContext];
 
@@ -138,10 +146,23 @@
    Class        cls;
    NSUInteger   options;
 
+   assert( (! _windowThread && [NSThread mulleIsMainThread]) ||
+           [NSThread currentThread] == _windowThread);
+
    // take renderlock here, relinquish later when wating for events
    // or when someone closes the window
 
    assert( _offscreenOSWindow);
+
+#ifdef SWAP_DEBUG
+   MulleUILog( "offscreen window context (%pp)", _offscreenContext);
+#endif
+
+   if( _keepOSGraphicsContext && _offscreenContext)
+   {
+      [_offscreenContext setActive:YES];
+      return( _offscreenContext);
+   }
 
    [_offscreenOSWindow os_activateGraphicsContext];
    if( ! _offscreenContext)
@@ -156,7 +177,8 @@
       [_offscreenContext setRendersOffScreen:YES];
       [_context setOSWindow:_offscreenOSWindow];
 #ifdef SWAP_DEBUG
-      MulleUILog( "context %#@ created for offscreen OSWindow %#@", _offscreenContext, _offscreenOSWindow);
+      MulleUILog( "context %#@ created for offscreen OSWindow %#@",
+                     _offscreenContext, _offscreenOSWindow);
 #endif      
    }
    [_offscreenContext setActive:YES];                        // just a flag
@@ -169,34 +191,65 @@
 
 
 // TODO: memo, maybe the context triggers os_activateGraphicsContext ?
-- (id <UIGraphicsContext>) activateRenderGraphicsContext
-{
-   if( _backingStore == UIWindowBackingStoreVolatile)
-      return( [self activateWindowGraphicsContext]);
-   return( [self activateOffscreenGraphicsContext]);
-}
-
-
 - (void) deactivateGraphicsContext:(id <UIGraphicsContext>) context
 {
    assert( context);
 
    [context setActive:NO];
+
    if( context == _offscreenContext)
    {
 #ifdef SWAP_DEBUG
-   MulleUILog( "offscreen context");
+      MulleUILog( "offscreen context");
 #endif
-      [_offscreenOSWindow os_deactivateGraphicsContext];
+      assert( (! _windowThread && [NSThread mulleIsMainThread]) ||
+              [NSThread currentThread] == _windowThread);
+
+      if( ! _keepOSGraphicsContext)
+         [_offscreenOSWindow os_deactivateGraphicsContext];
    }
    else
    {
 #ifdef SWAP_DEBUG
       MulleUILog( "window context");
 #endif
-      [_OSWindow os_deactivateGraphicsContext];
+      assert( [NSThread mulleIsMainThread]);
+
+      if( ! _keepOSGraphicsContext)
+         [_OSWindow os_deactivateGraphicsContext];
    }
 }
+
+
+- (id <UIGraphicsContext>) renderGraphicsContext
+{
+   id <UIGraphicsContext>  context;
+
+   // calling this method outside of rendering is an error
+   context = _renderGraphicsContext;
+   if( ! [context isActive])
+      abort();
+   return( context);
+}
+
+
+- (void) activateRenderGraphicsContext
+{
+   assert( ! _renderGraphicsContext);
+
+   _renderGraphicsContext = ( _backingStore == UIWindowBackingStoreVolatile) 
+                            ? [self activateWindowGraphicsContext]
+                            : [self activateOffscreenGraphicsContext];
+}
+
+
+- (void) deactivateRenderGraphicsContext
+{
+   assert( _renderGraphicsContext);
+   [self deactivateGraphicsContext:_renderGraphicsContext];
+   _renderGraphicsContext = nil;
+}
+
 
 
 //
@@ -213,9 +266,9 @@
 
    info->window        = tmp.base;
    info->viewportFrame = MulleIntegerRectMake( 0,
-                                           0,
-                                           info->window.framebufferSize.width,
-                                           info->window.framebufferSize.height);
+                                               0,
+                                               info->window.framebufferSize.width,
+                                               info->window.framebufferSize.height);
    info->alpha         = 1.0;
    info->now           = mulle_absolutetime_now();
 }
@@ -241,23 +294,31 @@
    }
 }
 
+struct UIRenderInfo
+{
+   UIWindow                 *window;
+   struct CGFrameInfo       frameInfo;
+   id <UIGraphicsContext>   context;
+   NSUInteger               displayBits;
+   BOOL                     didAnimate;
+};
+
 
 - (BOOL) renderWithFrameInfo:(struct CGFrameInfo *) info
                  displayBits:(NSUInteger) displayBits
 {
-   id <UIGraphicsContext>   context;
-   BOOL                     didAnimate;
-   id <UIResponder>         responder;
+   id <UIResponder>   responder;
+   BOOL               didAnimate;
 
-   context = [self activateRenderGraphicsContext];
+   [self activateRenderGraphicsContext];
+
+   @autoreleasepool // THIS IS IMPORTANT TO COLLECT CGLAYERS WHILE THE PROPER CONTEXT IS ALIVE
    {
 #ifdef RENDERINFO_DEBUG
       MulleUILog( "%s", CGFrameInfoUTF8String( info));
 #endif
       // for demos
-      [context setMouseLocation:_inputState.locationInWindow];
-      [context setMouseButtonStates:_inputState.buttonStates];
-      [context setKeyModifiers:_inputState.keyModifiers];
+      [_renderGraphicsContext setInputState:_inputState];
 
       // if the window size changed, we need to relayout
       if( ! CGSizeEqualToSize( info->window.frame.size, [self frame].size))
@@ -276,9 +337,11 @@
       }
 
       // This is usually UIWindowDefaultRawFrameCallback (UIWindow+Render.m)
-      didAnimate = (*self->_rawFrameCallback)( self, context, info, displayBits);
+      didAnimate = (*self->_rawFrameCallback)( self, _renderGraphicsContext, info, displayBits);
+      didAnimate = (*self->_didRenderFrameCallback)( self, _renderGraphicsContext, info, didAnimate);
    }
-   [self deactivateGraphicsContext:context];
+   [self deactivateRenderGraphicsContext];
+
    return( didAnimate);
 }
 
@@ -339,6 +402,8 @@
    // from here on CGImages should be safe to be reaped by autorelease pool
    // or ?
    //
+   if( _didSwapBuffersCallback)
+      (*_didSwapBuffersCallback)( self);
 }
 
 - (void) swapBuffersImmediately

@@ -68,7 +68,7 @@ static void   draw( CALayer *layer, CGContext *context)
    mouse  = [context mouseLocation];
 
    [context fillRect:canvas
-               color:CGColorMakeWhite()];
+            hexColor:CGHexColorMakeWithColor( CGColorMakeWhite())];
 
    max = CGPointDistanceToPoint( CGPointZero, CGSizeAsPoint( canvas.size));
      // make a x and y grid of ellipses
@@ -80,8 +80,8 @@ static void   draw( CALayer *layer, CGContext *context)
          size = CGPointDistanceToPoint( mouse, center);
          size = (size / max) * 66; // magic 66
          [context fillCircleAtPoint:center
-                                     radius:size / 2.0
-                                      color:CGColorMakeWithRGBBytes( 20, 200, 20)];
+                             radius:size / 2.0
+                           hexColor:CGHexColorMakeWithColor( CGColorMakeWithRGBBytes( 20, 200, 20))];
       }
    }
 }

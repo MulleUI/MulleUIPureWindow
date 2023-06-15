@@ -12,10 +12,11 @@
 #import "UIWindow+NSTimer.h"
 #import "UIWindow+UIEvent.h"
 #import "UIView+RenderQueue.h"
+#import "UIWindow+InvocationQueue.h"
 
-#define THREAD_DEBUG
-//#define THREAD_DEBUG_VERBOSE
-#define SWAP_DEBUG
+// #define THREAD_DEBUG
+// #define THREAD_DEBUG_VERBOSE
+// #define SWAP_DEBUG
 
 // this writes out a PNG for each frame
 // #define REFRESH_IMAGE_DEBUG
@@ -348,6 +349,7 @@
 #ifdef THREAD_DEBUG_VERBOSE
             MulleUILog( "done rendering");
 #endif
+
             UIWindowDisplayFrameStatisticsUpdate( &_windowThreadStatistics,
                                                   now,
                                                   mulle_absolutetime_now());
@@ -369,7 +371,7 @@
             // if there is an animation going, set our animation displayBit
             // right back
             if( didAnimate)
-                [self setNeedsAnimation];
+               [self setNeedsAnimation];
          }
 
          [self pollInvocationQueues];
@@ -419,7 +421,7 @@ done:
 - (void) refresh
 {
    BOOL                     isScaling;
-   CGColor                  color;
+   NSUInteger               color;
    CGRect                   imageFrame;
    CGRect                   rect;
    CGSize                   imageSize;
@@ -476,6 +478,7 @@ done:
 //  [self deactivateGraphicsContext:context];
 
       context = [self activateWindowGraphicsContext];
+      @autoreleasepool // THIS IS IMPORTANT TO COLLECT CGLAYERS WHILE CONTEXT IS ALIVE
       {
          [self getFrameInfo:&frameInfo];
 
@@ -490,8 +493,8 @@ done:
          isScaling          = CGContentModeIsScaling( refreshContentMode);
          if( ! isScaling)
          {
-            color = [self backgroundColor];
-            [context clearFramebufferWithColor:color];
+            color = [self backgroundHexColor];
+            [context clearFramebufferWithHexColor:color];
          }
 
          rect.origin = CGPointZero;
@@ -528,9 +531,11 @@ done:
 
          if( _debugEnabled & UIWindowDrawFramebufferIdRect)
          {
-            [context strokeRect:CGRectInset( rect, 20, 20)
-                        color:CGColorMakeWithHexColor( 0x20A080FF)
-                        width:4.0];
+            if( [context conformsToProtocol:@protocol( UIGraphicsDrawing)])
+               [(id <UIGraphicsDrawing>) context
+                        strokeRect:CGRectInset( rect, 20, 20)
+                             width:4.0
+                          hexColor:0x20A080FF];
          }
 
 #ifdef REFRESH_IMAGE_DEBUG
@@ -546,8 +551,8 @@ done:
 #endif
          [context endRender];
       }
-      [self deactivateGraphicsContext:context]; 
    }
+   [self deactivateGraphicsContext:context];
 }
 
 @end

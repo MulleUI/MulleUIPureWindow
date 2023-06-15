@@ -133,13 +133,12 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 // conveniences for quick hacks
 + (instancetype) windowWithView:(UIView *) view
                 titleUTF8String:(char *) title
+                      styleMask:(NSUInteger) styleMask
 {
-   NSUInteger   styleMask;
    CGRect       rect;
    NSUInteger   autoresizingMask;
    UIWindow     *window;
 
-   styleMask        = UIWindowStyleMaskDefault;
    autoresizingMask = [view autoresizingMask];
    if( autoresizingMask & UIViewAutoresizingFlexible)
       styleMask |= UIWindowStyleResizable;
@@ -164,9 +163,20 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 }
 
 
++ (instancetype) windowWithView:(UIView *) view
+                titleUTF8String:(char *) title
+{
+   return( [self windowWithView:view 
+                 titleUTF8String:title
+                       styleMask:UIWindowStyleMaskDefault]);
+}
+
+
 // conveniences for quick hacks
+
 + (instancetype) windowWithLayer:(id <UILayer>) layer
                  titleUTF8String:(char *) title
+                       styleMask:(NSUInteger) styleMask
 {
    UIView          *view;
    CGRect          frame;
@@ -184,7 +194,16 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    [view setMargins:margins];
    [view setAutoresizingMask:UIViewAutoresizingFlexible|UIViewAutoresizingStickToCenter];
    return( [self windowWithView:view
-               titleUTF8String:title]);
+               titleUTF8String:title
+                     styleMask:styleMask]);
+}
+
++ (instancetype) windowWithLayer:(id <UILayer>) layer
+                 titleUTF8String:(char *) title
+{
+   return( [self windowWithLayer:layer 
+                 titleUTF8String:title
+                       styleMask:UIWindowStyleMaskDefault]);
 }
 
 
@@ -313,18 +332,20 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    _mulle_atomic_pointer_nonatomic_write( &_needsRefresh, (void *) 1);
    _mulle_atomic_pointer_nonatomic_write( &_needsDisplay, (void *) ~0);
 
-   _oldSwapInterval     = NSIntegerMax;
-   _rawFrameCallback    = UIWindowDefaultRawFrameCallback;
+   _oldSwapInterval        = NSIntegerMax;
+   _rawFrameCallback       = UIWindowDefaultRawFrameCallback;
+   _didRenderFrameCallback = UIWindowDefaultDidRenderFrameCallback;
 
    // its kinda pointless to inherit clipRects down for views, that are full
    // window size
-   _clipsToBounds        = NO;
-   _backgroundColor      = CGColorMakeWithHexColor( 0xFFFFFFFF);
-   _refreshContentMode   = CGContentModeTopLeft;
-   _asyncAnimationRate   = 1.0 / 60.0;
-   _windowEventCallback  = defaultWindowEventCallback;
-   _window               = self;
-   _trackingAreasEnabled = YES;
+   _clipsToBounds         = NO;
+   _backgroundHexColor    = 0xFFFFFFFF;
+   _refreshContentMode    = CGContentModeTopLeft;
+   _asyncAnimationRate    = 1.0 / 60.0;
+   _windowEventCallback   = defaultWindowEventCallback;
+   _window                = self;
+   _trackingAreasEnabled  = YES;
+   _keepOSGraphicsContext = YES;  // now the default
 
    UIInputStateInit( &_inputState, CGPointMake( -1, -1), 0, 0);
 
@@ -336,6 +357,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    ui_window_pointer_fifo_init( &_timerQueue);
 
    [self _initInvocationQueues];
+   [self _initResourceStorage:&_resourceStorage];
 
    [self setupContentPlanesInRect:frame];
    return( self);
@@ -499,17 +521,22 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    [self discardPendingTimers];
    [self discardPendingEvents];
-   [self discardAllInvocationQueues];
+   [self terminateAllInvocationQueues];
 
    _mulle_atomic_pointer_write( &_needsDisplay, (void *) 0);
 
-   // do it again, in case we are
+   // unmount all subviews, the subviews -window method will now return nil
+   // which allows them to finalize
+   [self removeAllSubviews];
+
+   [self _finalizeResourceStorage:&_resourceStorage];
 
    if( _offscreenContext)
    {
       if( ! [_offscreenContext isActive])
       {
-         [_offscreenOSWindow os_activateGraphicsContext];
+         // if still locked somehow (keep flag) fine
+         [_offscreenOSWindow os_tryActivateGraphicsContext];
          [_offscreenContext setActive:YES];
       }
 
@@ -529,7 +556,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    {
       if( ! [_context isActive])
       {
-         [_OSWindow os_activateGraphicsContext];
+         // don't deadlock if still locked
+         [_OSWindow os_tryActivateGraphicsContext];
          [_context setActive:YES];
       }
       [_context mullePerformFinalize];
@@ -550,7 +578,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    _OSWindow = nil;
 
    _firstResponder = nil;
-
+   _window = nil;
+   
    [super finalize];
 }
 
@@ -570,16 +599,24 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    mulle_pointerarray_done( &_enteredAreas);
    mulle_pointerarray_done( &_delegateViews);
    mulle_pointerarray_done( &_drawingQueue);
+   _mulle__pointerset_done( &_layoutedViews, MulleObjCInstanceGetAllocator( self));
 
    mulle_quadtree_destroy( _quadtree);
 
    ui_window_pointer_fifo_done( &_timerQueue);
    ui_window_pointer_fifo_done( &_eventQueue);
    
+   [self _doneResourceStorage:&_resourceStorage];
    [self _doneInvocationQueues];
 
    // TODO: delete window ?
    [super dealloc];
+}
+
+
+- (struct MulleUIResourceStorage *) _resourceStorage
+{
+   return( &_resourceStorage);
 }
 
 
@@ -634,7 +671,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 }
 
 
-- (NSUInteger) mouseButtonStates
+- (NSUInteger) buttonStates
 {
    return( _inputState.buttonStates);
 }
@@ -1022,21 +1059,21 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 }
 
 
-- (CGColor) backgroundColor
+- (NSUInteger) backgroundHexColor
 {
-   CGColor   rval;
+   NSUInteger   rval;
 
-   MulleObjCNSLockProtectedAssignReadAccessor( _backgroundColor, 
-                                               _windowPropertyLock, 
+   MulleObjCNSLockProtectedAssignReadAccessor( _backgroundHexColor,
+                                               _windowPropertyLock,
                                                rval);
    return( rval);
 }
 
 
-- (void) setBackgroundColor:(CGColor) color
+- (void) setBackgroundHexColor:(NSUInteger) color
 {
-   MulleObjCNSLockProtectedAssignWriteAccessor( _backgroundColor, 
-                                                _windowPropertyLock, 
+   MulleObjCNSLockProtectedAssignWriteAccessor( _backgroundHexColor,
+                                                _windowPropertyLock,
                                                 color);
 }
 

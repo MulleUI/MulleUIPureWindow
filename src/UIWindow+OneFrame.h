@@ -1,5 +1,6 @@
 #import "UIWindow.h"
 
+#import "UIWindow+UIWindow.h"
 
 //
 // This is supoort for the "conventional" GLFW render/waitForEvents loop
@@ -23,9 +24,11 @@
 // returns NO, if windows should close
 // does event handling after renderAndSwapOneFrame
 - (BOOL) processOneFrame:(CGFloat) frameRate;
+- (BOOL) processOneFrame;  // Use unsynced
+
 
 // as processOneFrame
-- (void) renderAndSwapOneFrame;
+- (BOOL) renderAndSwapOneFrame;
 
 // activate and deactivates window context
 - (struct CGBitmap) screenshotBitmap;

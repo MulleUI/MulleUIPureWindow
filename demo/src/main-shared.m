@@ -71,61 +71,9 @@ static void  drawPrettyBackground( CALayer *layer, CGContext *context)
 }
 
 
-//
-// unused, just here to remind me how to use nvgCopyImage
-//
-static void  drawStuff_nvg( CALayer *layer, CGContext *context)
+static void  drawStuff( CALayer *layer, void *_context)
 {
-   struct NVGcontext          *vg;
-   struct CGDrawableOptions   options;
-   static int                 imageHandle[ 2];
-   static NVGcontext          *vgs[ 2];
-   int                        imageID;
-   NVGpaint                   imgPaint;
-
-   drawPrettyBackground( layer, context);
-
-   vg = CGContextGetNVGContext( context);
-
-   imageID = 0;
-   if( vgs[ 0] == vg)
-      imageID  = imageHandle[ 0];
-   else
-      imageID  = imageHandle[ 1];
-
-   if( ! imageID)
-   {
-      if( ! imageHandle[ 0])
-      {
-         vgs[ 0]         = vg;
-         imageHandle[ 0] = nvgCreateImageRGBA( vg, 8, 8, 0, (void *) stupidtex);
-         imageID         = imageHandle[ 0];
-      }
-      else
-      {
-         vgs[ 1]         = vg;
-         imageHandle[ 1] = nvgCopyImage( vgs[ 1], vgs[ 0], imageHandle[ 0]);
-         imageID         = imageHandle[ 1];
-      }
-   }
-
-   imgPaint  = nvgImagePattern( vg, 32.0,
-                                    32.0,
-                                    128.0,
-                                    128.0,
-                                    0.0,
-                                    imageID,
-                                    1.0);
-
-   nvgBeginPath( vg);
-   nvgRoundedRect( vg, 32.0, 32.0, 128.0, 128.0, 0.0);
-   nvgFillPaint( vg, imgPaint);
-   nvgFill( vg);
-}
-
-
-static void  drawStuff( CALayer *layer, CGContext *context)
-{
+   CGContext                  *context = _context;
    struct CGDrawableOptions   options;
    static CGImage             *cgImage[ 2];
    static CGContext           *contexts[ 2];

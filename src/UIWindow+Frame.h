@@ -17,14 +17,27 @@
 - (void) syncFrameInfo:(struct CGFrameInfo *) info;
 - (void) swapBuffers;
 - (void) swapBuffersImmediately;
+
 - (BOOL) renderWithFrameInfo:(struct CGFrameInfo *) info
                  displayBits:(NSUInteger) displayBits;  // assorted UIWindowNeedsDislay bits
 
+//
+// MEMO: put a NSAutoreleasePool between activate...GraphicsContext
+//       and deactivateGraphicsContext so ephemeral CGCLayers can properly
+//       relinquish their GPU textures, while the context is still active
+//                 
+// If the thread is running, then the main thread should never
+// call activateOffscreenGraphicsContext, likeweise the thread should never
+// call activateWindowGraphicsContext  
+//               
 - (id <UIGraphicsContext>) activateWindowGraphicsContext;
-- (id <UIGraphicsContext>) activateRenderGraphicsContext;
 - (id <UIGraphicsContext>) activateOffscreenGraphicsContext;
 
 - (void) deactivateGraphicsContext:(id <UIGraphicsContext>) context;
+
+- (id <UIGraphicsContext>) renderGraphicsContext;
+- (void) activateRenderGraphicsContext;
+- (void) deactivateRenderGraphicsContext;
 
 - (mulle_relativetime_t) remainingFrameTime:(mulle_absolutetime_t) now
                                   frameRate:(mulle_relativetime_t) frameRate

@@ -33,7 +33,7 @@
 @end
 
 
-static void   display( GLFWOSWindow *window_in)
+static int   display( GLFWOSWindow *window_in)
 {
    MyWindow      *window = (MyWindow *) window_in;
    CGRect        canvas;
@@ -51,6 +51,7 @@ static void   display( GLFWOSWindow *window_in)
       drawRedWhiteBlueFlag( CGContextGetNVGContext( context), canvas);
    }
    [context endRender];
+   return( 0);
 }
 
 

@@ -3,54 +3,84 @@
 ### clobbered with the next upgrade.
 
 ### Files
-if( NOT __IDE_SUPPORT__CMAKE__)
-   set( __IDE_SUPPORT__CMAKE__ ON)
+if( NOT __IDE_SUPPORT_START__CMAKE__)
+   set( __IDE_SUPPORT_START__CMAKE__ ON)
 
 if( MULLE_TRACE_INCLUDE)
    message( STATUS "# Include \"${CMAKE_CURRENT_LIST_FILE}\"" )
 endif()
 
-#
-# If there is (likely) a sourcetree
-#
-if( IS_DIRECTORY "${PROJECT_SOURCE_DIR}/.mulle/etc/sourcetree" OR
-    IS_DIRECTORY "${PROJECT_SOURCE_DIR}/.mulle/etc/sourcetree")
+#default to ON for a while
+option( IDE_SUPPORT "Enable IDE support for Clion" ON)
 
-   set( TMP_NEED_DEPENDENCY_CRAFT ON)
+if( IDE_SUPPORT)
+   find_program( MULLE_SDE mulle-sde)
+   if( NOT MULLE_SDE)
+      message( WARNING "The folder \"dependency\" is not ready.\nInstall mulle-sde and run `mulle-sde craft craftorder`")
+   else()
+      if( NOT DEFINED ENV{MULLE_VIRTUAL_ROOT}) # sic! NOT ${ENV}
+         #
+         # If there is (likely) a sourcetree, we need to build dependencies now
+         # because otherwise the include( DEPENDENCIES) fails.
+         #
+         if( IS_DIRECTORY "${PROJECT_SOURCE_DIR}/.mulle/etc/sourcetree" OR
+             IS_DIRECTORY "${PROJECT_SOURCE_DIR}/.mulle/share/sourcetree")
+            #
+            # If we have a dependency folder, check for the .state-complete
+            #
+            if( NOT EXISTS "${DEPENDENCY_DIR}/.state-complete")
+               execute_process( COMMAND "${MULLE_SDE}" craft --build-type "${CMAKE_BUILD_TYPE}" craftorder
+                                WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                                COMMAND_ERROR_IS_FATAL ANY)
+            endif()
+         endif()
 
-   #
-   # If we have a dependency folder, check for the state which needs
-   # to be complete. Conceivably the IS_DIRECTORY is superflous here
-   #
-   if( IS_DIRECTORY "${PROJECT_SOURCE_DIR}/dependency")
-      execute_process( COMMAND cat ".state"
-                       WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/dependency"
-                       OUTPUT_VARIABLE TMP_DEPENDENCY_STATE
-                       OUTPUT_STRIP_TRAILING_WHITESPACE)
-      if( "${TMP_DEPENDENCY_STATE}" STREQUAL "complete")
-         set( TMP_NEED_DEPENDENCY_CRAFT OFF)
-      endif()
-      unset( TMP_DEPENDENCY_STATE)
-   endif()
+         #
+         # In an IDE like CLion use these target to clean all. The immediate
+         # rebuild is needed, because the above code won't run again.
+         # mulle_sde_craft_craftorder: just rebuild. Can be useful if "clean all"
+         #                             failed.
+         add_custom_target( mulle_sde_craft_craftorder
+            COMMENT "Craft dependency folder"
+            COMMAND "${MULLE_SDE}" craft --build-type "${CMAKE_BUILD_TYPE}" craftorder
+            VERBATIM
+         )
+         set_target_properties( mulle_sde_craft_craftorder PROPERTIES EXCLUDE_FROM_ALL ON)
 
-   #
-   # Use mulle-sde to build the dependency folder (what else :))
-   #
-   if( TMP_NEED_DEPENDENCY_CRAFT)
-      find_program( MULLE_SDE mulle-sde)
-      if( NOT MULLE_SDE)
-         message( WARNING "The folder \"dependency\" is not ready.\nInstall mulle-sde and run `mulle-sde craft craftorder`")
+         add_custom_target( mulle_sde_reflect
+            COMMENT "Reflect files and sourcetree"
+            COMMAND "${MULLE_SDE}" reflect
+            VERBATIM
+         )
+         set_target_properties( mulle_sde_reflect PROPERTIES EXCLUDE_FROM_ALL ON)
+
+         add_custom_target( mulle_sde_clean_all
+            COMMENT "Clean dependency folder"
+            COMMAND "${MULLE_SDE}" clean all
+            VERBATIM
+         )
+         set_target_properties( mulle_sde_clean_all PROPERTIES EXCLUDE_FROM_ALL ON)
+
+         add_custom_target( mulle_sde_clean_tidy
+            COMMENT "Clean stash and dependency folder"
+            COMMAND "${MULLE_SDE}" clean tidy
+            VERBATIM
+         )
+         set_target_properties( mulle_sde_clean_tidy PROPERTIES EXCLUDE_FROM_ALL ON)
+
+         add_custom_target( mulle_sde_upgrade
+            COMMENT "Upgrade project to current mulle-sde version"
+            COMMAND "${MULLE_SDE}" upgrade
+            VERBATIM
+         )
+         set_target_properties( mulle_sde_upgrade PROPERTIES EXCLUDE_FROM_ALL ON)
       else()
-         execute_process( COMMAND ${MULLE_SDE} craft --build-type "${CMAKE_BUILD_TYPE}" craftorder
-                          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-                          COMMAND_ERROR_IS_FATAL ANY)
+         message( STATUS "Skipping IDE Support as we are in a mulle-sde environment")
       endif()
    endif()
-   unset( TMP_NEED_DEPENDENCY_CRAFT)
 endif()
 
 endif()
-
 
 # extension : mulle-sde/cmake
 # directory : project/all

@@ -26,10 +26,10 @@
 // add fuzzy factor to these comparisons, os that same Level
 // actually is +/- a couple of pixels
 //
-static inline BOOL  isBetter( CGFloat a, CGFloat b)
-{
-   return( a > b);
-}
+// static inline BOOL  isBetter( CGFloat a, CGFloat b)
+// {
+//    return( a > b);
+// }
 
 static inline BOOL  isWorse( CGFloat a, CGFloat b)
 {
@@ -67,11 +67,10 @@ static inline BOOL  isRightDirection( CGFloat a)
 }
 
 
-
 void  UIResponderSearchInit( struct UIResponderSearch *p, 
                              id <UIResponder> responder,
-                             CGDirection primaryDirection,
-                             CGDirection secondaryDirection)
+                             CADirection primaryDirection,
+                             CADirection secondaryDirection)
 {
    CGRect   frame;
    UIView   *view;
@@ -83,7 +82,7 @@ void  UIResponderSearchInit( struct UIResponderSearch *p,
    memset( p, 0, sizeof( *p));
    if( responder && [responder isKindOfClass:[UIView class]])
    {
-      view                   = (UIView *) responder;
+      view                  = (UIView *) responder;
       p->referenceView      = view;
       frame                 = [view frame];
       p->referenceViewFrame = [view convertRect:frame 
@@ -150,30 +149,30 @@ static void  UIResponderSearchAddView( struct UIResponderSearch *p,
       return;  
    }
 
-   // MEMO: the code is written for CGDirectionBottom/CGDirectionRight.
+   // MEMO: the code is written for CADirectionBottom/CADirectionRight.
    //       For other directions we use different axis information and
    //       flip things around
    switch( p->primaryDirection)
    {
-   case CGDirectionLeft   :
+   case CADirectionLeft   :
       referenceY = CGRectGetMidX( p->referenceViewFrame);
       y          = referenceY - CGRectGetMidX( screenFrame);
       bestY      = referenceY - CGRectGetMidX( p->bestScreenFrame);
       break;
 
-   case CGDirectionRight  :
+   case CADirectionRight  :
       referenceY = CGRectGetMidX( p->referenceViewFrame);
       y          = CGRectGetMidX( screenFrame) - referenceY;
       bestY      = CGRectGetMidX( p->bestScreenFrame) - referenceY;
       break;
 
-   case CGDirectionTop    :
+   case CADirectionTop    :
       referenceY = CGRectGetMidY( p->referenceViewFrame);
       y          = referenceY - CGRectGetMidY( screenFrame);
       bestY      = referenceY - CGRectGetMidY( p->bestScreenFrame);
       break;
 
-   case CGDirectionBottom :
+   case CADirectionBottom :
       referenceY = CGRectGetMidY( p->referenceViewFrame);
       y          = CGRectGetMidY( screenFrame) - referenceY;
       bestY      = CGRectGetMidY( p->bestScreenFrame) - referenceY;
@@ -182,25 +181,25 @@ static void  UIResponderSearchAddView( struct UIResponderSearch *p,
 
    switch( p->secondaryDirection)
    {
-   case CGDirectionLeft   :
+   case CADirectionLeft   :
       referenceX = CGRectGetMidX( p->referenceViewFrame);
       x          = referenceX - CGRectGetMidX( screenFrame);
       bestX      = referenceX - CGRectGetMidX( p->bestScreenFrame);
       break;
 
-   case CGDirectionRight  :
+   case CADirectionRight  :
       referenceX = CGRectGetMidX( p->referenceViewFrame);
       x          = CGRectGetMidX( screenFrame) - referenceX;
       bestX      = CGRectGetMidX( p->bestScreenFrame) - referenceX;
       break;
 
-   case CGDirectionTop    :
+   case CADirectionTop    :
       referenceX = CGRectGetMidY( p->referenceViewFrame);
       x          = referenceX - CGRectGetMidY( screenFrame);
       bestX      = referenceX - CGRectGetMidY( p->bestScreenFrame);
       break;
 
-   case CGDirectionBottom :
+   case CADirectionBottom :
       referenceX = CGRectGetMidY( p->referenceViewFrame);
       x          = CGRectGetMidY( screenFrame) - referenceX;
       bestX      = CGRectGetMidY( p->bestScreenFrame) - referenceX;

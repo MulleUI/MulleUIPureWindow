@@ -39,11 +39,11 @@ static void   drawStuff( CALayer *layer, CGContext *context)
    NSUInteger              counter;
    struct CGFrameInfo      *info;
    struct UIOSWindowInfo   windowInfo;
-   struct NVGcontext      *vg;
-   UIWindow               *window;
+   struct NVGcontext       *vg;
+   UIWindow                *window;
 
    osWindow = [context OSWindow];
-   window   = [osWindow parentWindow];
+   window   = (UIWindow *) [osWindow parentWindow];
    assert( window);
 
    canvas  = [layer canvas];
@@ -112,7 +112,7 @@ static UIEvent   *handleEvent( UIView *view, UIEvent *event)
 {
    UIWindow   *window;
 
-   window = [view window];
+   window = (UIWindow *) [view window];
    mulle_fprintf( stderr, "*** %@ : force refresh @ %.6f\n", window, mulle_absolutetime_now());
    [window setNeedsDisplay];
    return( nil);

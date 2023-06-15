@@ -30,8 +30,8 @@
 }
 
 
-- (id <UIResponder>) firstResponderSearchInPrimaryDirection:(CGDirection) primaryDirection
-                                         secondaryDirection:(CGDirection) secondaryDirection
+- (id <UIResponder>) firstResponderSearchInPrimaryDirection:(CADirection) primaryDirection
+                                         secondaryDirection:(CADirection) secondaryDirection
 {
    struct UIResponderSearch   search;
    id <UIResponder>           best;
@@ -56,8 +56,8 @@
          return( responder);
    }
 
-   return( [self firstResponderSearchInPrimaryDirection:CGDirectionTop
-                                     secondaryDirection:CGDirectionLeft]);
+   return( [self firstResponderSearchInPrimaryDirection:CADirectionTop
+                                     secondaryDirection:CADirectionLeft]);
 }
 
 
@@ -71,12 +71,12 @@
       if( responder)
          return( responder);
    }
-   return( [self firstResponderSearchInPrimaryDirection:CGDirectionBottom
-                                     secondaryDirection:CGDirectionRight]);
+   return( [self firstResponderSearchInPrimaryDirection:CADirectionBottom
+                                     secondaryDirection:CADirectionRight]);
 }
 
 
-- (UIInputEvent *) handleKeyboardEvent:(UIKeyboardEvent *) event
+- (UIInputEvent *) acceptKeyboardEvent:(UIKeyboardEvent *) event
 {
    NSUInteger   key;
    NSUInteger   modifiers;
