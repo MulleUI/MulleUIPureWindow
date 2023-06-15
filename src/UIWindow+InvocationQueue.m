@@ -29,7 +29,7 @@ static struct mulle_container_keyvaluecallback   callback;
 
 - (void) _doneInvocationQueues
 {
-   [self discardAllInvocationQueues];
+   [self terminateAllInvocationQueues];
    mulle_map_done( &_invocationQueueMap);
 }
 
@@ -68,7 +68,7 @@ static struct mulle_container_keyvaluecallback   callback;
 }
 
 
-- (void) discardAllInvocationQueues
+- (void) terminateAllInvocationQueues
 {
    char                   *key;
    MulleInvocationQueue   *queue;

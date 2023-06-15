@@ -28,7 +28,7 @@ static void   draw( CALayer *layer, CGContext *context)
 
    canvas = [layer canvas];
    [context fillRect:canvas
-               color:CGColorMakeWithGrayABytes( 20, 20)];
+            hexColor:CGHexColorMakeWithColor( CGColorMakeWithGrayABytes( 20, 20))];
 
    mouse = [context mouseLocation];
    t     = [context secondsSinceFirstRender];
@@ -49,8 +49,8 @@ static void   draw( CALayer *layer, CGContext *context)
          myY = y + 20 * sin( 2 * M_PI * t + angle);
 
          [context fillCircleAtPoint:CGPointMake( myX, myY)
-                                     radius:5.0
-                                      color:CGColorMakeWithRGBBytes( 20, 200, 20)];
+                             radius:5.0
+                           hexColor:CGHexColorMakeWithColor( CGColorMakeWithRGBBytes( 20, 200, 20))];
       }
    }
 }

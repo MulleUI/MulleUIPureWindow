@@ -43,6 +43,6 @@ export MULLE_SOURCETREE_TO_C_PRIVATEINCLUDE_FILE="ON"
 #
 #
 #
-export MULLE_SDE_CRAFT_STYLE="Release"
+
 
 

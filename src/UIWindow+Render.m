@@ -8,11 +8,20 @@
 #import "UIView+RenderQueue.h"
 #import "CGFrameInfo+UTF8String.h"
 
+//#define LAYOUT_ANIMATIONS
 //#define RENDER_DEBUG
 //#define RENDER_DEBUG_VERBOSE
 //#define RENDER_FRAMEINFO_DEBUG
-
+#ifdef DEBUG
+# ifndef DEBUG_DUPLICATE_LAYOUT
+#  define DEBUG_DUPLICATE_LAYOUT 1
+# endif
+#endif
+#ifndef DEBUG_DUPLICATE_LAYOUT
+#  define DEBUG_DUPLICATE_LAYOUT 0
+#endif
 // #define DRAW_FRAMEBUFFER_ID_RECT
+
 
 //
 //
@@ -124,7 +133,7 @@ static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
 
 
 - (BOOL) postLayoutAnimations:(struct CGFrameInfo *) info
-             graphicsContext:(id <UIGraphicsContext>) context
+              graphicsContext:(id <UIGraphicsContext>) context
 {
    BOOL                   didAnimate;
    mulle_relativetime_t   animationRate;
@@ -143,9 +152,40 @@ static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
 }
 
 
+- (BOOL) isLayoutedView:(UIView *) view
+{
+#if DEBUG_DUPLICATE_LAYOUT
+   return( _mulle__pointerset_get( &_layoutedViews, view) ? YES : NO);
+#else
+   return( NO);
+#endif
+}
+
+
+- (void) addLayoutedView:(UIView *) view
+{
+#if DEBUG_DUPLICATE_LAYOUT
+   assert( ! _mulle__pointerset_get( &_layoutedViews, view));
+   if( _isLayouting)
+      _mulle__pointerset_insert( &_layoutedViews, view, MulleObjCInstanceGetAllocator( self));
+#endif
+}
+
+
 - (void) layout 
 {
+#if DEBUG_DUPLICATE_LAYOUT
+   assert( ! _isLayouting);
+   _isLayouting = YES;
+   _mulle__pointerset_init( &_layoutedViews, 64, MulleObjCInstanceGetAllocator( self));
+#endif
+
    [super layout];
+
+#if DEBUG_DUPLICATE_LAYOUT
+   _mulle__pointerset_reset( &_layoutedViews);
+   _isLayouting = NO;
+#endif
    _quadtreeNeedsSetup = YES;
 }
 
@@ -220,12 +260,9 @@ static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
    //
    // if window is Opaque, clear is superflous, except if this is the very
    // first frame of a new or corrupted framebuffer
-   if( [self uninitializedFramebuffer])
-   {
-      doClearFramebufferColor = YES;
-      [self setUninitializedFramebuffer:NO];
-   }
-   else
+   //
+   doClearFramebufferColor = YES;
+   if( [context isInitializedFramebuffer]) // now we can be smarter..
       doClearFramebufferColor = info->alpha == 1.0 && ! [self isOpaque];
 
 #ifdef RENDER_DEBUG_VERBOSE
@@ -234,7 +271,7 @@ static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
    // we have to clear some of the framebuffer for nanovg anyway
    // like the stencil bits
    if( doClearFramebufferColor)
-      [context clearFramebufferWithColor:[self backgroundColor]];
+      [context clearFramebufferWithHexColor:[self backgroundHexColor]];
    else
       [context clearFramebufferNoColor];
 
@@ -284,21 +321,25 @@ static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
 
       if( _debugEnabled & UIWindowDrawFramebufferIdRect)
       {
-         CGRect   rect;
+         if( [context conformsToProtocol:@protocol( UIGraphicsDrawing)])
+         {
+            CGRect   rect;
 
-         [context resetTransform];
-         [context resetScissor];
+            [context resetTransform];
+            [context resetScissor];
 
-         rect.origin = CGPointZero;
-         rect.size   = info->window.frame.size;
-         [context strokeRect:CGRectInset( rect, 24, 24)
-                        color:CGColorMakeWithHexColor( 0xE04020FF)
-                        width:4.0];
+            rect.origin = CGPointZero;
+            rect.size   = info->window.frame.size;
+            [(id <UIGraphicsDrawing>) context
+                     strokeRect:CGRectInset( rect, 24, 24)
+                          width:4.0
+                       hexColor:0xE04020FF];
+         }
       }
 
       [self->_frameDelegate window:self
-                        didDrawFrame:info
-                     graphicsContext:context];
+                      didDrawFrame:info
+                   graphicsContext:context];
 #ifdef RENDER_FRAMEINFO_DEBUG
       [self renderFrameInfo:info
                   atPoint:CGPointMake( 20, 20)
@@ -358,8 +399,8 @@ static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
 
 - (void) renderFrameInfo:(struct CGFrameInfo *) info
                  atPoint:(CGPoint) point
-                   color:(CGColor) color
-         graphicsContext:(id <UIGraphicsContext>) context
+                hexColor:(NSUInteger) color
+         graphicsContext:(id <UIGraphicsDrawing>) context
 {
    struct mulle_buffer    buffer;
 
@@ -380,7 +421,7 @@ static mulle_relativetime_t    determineAnimationRate( UIWindow *self)
             textUTF8String:mulle_buffer_get_bytes( &buffer)
         fontNameUTF8String:NULL
                   fontSize:12.0
-                     color:color];
+                  hexColor:color];
    }
    mulle_buffer_done( &buffer);
 }
@@ -473,6 +514,16 @@ BOOL   UIWindowDefaultRawFrameCallback( UIWindow *self,
                    graphicsContext:context];
    }
 
+   return( didAnimate);
+}
+
+
+
+BOOL   UIWindowDefaultDidRenderFrameCallback( UIWindow *self,
+                                              id <UIGraphicsContext> context,
+                                              struct CGFrameInfo *info,
+                                              BOOL didAnimate)
+{
    return( didAnimate);
 }
 

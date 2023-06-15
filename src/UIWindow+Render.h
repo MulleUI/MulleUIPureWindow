@@ -21,6 +21,11 @@ extern BOOL   UIWindowDefaultRawFrameCallback( UIWindow *self,
                                                struct CGFrameInfo *info,
                                                NSUInteger displayBits);
 
+extern BOOL   UIWindowDefaultDidRenderFrameCallback( UIWindow *self,
+                                                     id <UIGraphicsContext> context,
+                                                     struct CGFrameInfo *info,
+                                                     BOOL didAnimate);
+
 @interface UIWindow( Render)
 
 - (void) willRenderWithAbsoluteTime:(mulle_absolutetime_t) renderStart;
@@ -41,6 +46,14 @@ extern BOOL   UIWindowDefaultRawFrameCallback( UIWindow *self,
       graphicsContext:(id <UIGraphicsContext>) context;
 - (void) drawFrame:(struct CGFrameInfo *) info
    graphicsContext:(id <UIGraphicsContext>) context;
+
+
+// debug method, depending on how UIWindow is compiled, this will
+// check for duplicated -layout calls to a UIView
+- (void) addLayoutedView:(UIView *) view;
+
+// used in setFrame: to catch subviews "managing" a superview state
+- (BOOL) isLayoutedView:(UIView *) view;
 
 @end
 

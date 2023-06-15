@@ -24,7 +24,6 @@
 - (void) _initInvocationQueues;
 - (void) _doneInvocationQueues;
 - (void) pollInvocationQueues;
-- (void) discardAllInvocationQueues;
 - (void) terminateAllInvocationQueues;
 
 @end

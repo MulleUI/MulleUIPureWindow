@@ -8,19 +8,19 @@
 #import "UIWindow.h"
 
 
-@implementation UIView ( RenderQueue)
+@interface NSObject (Forward)
 
-struct RenderQueueContext
-{
-   CGAffineTransform   xform;
-   CGRect              clipRect;
-   CGFloat             alpha;
-};
+- (void) dumpWithIndent:(NSUInteger) indent;
+
+@end
+
+
+@implementation UIView ( RenderQueue)
 
 
 static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
                                    id <UILayer> layer,
-                                   struct RenderQueueContext *v)
+                                   struct UIRenderQueueContext *v)
 {
    [layer setTransform:v->xform];
    [layer setAlpha:v->alpha];
@@ -36,12 +36,26 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
 }
 
 
+#ifndef CG_COLOR_H__
+
+static inline int   CGAlphaIsTransparentWithBitDepth( float a, unsigned int depth)
+{
+   return( a < 0.5 / (1LL << depth));  // (((1LL << depth) / 2) - 1));
+}
+
+static inline int   CGAlphaIsTransparent( float a)
+{
+   return( CGAlphaIsTransparentWithBitDepth( a, 16));
+}
+
+#endif
+
 //
 // the transform is the concatenation of the superviews transforms
 // the clipRect is in window space (window bounds)
 //
 - (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue
-                   context:(struct RenderQueueContext *) ctx
+                   context:(struct UIRenderQueueContext *) ctx
 {
    id <UILayer>                          layer;
    CGAffineTransform                     projection;
@@ -50,7 +64,7 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
    CGRect                                screenRect;
    CGRect                                transformedRect;
    struct mulle_pointerarrayenumerator   rover;
-   struct RenderQueueContext             v;
+   struct UIRenderQueueContext             v;
    UIView                                *view;
 
    if( [self isHidden] || [self isCulledByLayout])
@@ -74,7 +88,7 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
 
    //
    // if we clip to nothing we don't do anything
-   // we use 0.1 for FP errors. An invalid intersetion also produces
+   // we use 0.1 for FP errors. An invalid intersection also produces
    // inf origins, which apparently is bad later on. This should implicitly
    // catch this too
    // TODO: why not check for 0.5 ?
@@ -128,7 +142,7 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
 - (void) dumpRenderQueue:(struct mulle_pointerarray *) renderQueue
 {
    struct mulle_pointerarrayenumerator   rover;
-   id <UILayer>                          layer;
+   id                                    layer;
 
    rover = mulle_pointerarray_enumerate( renderQueue);
    while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
@@ -154,21 +168,18 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
 // start
 - (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue
 {
-   struct mulle_pointerarrayenumerator   rover;
-   UIView                                *view;
-   struct RenderQueueContext             v;
+   UIView                       *view;
+   struct UIRenderQueueContext  v;
 
    v.xform    = CGAffineTransformMakeIdentity();
    v.clipRect = CGRectMake( -INFINITY, -INFINITY, INFINITY, INFINITY);
    v.alpha    = 1.0;
 
-   rover = mulle_pointerarray_enumerate( &_subviews);
-   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
+   mulle_pointerarray_for( &_subviews, view)
    {
       [view createRenderQueue:renderQueue
                       context:&v];
    }
-   mulle_pointerarrayenumerator_done( &rover);
 }
 
 @end

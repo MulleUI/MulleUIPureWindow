@@ -12,7 +12,6 @@
 #import "import.h"
 
 
-
 struct UIResponderSearch
 {
    UIView        *referenceView;
@@ -21,8 +20,8 @@ struct UIResponderSearch
    UIView        *best;
    CGRect        bestScreenFrame;
 
-   CGDirection   primaryDirection;
-   CGDirection   secondaryDirection;
+   CADirection   primaryDirection;
+   CADirection   secondaryDirection;
 
    CGFloat       fummelX;
    CGFloat       fummelY;
@@ -31,8 +30,8 @@ struct UIResponderSearch
 
 void  UIResponderSearchInit( struct UIResponderSearch *p, 
                              id <UIResponder> responder,
-                             CGDirection primaryDirection,
-                             CGDirection secondaryDirection);
+                             CADirection primaryDirection,
+                             CADirection secondaryDirection);
 
 
 static inline UIView   *UIResponderSearchGetResult( struct UIResponderSearch *p)

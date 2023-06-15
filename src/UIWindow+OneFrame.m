@@ -10,6 +10,7 @@
 #import "UIWindow+NSTimer.h"
 #import "UIWindow+UIEvent.h"
 #import "UIWindow+UIResponder.h"
+#import "UIWindow+UITrackingArea.h"
 #import "UIWindow+UIWindow.h"
 #import "UIView+UIWindow.h"
 
@@ -206,35 +207,40 @@
    struct MulleIntegerRect      rect;
 
    context = [self activateWindowGraphicsContext];
+   @autoreleasepool
+   {
+      [self getFrameInfo:&frameInfo];
 
-   [self getFrameInfo:&frameInfo];
-
-   rect  = MulleIntegerRectMake( 0,
-                                 0,
-                                 frameInfo.window.framebufferSize.width,
-                                 frameInfo.window.framebufferSize.height);
-   bitmap = [context readFramebufferBitmap:rect
-                     framebufferBitmapType:CGFramebufferRGBABytes
-                                 allocator:NULL];
+      rect  = MulleIntegerRectMake( 0,
+                                    0,
+                                    frameInfo.window.framebufferSize.width,
+                                    frameInfo.window.framebufferSize.height);
+      bitmap = [context readFramebufferBitmap:rect
+                        framebufferBitmapType:CGFramebufferRGBABytes
+                                    allocator:NULL];
+   }
    [self deactivateGraphicsContext:context];
 
    return( bitmap);
 }
 
 
-- (void) renderAndSwapOneFrame
+- (BOOL) renderAndSwapOneFrame
 {
    NSUInteger              displayBits;
    struct CGFrameInfo      frameInfo;
+   BOOL                    didAnimate;
 
    assert( _backingStore == UIWindowBackingStoreVolatile && "Don't call processOneFrame on a UIWindowStyleRetained window");
+
    displayBits  = [self needsDisplayClearIfSet];
    displayBits |= UIWindowNeedsRedraw;
    [self getFrameInfo:&frameInfo];  // retrieve newest geometry
-   [self renderWithFrameInfo:&frameInfo
-                  displayBits:displayBits];
+   didAnimate = [self renderWithFrameInfo:&frameInfo
+                              displayBits:displayBits];
    [self setNeedsRefresh:NO];
    [self swapBuffers];
+   return( didAnimate);
 }
 
 
@@ -255,6 +261,11 @@
    }
 
    return( _shouldClose ? NO : YES);
+}
+
+- (BOOL) processOneFrame
+{
+   return( [self processOneFrame:UIWindowFrameRateUnsynced]);
 }
 
 @end

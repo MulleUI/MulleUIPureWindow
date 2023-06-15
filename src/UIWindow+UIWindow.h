@@ -12,7 +12,4 @@
 // needsRefresh to YES
 - (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now;
 
-// pretty much obsolete
-- (void) eventHandlingWithFrameRate:(mulle_relativetime_t) frameRate;
-
 @end

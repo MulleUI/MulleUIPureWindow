@@ -6,25 +6,37 @@
 #include <math.h>
 #include <stdlib.h>
 
-//#define DUMP
-
+//#define DEBUG_WITH_FEW_LARGE_BALLS
 
 // kynd.info 2014
 // Code "inspired" by paper.js demos
+// http://paperjs.org/examples/candy-crash/
+//
+#ifndef DEBUG_WITH_FEW_LARGE_BALLS
+# define      MIN_RADIUS      40
+# define      MAX_RADIUS      40
+# define      numBalls        32
+# define      maxVec          15
+# define      overlapFactor   0.015  // bounce back over framerate 66.6 Hz ?
+# define      smoothness      1.5      // > 0 < min radius
+# define      maxSegments     INT_MAX
+#else
+# define      MIN_RADIUS      140
+# define      MAX_RADIUS      200
+# define      numBalls        2
+# define      maxVec          15
+# define      overlapFactor   0.015  // bounce back over framerate 66.6 Hz ?
+# define      smoothness      1.5      // > 0 < min radius
+# define      maxSegments     8
+#endif
 
-#define      MIN_RADIUS      40
-#define      MAX_RADIUS      40
-#define      numBalls        32
-#define      maxVec          15
-#define      overlapFactor   0.015  // bounce back over framerate 66.6 Hz ?
-#define      smoothness      1.5      // > 0 < min radius
 
 static id    balls[ numBalls];
 
 
 @interface Ball : NSObject
 {
-   NSUInteger          _numSegment;
+   NSUInteger           _numSegment;
    CGFloat             *_boundOffset;
    CGFloat             *_boundOffsetBuff;
    struct CGPoint      *_sidePoints;
@@ -53,6 +65,8 @@ static id    balls[ numBalls];
    _point           = p;
    _vector          = v;
    _numSegment      = (NSUInteger) floorf( r / smoothness) + 2;
+   if( _numSegment > maxSegments)
+      _numSegment = maxSegments;
 
    _boundOffset     = mulle_calloc( _numSegment, sizeof( CGFloat));
    _boundOffsetBuff = mulle_calloc( _numSegment, sizeof( CGFloat));
@@ -75,21 +89,6 @@ static id    balls[ numBalls];
 }
 
 
-#ifdef DUMP
-- (void) dump:(char *) name
-{
-   NSUInteger   i;
-
-   fprintf( stdout, "%s r=%.2f p=%.2f/%.2f v=%.2f,%.2f [", name,
-                        _radius, _point.x, _point.y, _vector.angle, _vector.radius);
-   for( i = 0; i <_numSegment; i++)
-   {
-      fprintf( stdout, " %.2f/%.2f", _sidePoints[ i].x, _sidePoints[ i].y);
-   }
-   fprintf( stdout, "]\n");
-}
-#endif
-
 /*
  * Ball collision
  */
@@ -111,11 +110,15 @@ static id    balls[ numBalls];
    CGPoint          diff;
    CGFloat          angle;
    CAAngleDegrees   deg;
+   NSUInteger       i;
 
    diff  = CGPointSubtract( _point, b);
    deg   = CAAngleRadiansToDegrees( CGPointGetPolarAngle( diff));
    angle = fmodf( deg + 180.0, 360.0f);
-   return( _boundOffset[ (NSUInteger) floor( angle / 360.0 * _numSegment)]);
+   angle = CAAngleDegreesNormalize( angle);
+   i     = (NSUInteger) (floor( angle / 360.0) * _numSegment);
+   assert( i < _numSegment);
+   return( _boundOffset[ i]);
 }
 
 
@@ -125,6 +128,7 @@ static id    balls[ numBalls];
    CGPoint      tp;
    CGFloat      bLen;
    CGFloat      td;
+   CGFloat      offset;
 
    for( i = 0; i < _numSegment; i++)
    {
@@ -133,7 +137,9 @@ static id    balls[ numBalls];
       td   = CGPointDistanceToPoint( tp, [b point]);
       if(td < bLen)
       {
-         _boundOffsetBuff[ i] -= (bLen - td) / 2;
+         offset = (bLen - td) / 2;
+         _boundOffsetBuff[ i] -= offset;
+         assert( _boundOffsetBuff[ i] >= -1000 && _boundOffsetBuff[ i] <= 1000);
       }
    }
 }
@@ -164,10 +170,6 @@ static id    balls[ numBalls];
       diff    = CGPointSubtract( _point, [b point]);
       direc   = CAPolarPointMake( overlap * overlapFactor,
                                   CGPointGetPolarAngle( diff));
-#ifdef DUMP
-      fprintf( stdout, "dist=%.2f, overlap=%.2f, direc=%.2f,%2.f vector=%.2f,%2.f\n",
-                  dist, overlap, direc.angle, direc.radius, _vector.angle, _vector.radius);
-#endif
       _vector = CAPolarPointAdd( _vector, direc);
       [b setVector:CAPolarPointSubtract( [b vector], direc)];
 
@@ -210,9 +212,13 @@ static id    balls[ numBalls];
 
       next    = (i + 1) % _numSegment;
       prev    = (i > 0) ? i - 1 : _numSegment - 1;
+
       offset  = _boundOffset[ i];
-      offset += (_radius - offset) / 15; // maxVec; ??
+      offset += (_radius - offset) / maxVec;
       offset += ((_boundOffset[ next] + _boundOffset[ prev]) / 2 - offset) / 3;
+
+      // sanity check
+      assert( offset >= -1000 && offset <= 1000);
 
       _boundOffsetBuff[ i] = _boundOffset[ i] = offset;
    }
@@ -230,7 +236,6 @@ static id    balls[ numBalls];
 }
 
 
-
 /*
  * Ball drawing
  */
@@ -241,6 +246,7 @@ static id    balls[ numBalls];
    CGPoint      p;
 
    vg = CGContextGetNVGContext( context);
+
    nvgBeginPath( vg);
    nvgGlobalCompositeOperation( vg, NVG_LIGHTER);
    for( i = 0; i < _numSegment; i++)
@@ -261,8 +267,9 @@ static id    balls[ numBalls];
 @end
 
 
-static void  drawStuff( CALayer *layer, CGContext *context)
+static void  drawStuff( CALayer *layer, void *_context)
 {
+   CGContext    *context = _context;
    CGRect       canvas;
    NSUInteger   i;
    NSUInteger   j;
@@ -272,19 +279,9 @@ static void  drawStuff( CALayer *layer, CGContext *context)
 //   mulle_fprintf( stderr, "%s\n", __PRETTY_FUNCTION__);
 //#endif
 
-#ifdef DUMP
-   [balls[ 0] dump:"a (before)"];
-   [balls[ 1] dump:"b (before)"];
-#endif
-
    for( i = 0; i < numBalls - 1; i++)
       for( j = i + 1; j < numBalls; j++)
          [balls[ i] react:balls[ j]];
-
-#ifdef DUMP
-   [balls[ 0] dump:"a (after)"];
-   [balls[ 1] dump:"b (after)"];
-#endif
 
    canvas = [layer canvas];
    for( i = 0; i < numBalls; i++)
@@ -317,17 +314,6 @@ static void   setupSceneInView( UIView *contentPlane)
                                       position:p
                                         vector:v];
    }
-//
-//      balls[ 0] = [[Ball alloc] initWithRadius:100.0
-//                                      position:CGPointMake( 100, 100.0)
-//                                        vector:CAPolarPointMake( 1.0,
-//                                                                 CAAngleHourToRadians( 6.0)
-//                                                                 )];
-//      balls[ 1] = [[Ball alloc] initWithRadius:100.0
-//                                      position:CGPointMake( 100.0, 400.0)
-//                                        vector:CAPolarPointMake( 1.0,
-//                                                                 CAAngleHourToRadians( 12.0)
-//                                                                 )];
 }
 
 
@@ -343,7 +329,7 @@ int   main( int argc, char *argv[])
       frame  = CGRectMake( 0.0, 0.0, 800.0, 600.0);
       window = [UIWindow windowWithFrame:frame
                          titleUTF8String:"Demo"
-                               styleMask:UIWindowStyleMaskDefault & ~UIWindowStyleRetained];
+                               styleMask:UIWindowStyleMaskDefault]; // & ~UIWindowStyleRetained];
 
 //      window = [UIWindow windowWithFrame:CGRectMake( frame)];
       assert( window);
@@ -351,7 +337,7 @@ int   main( int argc, char *argv[])
       // If alpha is 0.0 balls lose contour ?
       // If color is white, nothing is shown
       [window setBackgroundColor:CGColorMakeBlack()];
-      [window setFrameRateHz:60.0];
+      [window setFrameRateHz:120.0];
 
       setupSceneInView( [window contentPlane]);
 

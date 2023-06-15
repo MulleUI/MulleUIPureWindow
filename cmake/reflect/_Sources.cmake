@@ -14,11 +14,13 @@ set( SOURCES
 src/CGFrameInfo+UTF8String.m
 src/UIFont.m
 src/UIPasteboard.m
+src/UITrackingArea.m
 src/UIView+CAAnimation.m
 src/UIView+RenderQueue.m
 src/UIView+Render.m
 src/UIView+UIResponderSearch.m
 src/UIView+UIResponder.m
+src/UIView+UITrackingArea.m
 src/UIView+UIWindow.m
 src/UIWindow+CGGeometry.m
 src/UIWindow+Frame.m
@@ -30,6 +32,7 @@ src/UIWindow+Thread.m
 src/UIWindow+UIEvent.m
 src/UIWindow+UIPasteboard.m
 src/UIWindow+UIResponder.m
+src/UIWindow+UITrackingArea.m
 src/UIWindow+UIWindow.m
 src/UIWindow.m
 )

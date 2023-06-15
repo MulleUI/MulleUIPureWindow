@@ -7,13 +7,6 @@
 
 @implementation UIView( UIResponder)
 
-- (BOOL) isUserInteractionEnabled
-{
-   if( [self isHidden])
-      return( NO);
-   return( [super isUserInteractionEnabled]);
-}
-
 
 - (id <UIResponder>) nextResponder
 {
@@ -64,6 +57,9 @@
 
 - (BOOL) resignFirstResponder
 {
+   if( ! [self isFirstResponder])
+      return( YES);
+
    if( [(UIWindow *) _window makeFirstResponder:nil])
    {
       [self didResignFirstResponder];

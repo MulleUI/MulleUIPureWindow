@@ -86,7 +86,7 @@ static void   init_texture()
 //
 // pretty much unchanged.
 //
-static void   display( GLFWOSWindow *window)
+static int   display( GLFWOSWindow *window)
 {
    static GLint faces[][4] = {{4,5,6,7},
                               {1,2,6,5},
@@ -140,6 +140,8 @@ static void   display( GLFWOSWindow *window)
       glEnd();
    }
    glFlush();
+
+   return( 0);
 }
 
 

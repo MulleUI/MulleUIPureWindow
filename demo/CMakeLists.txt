@@ -24,6 +24,8 @@ include( Environment)
 
 include( Files)
 
+include( IDESupport OPTIONAL)
+
 include( Dependencies OPTIONAL)
 
 foreach( MAIN_SOURCE ${SOURCES})
