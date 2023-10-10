@@ -8,8 +8,9 @@
 #import "import-private.h"
 
 #import "UIWindow+Frame.h"
+#import "UIWindow+Render.h"
 #import "UIWindow+Thread.h"
-
+#import "UIWindow+DebugPrivate.h"
 //#define DISPLAY_DEBUG
 
 
@@ -73,18 +74,19 @@
    double                  fastestFrameRate;
    double                  desiredFrameRate;
    mulle_relativetime_t    remainingFrameTime;
-   NSUInteger              displayBits;
    struct CGFrameInfo      frameInfo;
    struct UIOSWindowInfo   windowInfo;
-   BOOL                    didAnimate;
+   UIWindowDisplayBits     displayBits;
 
    assert( [NSThread mulleIsMainThread]);
 
-   didAnimate   = NO;
+   displayBits  = 0;
    needsRefresh = [self needsRefreshClearIfSet];
-#ifdef DISPLAY_DEBUG
-   MulleUILog( "needsRefresh=%s", needsRefresh ? "YES" : "NO");
-#endif
+
+   // this checks "refresh" events only, it can be NO, but still "display"
+   // may be set. The user usually never touches the refresh flag
+   UIWindowRenderLogVerbose( "needsRefresh=%s", needsRefresh ? "YES" : "NO");
+
    // We get called, but do we really need to do something already ?
    //
    // ## **UIWindowBackingStoreRetained**
@@ -100,33 +102,29 @@
       // main thread: handle refresh request
       if( needsRefresh)
       {
-#ifdef DISPLAY_DEBUG
-         MulleUILog( "refresh and swap");
-#endif
+         UIWindowRenderLog( "refresh and swap");
+
          if( _backingStore == UIWindowBackingStoreRetainedOnMainThread)
          {
-            displayBits = [self needsDisplayClearIfSet];
+            displayBits = [self needsDisplayBitsClearIfSet];
             [self getFrameInfo:&frameInfo];  // retrieve newest geometry
-            didAnimate  = [self renderWithFrameInfo:&frameInfo
+            displayBits = [self renderWithFrameInfo:&frameInfo
                                         displayBits:displayBits];
          }
          [self refresh];
          [self swapBuffers];
+         [self setNeedsDisplayBits:displayBits];
       }
 
-      if( didAnimate)
+      if( displayBits & UIWindowDisplayNeedsAnimation)
       {
-         [_OSWindow getOSWindowInfo:&windowInfo];
-         desiredFrameRate = UIOSWindowInfoGetFastestFrameRate( &windowInfo);         
-#ifdef DISPLAY_DEBUG
-         MulleUILog( "wait %.6fs", desiredFrameRate);
-#endif
+         desiredFrameRate = UIWindowGetAnimationRate( self);         
+
+         UIWindowRenderLogVerbose( "wait %.6fs", desiredFrameRate);
          return( desiredFrameRate);  // call me for events only ?
       }
 
-#ifdef DISPLAY_DEBUG
-      MulleUILog( "wait inf");
-#endif
+      UIWindowRenderLog( "wait inf");
       return( INFINITY);  // call me for events only ?
    }
 
@@ -148,30 +146,28 @@
 
    if( ! needsRefresh && remainingFrameTime != 0.0)
    {
-#ifdef DISPLAY_DEBUG
-      MulleUILog( "wait %.6f s", remainingFrameTime);
-#endif
+      UIWindowRenderLogVerbose( "wait %.6f s", remainingFrameTime);
       return( remainingFrameTime);
    }
 
-#ifdef DISPLAY_DEBUG
-   MulleUILog( "UIWindowBackingStoreVolatile -> renderFrame and swapBuffers (%.6f)",
+   UIWindowRenderLog( "UIWindowBackingStoreVolatile -> renderFrame and swapBuffers (%.6f)",
                          remainingFrameTime);
-#endif
 
    //
    // After swapBuffers we can safely release the CGLayers that were
    // possibly generated during the render. But not earlier, except if
    // one diligently calls flushRender
    //
-   displayBits  = [self needsDisplayClearIfSet];
-   displayBits |= UIWindowNeedsRedraw;
+   displayBits  = [self needsDisplayBitsClearIfSet];
+   displayBits |= UIWindowDisplayNeedsRedraw;
    [self getFrameInfo:&frameInfo];  // retrieve newest geometry
-   didAnimate   = [self renderWithFrameInfo:&frameInfo
+   displayBits  = [self renderWithFrameInfo:&frameInfo
                                 displayBits:displayBits];
 
    // no refresh in UIWindowBackingStoreVolatile
    [self swapBuffers];
+   [self setNeedsDisplayBits:displayBits];
+
    // now is the old now...
    UIWindowDisplayFrameStatisticsUpdate( &_mainThreadStatistics, now, mulle_absolutetime_now());
 
@@ -182,15 +178,13 @@
    desiredFrameRate = 0.0;
    if( ! _swapInterval)
    {
-      if( didAnimate)
-         desiredFrameRate = fastestFrameRate;
+      if( displayBits & UIWindowDisplayNeedsAnimation)
+         desiredFrameRate = UIWindowGetAnimationRate( self);
       else
          desiredFrameRate = UIOSWindowInfoGetSlowestFrameRate( &windowInfo);
    }
 
-#ifdef DISPLAY_DEBUG
-   MulleUILog( "wait %.6fs", desiredFrameRate);
-#endif
+   UIWindowRenderLogVerbose( "wait %.6fs", desiredFrameRate);
 
    return( desiredFrameRate);
 }

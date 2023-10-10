@@ -59,6 +59,18 @@
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleUIImage/MulleUIImage.h>   // MulleUIImage
 
+// You can tweak the following #import with these commands.
+// (Use 7488A99A-76BC-41A8-9372-A16071309EAB instead of MulleUIControl if there are duplicate entries)
+//    remove #import: : `mulle-sde dependency mark MulleUIControl no-header`
+//    rename:              `mulle-sde dependency|library set MulleUIControl include whatever.h`
+//    reorder:             `mulle-sde dependency move MulleUIControl <up|down>`
+//    toggle #import:     `mulle-sde dependency mark MulleUIControl [no-]import`
+//    toggle public:       `mulle-sde dependency mark MulleUIControl [no-]public`
+//    toggle optional:     `mulle-sde dependency mark MulleUIControl [no-]require`
+//    remove for platform: `mulle-sde dependency mark MulleUIControl no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
+#import <MulleUIControl/MulleUIControl.h>   // MulleUIControl
+
 #ifdef __has_include
 # if __has_include( "_demos-include.h")
 #  include "_demos-include.h"

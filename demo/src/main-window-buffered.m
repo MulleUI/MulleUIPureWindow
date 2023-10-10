@@ -21,7 +21,7 @@ int   main( int argc, char *argv[])
       assert( window);
 
       [window setBackgroundColor:WEISS];
-      contentPlane = [window contentPlane];
+      contentPlane = [window contentView];
       frame        = [contentPlane contentRect];
       frame        = UIEdgeInsetsInsetRect( frame, UIEdgeInsetsMake( 50, 50, 50, 50));
 

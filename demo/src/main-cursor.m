@@ -71,12 +71,11 @@ void   setupTrackingRectangles( UIView *view, UIWindow *window, BOOL reverse)
    }
 
    area = [UITrackingArea trackingAreaWithRect:rect1
+                                       options:0
                                          owner:view
-                                         cursor:[UIApp cursorWithStandardShape:UICursorDrag]
-                                       userInfo:nil
-                                        options:0];
-   [view addTrackingArea:area 
-                toWindow:window];
+                                      userInfo:nil]
+   [area setCursor:[UIApp cursorWithStandardShape:UICursorDrag]];
+   [view addTrackingArea:area];
 
 
    layer = [CALayer layerWithFrame:rect1];
@@ -85,12 +84,11 @@ void   setupTrackingRectangles( UIView *view, UIWindow *window, BOOL reverse)
    [view addLayer:layer];
 
    area = [UITrackingArea trackingAreaWithRect:rect2
+                                       options:0
                                          owner:view
-                                        cursor:[UIApp cursorWithStandardShape:UICursorTextInput]
-                                      userInfo:nil
-                                       options:0];
-   [view addTrackingArea:area 
-                toWindow:window];
+                                      userInfo:nil];
+   [area setCursor:[UIApp cursorWithStandardShape:UICursorTextInput]];
+   [view addTrackingArea:area];
 
    layer = [CALayer layerWithFrame:rect2];
    [layer setBorderWidth:1.0];
@@ -101,7 +99,7 @@ void   setupTrackingRectangles( UIView *view, UIWindow *window, BOOL reverse)
 
 void   setupScene( UIWindow *window)
 {
-   UIWindowPlane  *contentPlane;
+   UIView         *contentView;
    UIView         *view;
    SensitiveView  *subview;
    CGRect         frame;
@@ -109,19 +107,17 @@ void   setupScene( UIWindow *window)
    UIEdgeInsets   insets;
    CALayer        *layer;
 
-   contentPlane = [window contentPlane];
+   contentView = [window contentView];
 
-   frame  = [contentPlane contentRect];
+   frame  = [contentView contentRect];
    insets = UIEdgeInsetsMake( 8, 8, 8, 8);
    frame  = UIEdgeInsetsInsetRect( frame, insets);
 
    view  = [UIView viewWithFrame:frame];
    [view setDebugNameUTF8String:"parent"];
-   [view setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
+   [view setAutoresizingMask:UIViewAutoresizingScaleToFill];
    [view setBackgroundColor:CGColorMakeYellow()];
    [view setPadding:UIEdgeInsetsMake( 4.0, 4.0, 4.0, 4.0)];
-
-   [contentPlane addSubview:view];
 
    frame   = CGRectMake( 20, 40, 200, 200);
    subview = [SensitiveView viewWithFrame:frame];
@@ -166,6 +162,8 @@ void   setupScene( UIWindow *window)
    [subview setColors:CGColorMakeGreen()];
    setupTrackingRectangles( subview, window, YES);
    [view addSubview:subview];
+
+   [contentView addSubview:view];
 }
 
 

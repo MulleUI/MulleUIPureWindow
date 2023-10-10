@@ -52,9 +52,9 @@ int   main( int argc, char *argv[])
       [layer mulleSetVerticalAlignmentMode:MulleTextVerticalAlignmentVisualMiddle];
 
       view = [UIView viewWithLayer:layer];
-      [view setAutoresizingMask:UIViewAutoresizingStickToMiddle|UIViewAutoresizingStickToCenter];
+      [view setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
 
-      contentPlane = [window contentPlane];
+      contentPlane = [window contentView];
       [contentPlane addSubview:view];
 
       [app addWindow:window];

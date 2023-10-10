@@ -2,6 +2,10 @@
 
 #import "import-private.h"
 
+#import "UIWindow.h"
+#import "UIView+UIWindow.h"
+#import "UIView+UIResponder.h"
+#import "UIWindow+UIResponder.h"
 
 
 @implementation UITrackingArea 
@@ -9,58 +13,43 @@
 
 + (instancetype) trackingAreaWithRect:(CGRect) rect
 {
-   return( [[[self alloc] initWithRect:rect 
+   return( [[[self alloc] initWithRect:rect
+                               options:0
                                  owner:nil 
-                                cursor:NULL
-                              userInfo:nil 
-                               options:0] autorelease]);
+                              userInfo:nil] autorelease]);
 }
 
 
 + (instancetype) trackingAreaWithRect:(CGRect) rect
-                                owner:(id) owner 
-                               cursor:(UICursor *) cursor
-                             userInfo:(id) userInfo
                               options:(NSUInteger) options
+                                owner:(id) owner 
+                             userInfo:(id) userInfo
 {
    return( [[[self alloc] initWithRect:rect 
+                               options:options
                                  owner:owner 
-                                cursor:cursor
-                              userInfo:userInfo 
-                               options:options] autorelease]);
+                              userInfo:userInfo] autorelease]);
 }
 
 
 - (instancetype) initWithRect:(CGRect) rect 
-                        owner:(id) owner 
-                       cursor:(UICursor *) cursor
-                     userInfo:(id) userInfo
                       options:(NSUInteger) options
+                        owner:(id) owner 
+                     userInfo:(id) userInfo
 {
-   if( cursor)
-      options |= UITrackingSetCursor;
+   if( CGRectGetArea( rect) == 0.0f)
+   {
+      [self release];
+      return( nil);
+   }
 
    self->_owner    = owner;
    self->_rect     = rect;
    if( ! (options & UITrackingAssignUserInfo))
       userInfo = [userInfo retain];
    self->_userInfo = userInfo;
-   self->_cursor   = cursor;
    self->_options  = options;
    return( self);
-}
-
-
-- (instancetype) initWithRect:(CGRect) rect 
-                      options:(NSUInteger) options
-                        owner:(id) owner 
-                     userInfo:(id) userInfo
-{
-   return( [self initWithRect:rect  
-                        owner:owner
-                       cursor:NULL
-                     userInfo:userInfo
-                      options:options]);
 }
 
 
@@ -69,6 +58,42 @@
    if( ! (self->_options & UITrackingAssignUserInfo))
       [self->_userInfo release];
    [super dealloc];
+}
+
+
+- (BOOL) isTrackingActiveAtLocation:(CGPoint) location
+                           inWindow:(UIWindow *) window
+{
+   CGRect   visibleRect;
+   CGRect   rect;
+   UIView   *hitView;
+
+   if( _options & UITrackingActiveWhenFirstResponder)
+   {
+      if( [window firstResponder] != _view)
+         return( NO);
+   }
+
+   if( _options & UITrackingAreaReceivesObscuredEvents)
+      return( YES);
+
+   // try to keep it as cheap as possible
+   visibleRect = [_view visibleWindowRect];
+   if( ! CGRectContainsPoint( visibleRect, location))
+      return( NO);
+
+   rect = [_view convertRect:_rect
+                      toView:nil];
+   if( ! CGRectContainsPoint( rect, location))
+      return( NO);
+
+   if( _options & UITrackingVisibleRectOnly)
+   {
+      hitView = [window hitTest:location
+                      withEvent:nil];
+      return( hitView == _view);
+   }
+   return( YES);
 }
 
 
@@ -85,5 +110,35 @@
             self->_cursor); 
    return( s);
 }
+
+
+- (CGRect) frame
+{
+   return( _rect);
+}
+
+
+- (void) setCursor:(UICursor *) cursor
+{
+   if( cursor)
+      _options |= UITrackingSetCursor;
+   else
+      _options &= ~UITrackingSetCursor;
+
+   _cursor = cursor;
+}
+
+
+- (void) setUserInfo:(id) userInfo
+{
+   if( ! (self->_options & UITrackingAssignUserInfo))
+   {
+      [self->_userInfo autorelease];
+      userInfo = [userInfo retain];
+   }
+
+   _userInfo = userInfo;
+}
+
 
 @end 

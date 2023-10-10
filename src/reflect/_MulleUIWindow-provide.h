@@ -9,4 +9,11 @@
  *
  *      mulle-sde environment set MULLE_MATCH_TO_C_RUN DISABLE
  */
+#ifndef mulle_ui_window_provide_h__
+#define mulle_ui_window_provide_h__
+
+
 // no headers
+
+
+#endif

@@ -58,6 +58,9 @@ typedef NS_OPTIONS( NSUInteger, UIViewForgetImplicitAnimationsMode)
 + (mulle_relativetime_t) animationDuration;
 + (void) setAnimationDuration:(mulle_relativetime_t) duration;
 
++ (mulle_relativetime_t) animationOffset;
++ (void) setAnimationOffset:(mulle_relativetime_t) offset;
+
 + (BOOL) animationRepeatAutoreverses;
 + (void) setAnimationRepeatAutoreverses:(BOOL) flag;
 

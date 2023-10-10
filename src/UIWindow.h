@@ -49,13 +49,13 @@ typedef UIView   UIWindowPlane;
 //
 typedef NS_ENUM( NSUInteger, UIWindowBackingStoreType)
 {
-   UIWindowBackingStoreRetainedOnMainThread, // useful for debugging only
-   UIWindowBackingStoreRetained,  // safe default
-   UIWindowBackingStoreVolatile   // draws to "volatile" window framebuffer
+   UIWindowBackingStoreVolatile,  // draws to "volatile" window framebuffer
                                   // still dual buffered but needs fast code
                                   // to avoid ugliness during resize
                                   // you can use a UIWindowStyleSingleBuffer
                                   // to get single buffered...
+   UIWindowBackingStoreRetainedOnMainThread, // useful for debugging only
+   UIWindowBackingStoreRetained,  // safe default
 };
 
 typedef NSUInteger   UIWindowBackingStoreType;
@@ -87,14 +87,19 @@ typedef NSUInteger   UIWindowBackingStoreType;
 // during refresh to the window. These properties need also locks or atomic
 // updates.
 //
-// value to use if styleMask is 0
-#define UIWindowStyleMaskDefault \
-   (UIWindowStyleRetained\
-    |UIWindowStyleResizable\
-    |UIWindowStyleEdgeAntialias \
+
+// as UIWindowStyleMaskDefault, but not retained (duh)
+#define UIWindowStyleMaskNonRetained \
+   (UIWindowStyleResizable\
+    |UIWindowStylePanes\
+    |UIWindowStyleAntiAlias \
     |UIWindowStyleStencilStrokes\
+    |UIWindowStyleClearType\
     |UIWindowOpenGLLibraryFallback)
 
+// value to use if styleMask is 0
+#define UIWindowStyleMaskDefault \
+   (UIWindowStyleRetained|UIWindowStyleMaskNonRetained)
 
 #define ui_window_pointer_fifo                mulle__pointerfifo128
 
@@ -174,14 +179,6 @@ static inline void   UIWindowDisplayFrameStatisticsInit( struct UIWindowFrameSta
       stats->avgElapsedHistory = 0.0005;
    }
 }
-
-
-typedef NS_OPTIONS( NSUInteger, UIWindowNeedsDisplay)
-{
-   UIWindowNeedsRedraw    = 0x1,   // needs immediate attention
-   UIWindowNeedsLayout    = 0x2,   // needs immediate attention, forces redraw
-   UIWindowNeedsAnimation = 0x4    // needs attention according to animationRate
-};
 
 
 typedef NS_OPTIONS( NSUInteger, UIWindowPropertyChange)
@@ -264,6 +261,7 @@ struct MulleClickDragDifferentiator
    //
    struct ui_window_pointer_fifo   _eventQueue;
    struct ui_window_pointer_fifo   _timerQueue;
+   int                             _sendFakeMouseMotionEvent;
 
    // usually if we are buffered, we have a windowThread to do everything
    NSThread                        *_windowThread;
@@ -312,6 +310,11 @@ struct MulleClickDragDifferentiator
    // only used to create UIEventTypeWindowFramebufferGeometry events
    struct CGWindowInfo             _previousWindowInfo;
    struct CGWindowInfo             _currentWindowInfo;
+
+   // used for showing menus
+   char                            _oldUserInteractionEnabled;
+   char                            _oldMenuPlaneHidden;
+
 }
 
 @property( retain, readonly) id <UIOSWindow>         OSWindow;
@@ -319,8 +322,6 @@ struct MulleClickDragDifferentiator
 // only available during rendering use for layout code if you need
 // to do font measurements, will abort if nil
 @property( assign, readonly) id <UIGraphicsContext>  renderGraphicsContext;
-
-@property( assign) BOOL                            debugEnabled;
 
 @property( retain) id                              userInfo;
 // TODO: pasteboard is a global resource and is on Application ?
@@ -370,7 +371,9 @@ struct MulleClickDragDifferentiator
 @property( getter=isOpaque) BOOL                    opaque;
 
 // context switches are expensive, try to minimize with this setting
-@property( assign) BOOL                             keepOSGraphicsContext;
+@property( assign) BOOL                                keepOSGraphicsContextActive;
+// default yes
+@property( assign, getter=isLoadingDefaultFont) BOOL   loadDefaultFont;
 
 // Rendercallbacks. If the renderer is in its own thread, then all these
 //                  callbacks will appear on the render thread. This thread
@@ -380,21 +383,31 @@ struct MulleClickDragDifferentiator
 // This is the "master" callback, if you override this, none of the other
 // render callbacks and delegate methods will be invoked (except 
 // didRenderFrameCallback). So in general keep it as 
-// UIWindowDefaultRawFrameCallback. DisplayBits are UIWindowNeedsRedraw et.al.
+// UIWindowDefaultRawFrameCallback. DisplayBits are UIWindowDisplayNeedsRedraw et.al.
 // Returns YES, if any animations were run.
 //
 // Will be usually either  or 
 //
-@property BOOL   (*rawFrameCallback)( UIWindow *window,
-                                      id <UIGraphicsContext> context,
-                                      struct CGFrameInfo *frameInfo,
-                                      NSUInteger displayBits);
+@property UIWindowDisplayBits
+   (*rawFrameCallback)( UIWindow *window,
+                        id <UIGraphicsContext> context,
+                        struct CGFrameInfo *frameInfo,
+                        UIWindowDisplayBits displayBits);
+
+// will be called immediately before rawFrameCallback, you should return
+// displayBits intact, unless you know better
+@property UIWindowDisplayBits
+   (*willRenderFrameCallback)( UIWindow *window,
+                               id <UIGraphicsContext> context,
+                               struct CGFrameInfo *frameInfo,
+                               UIWindowDisplayBits displayBits);
 
 // will be called immediately after rawFrameCallback, before swapBuffers
-@property BOOL   (*didRenderFrameCallback)( UIWindow *window,
-                                            id <UIGraphicsContext> context,
-                                            struct CGFrameInfo *frameInfo,
-                                            BOOL didAnimate);
+@property UIWindowDisplayBits
+   (*didRenderFrameCallback)( UIWindow *window,
+                              id <UIGraphicsContext> context,
+                              struct CGFrameInfo *frameInfo,
+                              UIWindowDisplayBits displayBits);
 
 //
 // If this callback is set, then UIViews and CAAnimations are ignored and this 
@@ -473,14 +486,19 @@ struct MulleClickDragDifferentiator
 
 // the resize plane is shown, when the window is resizing
 // the other planes are then not shown
-
+// these properties return nil, if styleMask did not contain UIWindowStylePanes
+//
 @property( readonly, assign) UIWindowPlane   *alertPlane;
 @property( readonly, assign) UIWindowPlane   *dragAndDropPlane;
 @property( readonly, assign) UIWindowPlane   *menuPlane;
 @property( readonly, assign) UIWindowPlane   *toolTipPlane;
 @property( readonly, assign) UIWindowPlane   *contentPlane;
 
-@property( assign) id <UIResponder>          initialFirstResponder;
+// this is usually the contentPlane (UIWindowStylePanes) or the window as
+// a fallback, but you can assign any subview of the UIWindow to it
+@property( assign) UIView                     *contentView;
+
+@property( assign) id <UIResponder>           initialFirstResponder;
 
 + (instancetype) windowWithFrame:(CGRect) frame;
 
@@ -533,14 +551,21 @@ struct MulleClickDragDifferentiator
 - (BOOL) needsRefresh;
 - (BOOL) needsRefreshClearIfSet;
 
+- (BOOL) isTracking;
+
 //
 // needs Display is a combination of needsLayout and needsRedraw, needsAnimation
-// bits defined in UIWindowNeedsDisplay
+// bits defined in UIWindowDisplayBits
 //
+// - (void) setNeedsDisplayBit:(UIWindowDisplayBit) value;  // can't zero
+- (UIWindowDisplayBits) needsDisplayBitsClearIfSet;
+
+// sets more than just one bit, can also zero
+- (void) setNeedsDisplayBits:(UIWindowDisplayBits) value;
+
+// legacy compatibility
 - (void) setNeedsDisplay;  // sets all bits
-- (void) setNeedsDisplayBit:(NSUInteger) value;
-- (NSUInteger) needsDisplay;
-- (NSUInteger) needsDisplayClearIfSet;
+- (UIWindowDisplayBits) needsDisplay;
 
 // force re-layout on next render, setting this flag does not affect other
 // flags

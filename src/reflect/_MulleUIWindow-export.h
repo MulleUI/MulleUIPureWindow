@@ -9,6 +9,10 @@
  *
  *      mulle-sde environment set MULLE_MATCH_TO_C_RUN DISABLE
  */
+#ifndef mulle_ui_window_export_h__
+#define mulle_ui_window_export_h__
+
+
 #import "CGFrameInfo+UTF8String.h"
 #import "MulleObjCLoader+MulleUIWindow.h"
 #import "UIFont.h"
@@ -33,3 +37,6 @@
 #import "UIWindow+UITrackingArea.h"
 #import "UIWindow+UIWindow.h"
 #import "UIWindow.h"
+
+
+#endif

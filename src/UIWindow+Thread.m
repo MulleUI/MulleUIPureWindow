@@ -7,6 +7,7 @@
 
 #import "import-private.h"
 
+#import "UIWindow+DebugPrivate.h"
 #import "UIWindow+Frame.h"
 #import "UIWindow+Render.h"
 #import "UIWindow+NSTimer.h"
@@ -16,10 +17,10 @@
 
 // #define THREAD_DEBUG
 // #define THREAD_DEBUG_VERBOSE
-// #define SWAP_DEBUG
+#define SWAP_DEBUG
 
 // this writes out a PNG for each frame
-// #define REFRESH_IMAGE_DEBUG
+//#define REFRESH_IMAGE_DEBUG
 // catch race conditions (only works if picture drawn is not empty)
 //#define MISSING_BARRIER_DEBUG
 //#define RANDOM_SLEEP_DURING_DRAW
@@ -85,27 +86,20 @@
 
    assert( _windowThread && [NSThread mulleIsMainThread]);
 
-#ifdef THREAD_DEBUG
-   MulleUILogThisMethod();
-#endif
-
    timeout = RENDER_THREAD_GRACE_PERIOD;
 
-#ifdef THREAD_DEBUG
-   MulleUILog( "trying to lock with 1 (%@ = %td, %s) (%.3f)",
+   UIWindowThreadLog( "trying to lock with 1 (%@ = %td, %s) (%.3f)",
                _windowThreadLock, [_windowThreadLock condition],
                [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED",
                timeout);
-#endif
 
    if( [_windowThreadLock mulleLockWhenCondition:1
                                          timeout:timeout])
    {
-#ifdef THREAD_DEBUG
-      MulleUILog( "locked with 1, unlocking with 2 (%@ = %td, %s)",
+      UIWindowThreadLog( "locked with 1, unlocking with 2 (%@ = %td, %s)",
                   _windowThreadLock, [_windowThreadLock condition],
                   [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
-#endif
+
       // or place a shutdown event into the event pipe ? We are the only one
       // who cancel the thread. This means a thread could possibly have gone
       // down somehow or is in an endless loop if it doesn't catch this
@@ -113,10 +107,8 @@
 
       [_windowThreadLock unlockWithCondition:2];
 
-#ifdef THREAD_DEBUG
-      MulleUILog( "waiting for unlock to 1 (%@ = %td)",
-                  _windowThreadLock, [_windowThreadLock condition]);
-#endif
+      UIWindowThreadLog( "waiting for unlock to 1 (%@ = %td)",
+                         _windowThreadLock, [_windowThreadLock condition]);
 
       if( [_windowThreadLock mulleLockWhenCondition:1
                                              timeout:timeout])
@@ -150,9 +142,7 @@
    [_windowPropertyLock autorelease];
    _windowPropertyLock = nil;
 
-#ifdef THREAD_DEBUG
-   MulleUILog( "\033[1mwindow thread stopped\033[0m");
-#endif
+   UIWindowThreadLog( "\033[1mwindow thread stopped\033[0m");
 }
 
 
@@ -164,23 +154,17 @@
 //
 - (void) wakeupWindowThread
 {
-#ifdef THREAD_DEBUG
-   MulleUILog( "(%@ = %td, %s)",
+   UIWindowThreadLog( "(%@ = %td, %s)",
                _windowThreadLock, [_windowThreadLock condition],
                [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
-#endif
    if( [_windowThreadLock tryLockWhenCondition:1])
    {
-#ifdef THREAD_DEBUG
-      MulleUILog( "unlocking %#@", _windowThread);
-#endif
+      UIWindowThreadLog( "unlocking %#@", _windowThread);
       [_windowThreadLock unlockWithCondition:2];
    }
    else
    {
-#ifdef THREAD_DEBUG
-      MulleUILog( "window thread is running it seems");
-#endif
+      UIWindowThreadLog( "window thread is running it seems");
    }
 }
 
@@ -239,11 +223,9 @@
    thread = [NSThread currentThread];
    [thread mulleSetNameUTF8String:"UIWindowThread"];
 
-#ifdef THREAD_DEBUG
-   MulleUILog( "coming up (%@ = %td, %s)",
+   UIWindowThreadLog( "coming up (%@ = %td, %s)",
                      _windowThreadLock, [_windowThreadLock condition],
                      [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
-#endif
 
    //
    // state machine
@@ -268,12 +250,10 @@
 
    for(;;)
    {
-#ifdef THREAD_DEBUG_VERBOSE
-      MulleUILog( "locking and waiting for condition 2 (%@ = %td, %s) timeout=%.3f",
+      UIWindowThreadLogVerbose( "locking and waiting for condition 2 (%@ = %td, %s) timeout=%.3f",
                   _windowThreadLock, [_windowThreadLock condition],
                   [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED",
                   timeout);
-#endif
       [pool mulleReleaseAllObjects];
       haveLock = [_windowThreadLock mulleLockWhenCondition:2
                                                    timeout:timeout];
@@ -285,22 +265,18 @@
             if( haveLock)
             {
                [_windowThreadLock unlockWithCondition:1];
-#ifdef THREAD_DEBUG
-               MulleUILog( "going down (%#@ = %td, %s)",
+               UIWindowThreadLog( "going down (%#@ = %td, %s)",
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
-#endif
                goto done;
             }
 
             // if we don't have the lock (curious), we can't clearly
             // communicate with the main thread, so we just redo the wait
             // for lock. The cancel flag sticks
-#ifdef THREAD_DEBUG
-            MulleUILog( "waiting for final lock (%#@ = %td, %s)",
+            UIWindowThreadLog( "waiting for final lock (%#@ = %td, %s)",
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
-#endif
             break;
          }
 
@@ -323,18 +299,16 @@
                                        frameStatistics:&_windowThreadStatistics
                                       frameRateLimiter:windowInfo.frameRateLimiter];
 
-         displayBits = [self needsDisplayClearIfSet];
+         displayBits = [self needsDisplayBitsClearIfSet];
          if( remainingFrameTime == 0.0)
-            displayBits |= UIWindowNeedsRedraw;
+            displayBits |= UIWindowDisplayNeedsRedraw;
 
-#ifdef THREAD_DEBUG
-         MulleUILog( "displayBits = 0x%tx frameRate=%.6f remainingFrameTime=%.6f didAnimate=%btd, mask=0x%tx)",
+         UIWindowThreadLog( "displayBits = 0x%tx frameRate=%.6f remainingFrameTime=%.6f didAnimate=%btd, mask=0x%tx)",
                      displayBits,
                      windowInfo.frameRate,
                      remainingFrameTime,
                      didAnimate,
                      mask);
-#endif
 
          if( displayBits)
          {
@@ -342,13 +316,11 @@
                                                windowInfo.base.framebufferSize,
                                                windowInfo.base.pixelRatio);
             frameInfo.now = now;
-            didAnimate    = [self renderWithFrameInfo:&frameInfo
+            displayBits   = [self renderWithFrameInfo:&frameInfo
                                           displayBits:displayBits];
 
 
-#ifdef THREAD_DEBUG_VERBOSE
-            MulleUILog( "done rendering");
-#endif
+            UIWindowThreadLogVerbose( "done rendering");
 
             UIWindowDisplayFrameStatisticsUpdate( &_windowThreadStatistics,
                                                   now,
@@ -370,8 +342,7 @@
 
             // if there is an animation going, set our animation displayBit
             // right back
-            if( didAnimate)
-               [self setNeedsAnimation];
+            [self setNeedsDisplayBits:displayBits];
          }
 
          [self pollInvocationQueues];
@@ -385,19 +356,15 @@
       if( haveLock)
       {
          [_windowThreadLock unlockWithCondition:1];
-#ifdef THREAD_DEBUG
-         MulleUILog( "unlockWithCondition 1 (%@ = %td, %s)",
+         UIWindowThreadLog( "unlockWithCondition 1 (%@ = %td, %s)",
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
-#endif
       }
       else
       {
-#ifdef THREAD_DEBUG_VERBOSE
-         MulleUILog( "haveNoLock (%@ = %td, %s)",
+         UIWindowThreadLogVerbose( "haveNoLock (%@ = %td, %s)",
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
-#endif
       }
 
       // MEMO: the window thread doesn't need to lock indefinitely, the
@@ -445,18 +412,14 @@ done:
          layer = _lastOffscreenFramebuffer;
          if( ! layer)
          {
-            mulle_fprintf( stderr, "%#@ has nothing to display (yet ?)\n", self);
+            UIWindowThreadLog( "There is nothing to display (yet ?)");
             return;
          }
-#ifdef SWAP_DEBUG
-         MulleUILog( "Reuse previously acquired offscreen framebuffer layer %#@", layer);
-#endif
+         UIWindowSwapLog( "Reuse previously acquired offscreen framebuffer layer %#@", layer);
       }
       else
       {
-#ifdef SWAP_DEBUG
-         MulleUILog( "Acquired freshly drawn layer %#@, recycling layer %#@", layer, _lastOffscreenFramebuffer);
-#endif
+         UIWindowSwapLog( "Acquired freshly drawn layer %#@, recycling layer %#@", layer, _lastOffscreenFramebuffer);
          // recycle our old framebuffer
          assert( _lastOffscreenFramebuffer != layer);
 
@@ -466,25 +429,25 @@ done:
          _lastOffscreenFramebuffer = [layer retain];
       }
 
-//  // hack, because render thread could be active
-//  context = [self activateRenderGraphicsContext];
-//  {
-//     static int   nr;
-//     char         *s;
+//#ifdef DUMP_FRAME_TO_FILE
+//     // hack, because render thread could be active
+//     context = [self activateRenderGraphicsContext];
+//     {
+//        static int   nr;
+//        char         *s;
 //
-//     s = MulleObjC_asprintf( "layer-%d.png", ++nr);
-//     [[layer bitmapImage] writeToPNGUTF8String:s];
-//  }
-//  [self deactivateGraphicsContext:context];
+//        s = MulleObjC_asprintf( "layer-%d.png", ++nr);
+//        [[layer bitmapImage] writeToPNGUTF8String:s];
+//     }
+//     [self deactivateGraphicsContext:context];
+//#endif
 
       context = [self activateWindowGraphicsContext];
       @autoreleasepool // THIS IS IMPORTANT TO COLLECT CGLAYERS WHILE CONTEXT IS ALIVE
       {
          [self getFrameInfo:&frameInfo];
 
-#ifdef SWAP_DEBUG
-         MulleUILog( "Begin render");
-#endif
+         UIWindowSwapLog( "Begin render");
          // TODO: voodoo barrier, possibly useless
          // [context barrier];
          [context beginRender:&frameInfo];
@@ -500,9 +463,7 @@ done:
          rect.origin = CGPointZero;
          rect.size   = frameInfo.window.frame.size;
 
-#ifdef SWAP_DEBUG
-         MulleUILog( "Acquire image");
-#endif
+         UIWindowSwapLog( "Acquire image");
          image       = [_offscreenContext shareImage:layer
                                          withContext:context];
          assert( image);
@@ -522,35 +483,40 @@ done:
             }
          }
 #endif
-#ifdef SWAP_DEBUG
-         MulleUILog( "Refresh with image %#@", image);
-#endif
-         [context drawRect:imageFrame
-                     image:image
-                     scale:isScaling];
+         UIWindowSwapLog( "Refresh with image %#@", image);
+
+         // this can likely transfer directly into the framebuffer, any nvg
+         // drawing issued before (and after) will appear on top of it
+         // in other words: DO NOT emit drawing code before this, after is
+         // OK.
+         [(id <UIGraphicsDrawing>) context blitRect:imageFrame
+                                              image:image
+                                              scale:isScaling];
 
          if( _debugEnabled & UIWindowDrawFramebufferIdRect)
          {
             if( [context conformsToProtocol:@protocol( UIGraphicsDrawing)])
+            {
                [(id <UIGraphicsDrawing>) context
                         strokeRect:CGRectInset( rect, 20, 20)
-                             width:4.0
+                       strokeWidth:4.0
                           hexColor:0x20A080FF];
+            }
          }
 
 #ifdef REFRESH_IMAGE_DEBUG
          MulleUIWriteImageToPNGFileSequenceAsync( image, "refresh-image");
 #endif
 
-#ifdef SWAP_DEBUG
-         MulleUILog( "Drew image %#@ of size %.1f %.1f into %.1f %.1f %.1f %.1f for refresh",
+         UIWindowSwapLog( "Drew image %#@ of size %.1f %.1f into %.1f %.1f %.1f %.1f for refresh",
                            image,
                            imageSize.width, imageSize.height,
                            imageFrame.origin.x, imageFrame.origin.y,
                            imageFrame.size.width, imageFrame.size.height);
-#endif
          [context endRender];
+         UIWindowSwapLog( "Finished render");
       }
+      UIWindowSwapLog( "AutoreleasePool cleaned");
    }
    [self deactivateGraphicsContext:context];
 }

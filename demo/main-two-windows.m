@@ -111,7 +111,7 @@ static void   setupSceneInWindow( UIWindow *window)
    CGRect   frame;
    UIView   *contentPlane;
 
-   contentPlane = [window contentPlane];
+   contentPlane = [window contentView];
 
    frame = [contentPlane contentRect];
    frame = UIEdgeInsetsInsetRect( frame, UIEdgeInsetsMake( 40, 40, 40, 40));

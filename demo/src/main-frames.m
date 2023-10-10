@@ -28,7 +28,7 @@ static void  usage( void)
 #define LARGE_FONT      32
 
 
-static void   drawStuff( CALayer *layer, CGContext *context)
+static BOOL   drawStuff( CALayer *layer, CGContext *context)
 {
    auto char               buf[ 64];
    CGFont                  *font;
@@ -50,11 +50,12 @@ static void   drawStuff( CALayer *layer, CGContext *context)
 
    vg = CGContextGetNVGContext( context);
 
-   nvgTextColor( vg, CGColorMakeWithHexColor( 0x0000000FF), CGColorMakeWithHexColor( 0xFFFFFFFF));
+   nvgTextColor( vg, CGColorMakeWithHexColor( 0x0000000FF));
+   nvgTextBackgroundColor( vg, CGColorMakeWithHexColor( 0xFFFFFFFF));
    nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 
    font = [context fontWithNameUTF8String:"sans"];
-   [context setFont:font];
+   [context useFont:font];
 
    nvgFontSize( vg, SMALL_FONT);
    sprintf( buf, "frameRateLimiter : %s", [window frameRateLimiter] ? "YES" : "NO");
@@ -104,6 +105,7 @@ static void   drawStuff( CALayer *layer, CGContext *context)
 
 //   sprintf( buf, "%.6f display+refresh", [window displayAndRefreshRate]);
 //   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 3 + 8, buf, NULL);
+   return( YES);
 }
 
 
@@ -123,17 +125,16 @@ static void   setupSceneInWindow( UIWindow *window)
 {
    UIView   *view;
    CGRect   frame;
-   UIView   *contentPlane;
+   UIView   *contentView;
 
-   contentPlane = [window contentPlane];
-
-   frame = [contentPlane contentRect];
+   contentView = [window contentView];
+   frame       = [contentView contentRect];
 
    view  = [UIView viewWithFrame:frame];
    [view setBackgroundColor:CGColorMakeWithRGBA( 1.0, 1.0, 1.0, 1.0)];
    [(CALayer *) [view layer] setDrawCallback:(CALayerDrawCallback_t *) drawStuff];
    [view setUserInteractionEnabled:YES];
-   [contentPlane addSubview:view];
+   [contentView addSubview:view];
 }
 
 

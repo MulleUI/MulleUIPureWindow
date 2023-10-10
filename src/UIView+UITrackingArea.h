@@ -35,9 +35,8 @@
 - (void) removeAllTrackingAreas;
 
 // default implementation will update tracking areas with
-// option UITrackingInVisibleRect set and will set rect to zero
-// for all others!
+// option UITrackingVisibleRectOnly set. Other areas will stale away, if
+// this method isn't overridden.
 - (void) updateTrackingAreas;
-
 
 @end

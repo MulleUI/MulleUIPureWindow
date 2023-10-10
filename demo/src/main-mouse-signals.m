@@ -99,10 +99,10 @@ static void   draw( CALayer *layer, CGContext *context)
 
 #ifdef ORIGINAL   
       [context fillPoint:CGPointMake( i, now.location.x / 3)
-                   width:2.0
+              pointSize:2.0
                    color:CGColorMakeWithGrayByte( 255)];  
       [context fillPoint:CGPointMake( i, canvas.size.height / 3 + now.location.y / 3)
-                   width:2.0
+               pointSize:2.0
                    color:CGColorMakeWithGrayByte( 0)];
       [context drawLineFromPoint:CGPointMake( i, (2 * canvas.size.height) / 3 + (now.state ? 0 : 254) / 3)
                          toPoint:CGPointMake( i, (2 * canvas.size.height) / 3 + (prev.state ? 0 : 255) / 3)
@@ -132,13 +132,13 @@ static void   draw( CALayer *layer, CGContext *context)
 
 #ifndef ORIGINAL   
    [context strokePath:path[ 0]
-                 width:1.5
+           strokeWidth:1.5
               hexColor:CGHexColorMakeWithColor( CGColorMakeWithGrayByte( 255))];
    [context strokePath:path[ 1]
-                 width:1.5
+           strokeWidth:1.5
               hexColor:CGHexColorMakeWithColor( CGColorMakeWithGrayByte( 0))];
    [context strokePath:path[ 2]
-                 width:1.5
+           strokeWidth:1.5
               hexColor:CGHexColorMakeWithColor( CGColorMakeWithGrayByte( 255))];
    CGPathDestroy( path[ 0]);
    CGPathDestroy( path[ 1]);

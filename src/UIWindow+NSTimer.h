@@ -15,6 +15,8 @@
 
 - (NSUInteger) executeTimerQueue;
 
+// the window must have been added to the UIApplication before you can
+// add timers.
 - (void) addTimer:(NSTimer *) timer;
 - (void) resetTimer:(NSTimer *) timer;
 - (void) removeTimer:(NSTimer *) timer;

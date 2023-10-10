@@ -1,10 +1,11 @@
 #import "UIWindow+UIResponder.h"
 
+#import "UIWindow+DebugPrivate.h"
 
 #import "UIView+UIResponder.h"
 #import "UIView+UIResponderSearch.h"
 
-#define FIRST_RESPONDER_DEBUG
+//#define FIRST_RESPONDER_DEBUG
 
 @implementation UIWindow( UIResponder)
 
@@ -20,10 +21,8 @@
    // we can set any non-nil value
    assert( ! responder || ! _firstResponder);
 
-#ifdef FIRST_RESPONDER_DEBUG
    if( responder != _firstResponder)
-      MulleUILog( "change firstResponder to %#@", responder);
-#endif
+      UIWindowEventLog( nil, "change firstResponder to %#@", responder);
 
    _firstResponder = responder;
    return( YES);
@@ -37,7 +36,7 @@
    id <UIResponder>           best;
 
    UIResponderSearchInit( &search, _firstResponder, primaryDirection, secondaryDirection);
-   [[self contentPlane] _firstResponderSearch:&search];
+   [[self contentView] _firstResponderSearch:&search];
    best = UIResponderSearchGetResult( &search);
    UIResponderSearchDone( &search);
    
@@ -81,12 +80,10 @@
    NSUInteger   key;
    NSUInteger   modifiers;
 
-#ifdef DEBUG
-   MulleUILog( "key: %ld scanCode: %ld modifiers: %ld", 
+   UIWindowEventLog( event, "key: %ld scanCode: %ld modifiers: %ld",
                         (long) [event key], 
                         (long) [event scanCode],
                         (long) [event keyModifiers]);
-#endif 
 
    key       = [event key];
    modifiers = [event keyModifiers];

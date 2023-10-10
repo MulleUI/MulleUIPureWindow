@@ -10,7 +10,7 @@ int   main( int argc, char *argv[])
    UIWindow        *window;
    UIApplication   *app;
    UIView          *view;
-   UIWindowPlane   *contentPlane;
+   UIView          *contentView;
    CGRect          frame;
 
    app = [UIApplication sharedInstance];
@@ -21,13 +21,13 @@ int   main( int argc, char *argv[])
       assert( window);
 
       [window setBackgroundColor:WEISS];
-      contentPlane = [window contentPlane];
-      frame        = [contentPlane contentRect];
-      frame        = UIEdgeInsetsInsetRect( frame, UIEdgeInsetsMake( 50, 50, 50, 50));
+      contentView = [window contentView];
+      frame       = [contentView contentRect];
+      frame       = UIEdgeInsetsInsetRect( frame, UIEdgeInsetsMake( 50, 50, 50, 50));
 
       view = [UIView viewWithFrame:frame];
       [view setBackgroundColor:BLAU];
-      [contentPlane addSubview:view];
+      [window addSubview:view];
 
       [app addWindow:window];
    }
