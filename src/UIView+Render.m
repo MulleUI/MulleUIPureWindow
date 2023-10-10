@@ -6,6 +6,7 @@
 #import "import-private.h"
 
 #import "UIView+RenderQueue.h"
+#import <MulleUIView/UIView+DebugPrivate.h>
 
 
 @implementation UIView ( Render)
@@ -13,6 +14,8 @@
 - (void) renderInContext:(id <UIGraphicsContext>) context
 {
    struct mulle_pointerarray   renderQueue;
+
+   UIViewLog( "%#@", context);
 
    _mulle_pointerarray_init( &renderQueue, 0, NULL);
 

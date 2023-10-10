@@ -58,7 +58,6 @@ static id    balls[ numBalls];
 {
    NSUInteger       i;
    CAPolarPoint     x;
-   CAAngleRadians   rad;
    CGFloat          hue;
 
    _radius          = r;
@@ -81,8 +80,7 @@ static id    balls[ numBalls];
       _boundOffset[ i]     = r;
       _boundOffsetBuff[ i] = r;
 //      _path.add(new Point());
-      rad                  = CAAngleDegreesToRadians( 360.0 / _numSegment * i);
-      x                    = CAPolarPointMake( 1.0f, rad);
+      x                    = CAPolarPointMakeWithRotation( 1.0f, (double) i / _numSegment);
       _sidePoints[ i]      = CGPointMakeWithPolarPoint( x);
    }
    return( self);
@@ -109,13 +107,13 @@ static id    balls[ numBalls];
 {
    CGPoint          diff;
    CGFloat          angle;
-   CAAngleDegrees   deg;
+   CGFloat   deg;
    NSUInteger       i;
 
    diff  = CGPointSubtract( _point, b);
-   deg   = CAAngleRadiansToDegrees( CGPointGetPolarAngle( diff));
+   deg   = CARadiansToDegrees( CGPointGetPolarRadians( diff));
    angle = fmodf( deg + 180.0, 360.0f);
-   angle = CAAngleDegreesNormalize( angle);
+   angle = CADegreesNormalize( angle);
    i     = (NSUInteger) (floor( angle / 360.0) * _numSegment);
    assert( i < _numSegment);
    return( _boundOffset[ i]);
@@ -168,8 +166,8 @@ static id    balls[ numBalls];
       overlap = _radius + [b radius] - dist;
 
       diff    = CGPointSubtract( _point, [b point]);
-      direc   = CAPolarPointMake( overlap * overlapFactor,
-                                  CGPointGetPolarAngle( diff));
+      direc   = CAPolarPointMakeWithRadians( overlap * overlapFactor,
+                                             CGPointGetPolarRadians( diff));
       _vector = CAPolarPointAdd( _vector, direc);
       [b setVector:CAPolarPointSubtract( [b vector], direc)];
 
@@ -239,7 +237,7 @@ static id    balls[ numBalls];
 /*
  * Ball drawing
  */
-- (void) drawInContext:(CGContext *) context
+- (BOOL) drawInContext:(CGContext *) context
 {
    NVGcontext   *vg;
    NSUInteger   i;
@@ -262,12 +260,13 @@ static id    balls[ numBalls];
    // TODO: need to smooth
    nvgFillColor( vg, _fillColor);
    nvgFill( vg);
+   return( YES);
 }
 
 @end
 
 
-static void  drawStuff( CALayer *layer, void *_context)
+static BOOL  drawStuff( CALayer *layer, void *_context)
 {
    CGContext    *context = _context;
    CGRect       canvas;
@@ -289,6 +288,8 @@ static void  drawStuff( CALayer *layer, void *_context)
 
    for( i = 0; i < numBalls; i++)
       [balls[ i] drawInContext:context];
+
+   return( YES);
 }
 
 
@@ -308,8 +309,8 @@ static void   setupSceneInView( UIView *contentPlane)
    {
       r = CGFloatMakeRandom() * (MAX_RADIUS - MIN_RADIUS) + MIN_RADIUS;
       p = CGPointMakeRandomInRect( contentRect);
-      v = CAPolarPointMake( CGFloatMakeRandom(),
-                            CAAngleDegreesToRadians( CGFloatMakeRandom() * 360));
+      v = CAPolarPointMakeWithRadians( CGFloatMakeRandom(),
+                                       CADegreesToRadians( CGFloatMakeRandom() * 360));
       balls[ i] = [[Ball alloc] initWithRadius:r
                                       position:p
                                         vector:v];
@@ -339,7 +340,7 @@ int   main( int argc, char *argv[])
       [window setBackgroundColor:CGColorMakeBlack()];
       [window setFrameRateHz:120.0];
 
-      setupSceneInView( [window contentPlane]);
+      setupSceneInView( [window contentView]);
 
       [app addWindow:window];
    }

@@ -57,15 +57,15 @@ static inline int   CGAlphaIsTransparent( float a)
 - (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue
                    context:(struct UIRenderQueueContext *) ctx
 {
-   id <UILayer>                          layer;
-   CGAffineTransform                     projection;
-   CGRect                                bounds;
-   CGRect                                frame;
-   CGRect                                screenRect;
-   CGRect                                transformedRect;
-   struct mulle_pointerarrayenumerator   rover;
-   struct UIRenderQueueContext             v;
-   UIView                                *view;
+   id <UILayer>                  layer;
+   CGAffineTransform             projection;
+   CGRect                        bounds;
+   CGRect                        frame;
+   CGRect                        screenRect;
+   CGRect                        transformedRect;
+   CGFloat                       memo;
+   struct UIRenderQueueContext   v;
+   UIView                        *view;
 
    if( [self isHidden] || [self isCulledByLayout])
       return;
@@ -106,21 +106,27 @@ static inline int   CGAlphaIsTransparent( float a)
       /*
        * Layers
        */
+      if( _shadowLayer)
+      {
+         // we don't clip the shadowLayer
+         memo                  = v.clipRect.size.width;
+         v.clipRect.size.width = INFINITY;
+         renderQueueAddLayer( renderQueue, _shadowLayer, &v);
+         v.clipRect.size.width = memo;
+      }
+
       renderQueueAddLayer( renderQueue, _mainLayer, &v);
 
-      rover = mulle_pointerarray_enumerate( &_layers);
-      while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
+      mulle_pointerarray_for( &_layers, layer)
       {
          renderQueueAddLayer( renderQueue, layer, &v);
       }
-      mulle_pointerarrayenumerator_done( &rover);
    }
 
    /*
     * Subviews
     */
-   rover = mulle_pointerarray_enumerate( &_subviews);
-   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &view))
+   mulle_pointerarray_for( &_subviews, view)
    {
       // we cull clipped views completely here
       frame      = [view frame];
@@ -129,7 +135,6 @@ static inline int   CGAlphaIsTransparent( float a)
          [view createRenderQueue:renderQueue
                          context:&v];
    }
-   mulle_pointerarrayenumerator_done( &rover);
 }
 
 
@@ -141,15 +146,12 @@ static inline int   CGAlphaIsTransparent( float a)
 
 - (void) dumpRenderQueue:(struct mulle_pointerarray *) renderQueue
 {
-   struct mulle_pointerarrayenumerator   rover;
-   id                                    layer;
+   id   layer;
 
-   rover = mulle_pointerarray_enumerate( renderQueue);
-   while( _mulle_pointerarrayenumerator_next( &rover, (void **) &layer))
+   mulle_pointerarray_for( renderQueue, layer)
    {
       [layer dumpWithIndent:1];
    }
-   mulle_pointerarrayenumerator_done( &rover);
 }
 
 

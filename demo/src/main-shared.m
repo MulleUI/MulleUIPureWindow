@@ -61,17 +61,18 @@ static void  drawPrettyBackground( CALayer *layer, CGContext *context)
    // draw text
    // load in font first, this will be efficient on subsequent frames
    font = [context fontWithNameUTF8String:"sans"];
-   [context setFont:font];
+   [context useFont:font];
 
    nvgFontSize( vg, strokeWidth * 8.0);
    nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-   nvgTextColor( vg, WEISS, BLAU);
+   nvgTextColor( vg, WEISS);
+   nvgTextBackgroundColor( vg, BLAU);
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), "1848", NULL);
 
 }
 
 
-static void  drawStuff( CALayer *layer, void *_context)
+static BOOL  drawStuff( CALayer *layer, void *_context)
 {
    CGContext                  *context = _context;
    struct CGDrawableOptions   options;
@@ -85,7 +86,7 @@ static void  drawStuff( CALayer *layer, void *_context)
    if( ! cgImage[ 0])
    {
       cgImage[ 0] = [[image cgImageWithContext:context
-                                   imageFlags:0] retain];
+                                 textureFlags:0] retain];
       contexts[ 0] = context;
    }
    else
@@ -107,6 +108,8 @@ static void  drawStuff( CALayer *layer, void *_context)
                        options:&options
                        context:context];
       }
+
+   return( YES);
 }
 
 

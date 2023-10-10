@@ -18,8 +18,8 @@
 - (void) swapBuffers;
 - (void) swapBuffersImmediately;
 
-- (BOOL) renderWithFrameInfo:(struct CGFrameInfo *) info
-                 displayBits:(NSUInteger) displayBits;  // assorted UIWindowNeedsDislay bits
+- (UIWindowDisplayBits) renderWithFrameInfo:(struct CGFrameInfo *) info
+                                 displayBits:(UIWindowDisplayBits) displayBits;  // assorted UIWindowNeedsDislay bits
 
 //
 // MEMO: put a NSAutoreleasePool between activate...GraphicsContext

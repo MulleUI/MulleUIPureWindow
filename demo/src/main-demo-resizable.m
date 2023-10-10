@@ -22,7 +22,7 @@
 //
 // drawStuff and main are left unchanged.
 //
-static void  drawStuff( CALayer *layer, void *uicontext)
+static BOOL  drawStuff( CALayer *layer, void *uicontext)
 {
    CGContext             *context = uicontext;
    CGFloat               radius;
@@ -51,11 +51,13 @@ static void  drawStuff( CALayer *layer, void *uicontext)
    // draw text
    // load in font first, this will be efficient on subsequent frames
    font = [context fontWithNameUTF8String:"sans"];
-   [context setFont:font];
+   [context useFont:font];
 
    nvgFontSize( vg, strokeWidth * 2.0);
    nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-   nvgTextColor( vg, WEISS, BLAU);
+   nvgTextColor( vg, WEISS);
+   nvgTextBackgroundColor( vg, BLAU);
+
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), CGSizeUTF8String( canvas.size), NULL);
 
    // punish drawing to be super slow, because of buffering it's not
@@ -67,6 +69,8 @@ static void  drawStuff( CALayer *layer, void *uicontext)
    }
 #endif
    MulleUICLog( "stop");
+
+   return( YES);
 }
 
 
@@ -115,7 +119,7 @@ int   main( int argc, char *argv[])
       // them, until the drawing thread is done.
       // [window setRefreshContentMode:CGContentModeScaleToFill];
 
-      setupSceneInView( [window contentPlane]);
+      setupSceneInView( [window contentView]);
 
       [app addWindow:window];
    }

@@ -128,26 +128,30 @@
 
 - (void) addTimer:(NSTimer *) timer
 {
+   assert( _application);
    [_application addTimer:timer
-   forTimerReceiver:self];
+         forTimerReceiver:self];
 }
 
 
 - (void) removeTimer:(NSTimer *) timer
 {
+   assert( _application);
    [_application removeTimer:timer
-     forTimerReceiver:self];
+            forTimerReceiver:self];
 }
 
 
 - (void) resetTimer:(NSTimer *) timer
 {
+   assert( _application);
    [_application resetTimer:timer];
 }
 
 
 - (void) removeAllTimers
 {
+   assert( _application);
    [_application removeTimer:nil
             forTimerReceiver:self];
 }

@@ -5,8 +5,12 @@
 
 #import "import-private.h"
 
+#import <MulleUIView/UIView+DebugPrivate.h>
 #import "UIWindow+UITrackingArea.h"
 #import "UITrackingArea.h"
+
+
+//#define TRACKING_AREA_DEBUG
 
 
 @implementation UIView ( UITrackingArea)
@@ -35,17 +39,19 @@
 - (void) addTrackingArea:(UITrackingArea *) item
                 toWindow:(UIWindow *) window
 {
-   assert( window);
+   // adding empty item is OK, because UITrackingArea init removes
+   // self on empty rect
+   if( ! item)
+      return;
 
    if( mulle_pointerarray_get_count( &_trackingAreas) == 0)
    {
-      // if window does not exist, then a late add would not be noticed
-      // and tracking fails...
       [window addTrackingView:self];
    }
 
    if( ! [item owner])
       [item setOwner:self];
+   [item setView:self]; // we need this for visibleRect calculations
    [item retain];
    mulle_pointerarray_add( &_trackingAreas, item);
 }
@@ -92,22 +98,57 @@
 }
 
 
+- (void) updateTrackingArea:(UITrackingArea *) area
+                     inRect:(CGRect) rect
+           autoresizingMask:(UIViewAutoresizing) autoresizingMask
+{
+   CGRect   frame;
+
+   if( ! autoresizingMask)
+   {
+      UIViewEventLogVerbose( nil, "Keep area %@ as is, not autoresizing", area);
+      return;
+   }
+
+   frame = [self autoresizedFrameOfObject:area
+                                   inRect:rect
+                         autoresizingMask:autoresizingMask];
+
+   UIViewEventLogVerbose( nil, "Updating area %@ for rect %s to %s",
+                                 area,
+                                 CGRectUTF8String( rect),
+                                 CGRectUTF8String( frame));
+   [area setRect:frame];
+}
+
+
 - (void) updateTrackingAreas
 {
    UITrackingArea   *area;
-   CGRect           rect;
+   CGRect           contentRect;
+   CGRect           visibleRect;
 
    //
    // go through tracking areas, if we have autoresize ones treat them
    //
+   visibleRect = [self visibleRect];
+   contentRect = [self contentRect];
+
    mulle_pointerarray_for( &_trackingAreas, area)
    {
-      // gotta keep them alive (can't toss it, if NULL)
-      rect = CGRectZero;
-      if( [area options] & UITrackingInVisibleRect)
-         rect = [self visibleRect];
-      [area setRect:rect];
+      if( [area options] & UITrackingVisibleRectOnly)
+      {
+         UIViewEventLogVerbose( nil, "set to %s", CGRectUTF8String( visibleRect));
+         [area setRect:visibleRect];
+      }
+      else
+      {
+         [self updateTrackingArea:area
+                           inRect:contentRect
+                 autoresizingMask:[area autoresizingMask]];
+      }
    }
 }
+
 
 @end

@@ -58,7 +58,10 @@ static int   display( UIWindow *window,
 
 int   main( int argc, char *argv[])
 {
-   UIWindow   *window;
+   UIWindow        *window;
+   UIApplication   *app;
+
+   app = [UIApplication sharedInstance];
 
    window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 400.0, 400.0)
                       titleUTF8String:"Demo"

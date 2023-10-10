@@ -28,7 +28,7 @@
 
 
 // as processOneFrame
-- (BOOL) renderAndSwapOneFrame;
+- (void) renderAndSwapOneFrame;
 
 // activate and deactivates window context
 - (struct CGBitmap) screenshotBitmap;

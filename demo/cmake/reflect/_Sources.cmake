@@ -11,8 +11,10 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
-src/main-autoresizingmask.m
 src/main-candycrash.m
+src/main-copy-window2.m
+src/main-copy-window3.m
+src/main-copy-window.m
 src/main-cursor.m
 src/main-demo.m
 src/main-demo-resizable.m
@@ -26,6 +28,9 @@ src/main-oswindow-draw-simple.m
 src/main-shared.m
 src/main-star.m
 src/main-swapinterval.m
+src/main-trackingarea-animated.m
+src/main-trackingarea.m
+src/main-trackingarea-scrollview.m
 src/main-window-accumulate.m
 src/main-window-buffered.m
 src/main-window-draw-simple.m

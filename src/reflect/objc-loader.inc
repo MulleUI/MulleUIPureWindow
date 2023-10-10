@@ -4,6 +4,7 @@
       { @selector( MulleObjCLoader), @selector( MulleUIApplication) },      // 47a9beb6;MulleObjCLoader;55c305e6;MulleUIApplication
       { @selector( MulleObjCLoader), @selector( MulleUIBase) },      // 47a9beb6;MulleObjCLoader;3ebba954;MulleUIBase
       { @selector( MulleObjCLoader), @selector( MulleUIView) },      // 47a9beb6;MulleObjCLoader;58e9d41b;MulleUIView
+      { @selector( CABasicAnimation), @selector( UIView) },      // 1462ac1b;CABasicAnimation;155b6ee8;UIView
       { @selector( UIAnimatableViewPropertiesSnapshot), MULLE_OBJC_NO_CATEGORYID },      // d500f939;UIAnimatableViewPropertiesSnapshot;;
       { @selector( UIFont), MULLE_OBJC_NO_CATEGORYID },      // a5b31a2f;UIFont;;
       { @selector( UIMouseTrackingEvent), MULLE_OBJC_NO_CATEGORYID },      // 3320121b;UIMouseTrackingEvent;;

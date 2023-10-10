@@ -35,11 +35,13 @@ static void  drawStuff( CALayer *layer, CGContext *context)
    // draw text
    // load in font first, this will be efficient on subsequent frames
    font = [context fontWithNameUTF8String:"sans"];
-   [context setFont:font];
+   [context useFont:font];
 
    nvgFontSize( vg, strokeWidth * 8.0);
    nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-   nvgTextColor( vg, WEISS, BLAU);
+   nvgTextColor( vg, WEISS);
+   nvgTextBackgroundColor( vg, BLAU);
+
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), "1848", NULL);
 }
 

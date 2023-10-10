@@ -16,28 +16,40 @@
 //
 // this callback does the UIView layout, animation unless _frameCallback is set
 //
-extern BOOL   UIWindowDefaultRawFrameCallback( UIWindow *self,
-                                               id <UIGraphicsContext> context,
-                                               struct CGFrameInfo *info,
-                                               NSUInteger displayBits);
+extern UIWindowDisplayBits
+   UIWindowDefaultRawFrameCallback( UIWindow *self,
+                                    id <UIGraphicsContext> context,
+                                    struct CGFrameInfo *info,
+                                    UIWindowDisplayBits displayBits);
 
-extern BOOL   UIWindowDefaultDidRenderFrameCallback( UIWindow *self,
-                                                     id <UIGraphicsContext> context,
-                                                     struct CGFrameInfo *info,
-                                                     BOOL didAnimate);
+extern UIWindowDisplayBits
+   UIWindowDefaultWillRenderFrameCallback( UIWindow *self,
+                                           id <UIGraphicsContext> context,
+                                           struct CGFrameInfo *info,
+                                           UIWindowDisplayBits displayBits);
+
+extern UIWindowDisplayBits
+   UIWindowDefaultDidRenderFrameCallback( UIWindow *self,
+                                          id <UIGraphicsContext> context,
+                                          struct CGFrameInfo *info,
+                                          UIWindowDisplayBits didAnimate);
 
 @interface UIWindow( Render)
 
 - (void) willRenderWithAbsoluteTime:(mulle_absolutetime_t) renderStart;
 
-// runs even if layout is not
+//
+// If you have preLayoutAnimations, layout will always be called
+// -layout is needed for keeping tracking rects in sync (indirectly, by
+// invalidating the quadtree)
+//
 - (BOOL) preLayoutAnimations:(struct CGFrameInfo *) info
              graphicsContext:(id <UIGraphicsContext>) context;
 
 - (void) layoutFrame:(struct CGFrameInfo *) info
      graphicsContext:(id <UIGraphicsContext>) context;
 
-// runs even if layout is not
+// runs even if layout is not called
 - (BOOL) postLayoutAnimations:(struct CGFrameInfo *) info
               graphicsContext:(id <UIGraphicsContext>) context;
 
@@ -58,3 +70,4 @@ extern BOOL   UIWindowDefaultDidRenderFrameCallback( UIWindow *self,
 @end
 
 
+mulle_relativetime_t    UIWindowGetAnimationRate( UIWindow *self);

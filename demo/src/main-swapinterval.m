@@ -87,7 +87,7 @@ static void   drawColorwheel(NVGcontext* vg, float x, float y, float w, float h,
 }
 
 
-static void  drawStuff( CALayer *layer, void *_context)
+static BOOL  drawStuff( CALayer *layer, void *_context)
 {
    CGContext  *context = _context;
    CGFloat    diameter;
@@ -119,6 +119,7 @@ static void  drawStuff( CALayer *layer, void *_context)
 
    }
 #endif
+   return( YES);
 }
 
 
@@ -159,7 +160,7 @@ int   main( int argc, char *argv[])
 
       [window setFrameRate:UIWindowFrameRateSynced];
       [window setSwapInterval:swapInterval];
-      setupSceneInView( [window contentPlane]);
+      setupSceneInView( [window contentView]);
 
       [app addWindow:window];
    }

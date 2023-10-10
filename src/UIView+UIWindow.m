@@ -6,6 +6,11 @@
 #import "import-private.h"
 
 #import "UIWindow+UIEvent.h"
+#import "UIWindow+UITrackingArea.h"
+#import "UIView+UIResponder.h"
+#import "UIView+UITrackingArea.h"
+
+#import <MulleUIView/UIView+DebugPrivate.h>
 
 
 @interface NSObject ( UIWindow)
@@ -16,6 +21,45 @@
 
 
 @implementation UIView ( UIWindow)
+
+
+//
+// if window changes, remove ourselves from old window tracking and move
+// to new window tracking. Also resign as firstResponder, if we are
+//
+// If you change code here, also change it in UIView.m -setWindow:
+//
+- (void) setWindow:(id <UIWindow>) newWindow
+{
+   UIView   *view;
+   BOOL     flag;
+
+   NSCParameterAssert( ! newWindow || [newWindow isKindOfClass:[UIWindow class]]);
+
+   if( _window == newWindow)
+      return;
+
+   [self willMoveToWindow:newWindow];
+   [(UIWindow *) self->_window removeTrackingView:self];
+
+   flag = [self resignFirstResponder];
+   if( ! flag)
+   {
+      MulleUILog( "View won't -resignFirstResponder but gets removed from superview");
+      abort();
+   }
+
+   self->_window = newWindow;
+
+   mulle_pointerarray_for( &_subviews, view)
+      [view setWindow:newWindow];
+
+   if( mulle_pointerarray_get_count( &_trackingAreas))
+      [(UIWindow *) self->_window addTrackingView:self];
+
+   [self didMoveToWindow:newWindow];
+}
+
 
 /*
 - (UIWindow *) window
@@ -33,6 +77,7 @@
 }
 */
 
+
 // this is really quite conservative, maybe too conservative
 - (UIWindowPlane *) windowPlane
 {
@@ -45,7 +90,7 @@
    {
    }
 
-   if( [view __isUIWindow] && [(UIWindow *) view isWindowPlane:self])
+   if( [view __isUIWindow] && [(UIWindow *) view isWindowPlane:before])
       return( (UIWindowPlane *) before);
    return( nil);
 }
@@ -72,10 +117,8 @@
    UIWindow   *window;
 
    window = (UIWindow *) [self window];
-#ifdef DEBUG
    if( ! window)
-      MulleUILog( @"%@ has no window, so setNeedsDisplay does nothing");
-#endif
+      UIViewLog( "view has no window, so setNeedsDisplay does nothing");
    [window setNeedsDisplay];
 }
 
@@ -102,6 +145,18 @@
 //   UIView   *next;
 
    [window setNeedsLayout];
+
+   // MEMO: if we manually setFrame: on a UIView we want to reset the
+   //       _originalFrame so that sizeChanges are noticed. (otherwise on
+   //       legacy autoresizing we would use a cached version). Because
+   //       setFrame: as called from layouting code and setFrame: as called
+   //       "manually" is indistinguishable, we force manual code to issue
+   //       setNeedsLayout: (by convention), when using legacy bits...
+   _originalFrame.size.width = 0.0;
+
+// FIX: ugly hackage
+//   if( self->_superview)
+//      self->_superview->_lastBounds.size.width = 0.0;
 //
 //   next = self;
 //   for(;;)
@@ -119,17 +174,6 @@
 //
 //      // view->_needsLayout = YES;  // quick mark and unto next
 //   }
-}
-
-- (CGSize) sizeThatFits:(CGSize) size
-{
-   id <UIGraphicsContext>   context;
-   id <UIWindow>            window;
-
-   window  = [self window];
-   context = [window renderGraphicsContext];
-   return( [self sizeThatFits:size
-                      context:context]);
 }
 
 

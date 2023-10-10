@@ -21,6 +21,7 @@ enum
    UIMouseTrackingMovedEventType    = 2
 };
 
+
 @interface UIMouseTrackingEvent : UIInputEvent
 
 @property( assign) NSUInteger       type;
@@ -33,10 +34,18 @@ enum
 @end
 
 
-
+//
+// MEMO: The tracking area state (like "entered") will persist after a layout,
+//       but the tracking area itself may have moved. So the mouse cursor may
+//       not be any longer over that area. Just redoing the tracking area code
+//       after -layout, could conceivably trigger another tracking area
+//       state change,which might require another -layout. So this could get
+//       unpleasant.
+//
 @interface UIWindow( UITrackingArea)
 
 - (void) setupQuadtree;
+- (void) invalidateQuadTree;
 
 // Use -[UIView addTrackingAreaWithRect:toWindow:userInfo:]. It will call
 // -[UIWindow addTrackingView:] eventually

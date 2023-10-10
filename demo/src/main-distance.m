@@ -16,7 +16,8 @@
        ! MulleIntegerSizeEqualToIntegerSize( _currentFrameInfo.window.framebufferSize, [_accumulateLayer bitmapSize]))
    {
       oldLayer         = [_accumulateLayer autorelease];
-      _accumulateLayer = [[self layerWithSize:_currentFrameInfo.window.framebufferSize] retain];
+      _accumulateLayer = [[self layerWithSize:_currentFrameInfo.window.framebufferSize
+                                 textureFlags:0] retain];
    }
 
    [self bindFramebuffer:CGContextFramebufferMakeWithLayer( _accumulateLayer)];
@@ -39,7 +40,7 @@
       if( _rendersOffScreen)
          [self bindFramebuffer:CGContextFramebufferMakeWithLayer( _renderLayer)];
       else
-         [self bindFramebuffer:CGContextFramebufferMakeDefault()];
+         [self bindFramebuffer:CGContextFramebufferMakeDefault( NO)];
       CGContextCheckBackendError( self, "bind buffer");
 
       [self setCompositionMode:UIGraphicsCopy];
@@ -79,9 +80,8 @@ static void   draw( CALayer *layer, CGContext *context)
          // starting point of each circle depends on mouse position
          size = CGPointDistanceToPoint( mouse, center);
          size = (size / max) * 66; // magic 66
-         [context fillCircleAtPoint:center
-                             radius:size / 2.0
-                           hexColor:CGHexColorMakeWithColor( CGColorMakeWithRGBBytes( 20, 200, 20))];
+         [context fillCircle:CACircleMake( center, size / 2.0)
+                    hexColor:CGHexColorMakeWithColor( CGColorMakeWithRGBBytes( 20, 200, 20))];
       }
    }
 }

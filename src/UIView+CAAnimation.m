@@ -87,7 +87,7 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
        subclasses might want to add more
     **/
    [self generateAnimationsForPropertiesWithSnapshot:_snapshot
-                        animationGroup:group];
+                                     animationGroup:group];
 
    [(NSObject *) _snapshot autorelease];
    _snapshot = nil;
@@ -284,7 +284,28 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 
    transaction = CATransactionGetCurrentTransaction();
    assert( transaction);
-   [transaction setAnimationDelay:duration];
+   [transaction setAnimationDuration:duration];
+}
+
+
+
++ (mulle_relativetime_t) animationOffset
+{
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   return( [transaction animationOffset]);
+}
+
+
++ (void) setAnimationOffset:(mulle_relativetime_t) offset
+{
+   CATransaction   *transaction;
+
+   transaction = CATransactionGetCurrentTransaction();
+   assert( transaction);
+   [transaction setAnimationOffset:offset];
 }
 
 
@@ -428,6 +449,32 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
    transaction = CATransactionGetCurrentTransaction();
    assert( transaction);
    [transaction setAnimationRepeatCount:flag ? INFINITY : 0.0];
+}
+
+@end
+
+
+@implementation CABasicAnimation( UIView)
+
+//
+// this not super clean, but then UIView is the basis for everything
+// that gets layouted, so it shouldn't matter. The code is more or less
+// just intended for asserts.
+//
+- (BOOL) changesLayout
+{
+   struct _mulle_objc_property  *property;
+
+   property = [self property];
+   if( _mulle_objc_property_get_propertyid( property) != @selector( frame)
+       && _mulle_objc_property_get_propertyid( property) != @selector( bounds)
+       && _mulle_objc_property_get_propertyid( property) != @selector( padding)
+       && _mulle_objc_property_get_propertyid( property) != @selector( margin))
+   {
+      return( NO);
+   }
+
+   return( [[self animationObject] isKindOfClass:[UIView class]]);
 }
 
 @end

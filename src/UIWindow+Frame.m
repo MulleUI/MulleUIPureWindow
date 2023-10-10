@@ -8,15 +8,16 @@
 #import "import-private.h"
 
 #import "UIWindow+Render.h"
+#import "UIWindow+DebugPrivate.h"
 #import "UIWindow+UIEvent.h"
 #import "UIView+UIResponder.h"
 #import "UIView+RenderQueue.h"
 #import "CGFrameInfo+UTF8String.h"
 
 
+//#define FAKE_MOUSE_MOTION_CALLBACK_DEBUG
 //#define SWAP_DEBUG
 //#define RENDERINFO_DEBUG
-//#define SWAPPED_BUFFERS_DEBUG
 
 @interface UIWindow( Private)
 
@@ -49,7 +50,7 @@
 {
    mulle_relativetime_t   remainingFrameTime;
    mulle_relativetime_t   rate;
-   NSUInteger             displayBits;
+   UIWindowDisplayBits   displayBits;
 
    // first run always draw
    if( stats->lastEndTimestamp == 0.0)
@@ -69,7 +70,7 @@
          return( INFINITY);
 
       // if only animation is needed, we need to use the animationRate
-      if( displayBits != UIWindowNeedsAnimation)
+      if( displayBits != UIWindowDisplayNeedsAnimation)
          return( 0.0);
 
       rate = animationRate;
@@ -80,7 +81,7 @@
    remainingFrameTime = rate - (now - stats->lastEndTimestamp); // - stats->avgElapsedHistory;
 
 #ifdef DISPLAY_DEBUG
-   MulleUILog( "frameRate: %.3f now: %.6f last: %.6f remaining: %.6f",
+   MulleUIViewLog( "frameRate: %.3f now: %.6f last: %.6f remaining: %.6f",
                rate,
                now,
                previous,
@@ -107,11 +108,9 @@
 
    assert( [NSThread mulleIsMainThread]);
 
-#ifdef SWAP_DEBUG
-   MulleUILog( "window context (%p)", _context);
-#endif
+   UIWindowSwapLog( "window context (%p)", _context);
 
-   if( _keepOSGraphicsContext && _context)
+   if( _keepOSGraphicsContextActive && _context)
    {
       [_context setActive:YES];
       return( _context);
@@ -123,16 +122,34 @@
    {
       cls = [[self class] osGraphicsContextClass];
 
-      options  = _styleMask & UIWindowStyleEdgeAntialias  ? UIGraphicsEdgeAntialiasing : 0;
-      options |= _styleMask & UIWindowStyleStencilStrokes ? UIGraphicsUseStencilStrokes : 0;
+      options = 0;
+      if( _styleMask & UIWindowStyleAntiAlias)
+      {
+         if( [_OSWindow isAntiAliasing] == NO ||
+             [cls supportsAntiAliasing] == NO)
+            options |= UIGraphicsEdgeAntiAliasing;
+         else
+            options |= UIGraphicsUseMSAA;
+      }
+
+      options |= (_styleMask & UIWindowStyleForceEdgeAntiAlias) ? UIGraphicsEdgeAntiAliasing : 0;
+      options |= (_styleMask & UIWindowStyleClearType)          ? UIGraphicsUseClearType : 0;
+      options |= (_styleMask & UIWindowStyleStencilStrokes)     ? UIGraphicsUseStencilStrokes : 0;
 
       _context = [[cls alloc] initWithBackend:[_OSWindow backend]
                                       shareID:[_OSWindow shareID]
-                                      options:options];       
+                                      options:options];
+      if( ! _context)
+      {
+         MulleUILog( "Could not acquire a graphics context for backend: 0x%tx shareID: 0x%tx options: 0x%tx",
+                           [_OSWindow backend],
+                           [_OSWindow shareID],
+                           options);
+         abort();
+      }
       [_context setOSWindow:_OSWindow];
-#ifdef SWAP_DEBUG
-      MulleUILog( "context %#@ created for OSWindow %#@", _context, _OSWindow);
-#endif      
+
+      UIWindowSwapLog( "context %#@ created for OSWindow %#@", _context, _OSWindow);
    }
    [_context setActive:YES];
 
@@ -154,11 +171,9 @@
 
    assert( _offscreenOSWindow);
 
-#ifdef SWAP_DEBUG
-   MulleUILog( "offscreen window context (%pp)", _offscreenContext);
-#endif
+   UIWindowSwapLog( "offscreen window context (%pp)", _offscreenContext);
 
-   if( _keepOSGraphicsContext && _offscreenContext)
+   if( _keepOSGraphicsContextActive && _offscreenContext)
    {
       [_offscreenContext setActive:YES];
       return( _offscreenContext);
@@ -167,25 +182,48 @@
    [_offscreenOSWindow os_activateGraphicsContext];
    if( ! _offscreenContext)
    {
-      cls      = [[self class] osGraphicsContextClass];
-      options  = _offscreenStyleMask & UIWindowStyleEdgeAntialias  ? UIGraphicsEdgeAntialiasing : 0;
-      options |= _offscreenStyleMask & UIWindowStyleStencilStrokes ? UIGraphicsUseStencilStrokes : 0;
+      cls     = [[self class] osGraphicsContextClass];
+      options = 0;
+
+      //
+      // If the window supports antiAliasing, we might still have a CGContext
+      // that is just running GLES2.0, so we then still have to force
+      // EdgeAntiAliasing.
+      //
+      if( _offscreenStyleMask & UIWindowStyleAntiAlias)
+      {
+         if( [_OSWindow isAntiAliasing] == NO ||
+             [cls supportsAntiAliasing] == NO)
+            options |= UIGraphicsEdgeAntiAliasing;
+         else
+            options |= UIGraphicsUseMSAA;
+      }
+
+      options |= (_offscreenStyleMask & UIWindowStyleForceEdgeAntiAlias) ? UIGraphicsEdgeAntiAliasing : 0;
+      options |= (_offscreenStyleMask & UIWindowStyleClearType)          ? UIGraphicsUseClearType : 0;
+      options |= (_offscreenStyleMask & UIWindowStyleStencilStrokes)     ? UIGraphicsUseStencilStrokes : 0;
 
       _offscreenContext = [[cls alloc] initWithBackend:[_offscreenOSWindow backend]
                                                shareID:[_offscreenOSWindow shareID]
-                                              options:options]; 
+                                               options:options];
+      if( ! _offscreenContext)
+      {
+         MulleUILog( "Could not acquire an offscren context for backend: 0x%tx shareID: 0x%tx options: 0x%tx",
+                           [_offscreenOSWindow backend],
+                           [_offscreenOSWindow shareID],
+                           options);
+         abort();
+      }
       [_offscreenContext setRendersOffScreen:YES];
       [_context setOSWindow:_offscreenOSWindow];
-#ifdef SWAP_DEBUG
-      MulleUILog( "context %#@ created for offscreen OSWindow %#@",
+
+      UIWindowSwapLog( "context %#@ created for offscreen OSWindow %#@",
                      _offscreenContext, _offscreenOSWindow);
-#endif      
    }
    [_offscreenContext setActive:YES];                        // just a flag
 
-#ifdef SWAP_DEBUG
-   MulleUILog( "offscreen context");
-#endif
+   UIWindowSwapLog( "offscreen context");
+
    return( _offscreenContext);
 }
 
@@ -199,23 +237,20 @@
 
    if( context == _offscreenContext)
    {
-#ifdef SWAP_DEBUG
-      MulleUILog( "offscreen context");
-#endif
+      UIWindowSwapLog( "offscreen context");
       assert( (! _windowThread && [NSThread mulleIsMainThread]) ||
               [NSThread currentThread] == _windowThread);
 
-      if( ! _keepOSGraphicsContext)
+      if( ! _keepOSGraphicsContextActive)
          [_offscreenOSWindow os_deactivateGraphicsContext];
    }
    else
    {
-#ifdef SWAP_DEBUG
-      MulleUILog( "window context");
-#endif
+      UIWindowSwapLog( "window context");
+
       assert( [NSThread mulleIsMainThread]);
 
-      if( ! _keepOSGraphicsContext)
+      if( ! _keepOSGraphicsContextActive)
          [_OSWindow os_deactivateGraphicsContext];
    }
 }
@@ -249,7 +284,6 @@
    [self deactivateGraphicsContext:_renderGraphicsContext];
    _renderGraphicsContext = nil;
 }
-
 
 
 //
@@ -294,29 +328,28 @@
    }
 }
 
+
 struct UIRenderInfo
 {
    UIWindow                 *window;
    struct CGFrameInfo       frameInfo;
    id <UIGraphicsContext>   context;
-   NSUInteger               displayBits;
+   UIWindowDisplayBits      displayBits;
    BOOL                     didAnimate;
 };
 
 
-- (BOOL) renderWithFrameInfo:(struct CGFrameInfo *) info
-                 displayBits:(NSUInteger) displayBits
+- (UIWindowDisplayBits) renderWithFrameInfo:(struct CGFrameInfo *) info
+                                displayBits:(UIWindowDisplayBits) displayBits
 {
    id <UIResponder>   responder;
-   BOOL               didAnimate;
 
    [self activateRenderGraphicsContext];
 
    @autoreleasepool // THIS IS IMPORTANT TO COLLECT CGLAYERS WHILE THE PROPER CONTEXT IS ALIVE
    {
-#ifdef RENDERINFO_DEBUG
-      MulleUILog( "%s", CGFrameInfoUTF8String( info));
-#endif
+      UIWindowRenderLog( "%s", CGFrameInfoUTF8String( info));
+
       // for demos
       [_renderGraphicsContext setInputState:_inputState];
 
@@ -324,7 +357,7 @@ struct UIRenderInfo
       if( ! CGSizeEqualToSize( info->window.frame.size, [self frame].size))
       {
          [self _setFrame:info->window.frame]; // don't trigger property change
-         displayBits |= UIWindowNeedsLayout;
+         displayBits |= UIWindowDisplayNeedsLayout;
       }
 
       if( ! _initialFirstResponderState)
@@ -336,13 +369,20 @@ struct UIRenderInfo
          _initialFirstResponderState = responder ? 1 : -1;
       }
 
+      displayBits = (*self->_willRenderFrameCallback)( self, _renderGraphicsContext, info, displayBits);
       // This is usually UIWindowDefaultRawFrameCallback (UIWindow+Render.m)
-      didAnimate = (*self->_rawFrameCallback)( self, _renderGraphicsContext, info, displayBits);
-      didAnimate = (*self->_didRenderFrameCallback)( self, _renderGraphicsContext, info, didAnimate);
+      displayBits = (*self->_rawFrameCallback)( self, _renderGraphicsContext, info, displayBits);
+      displayBits = (*self->_didRenderFrameCallback)( self, _renderGraphicsContext, info, displayBits);
    }
    [self deactivateRenderGraphicsContext];
 
-   return( didAnimate);
+   if( displayBits & UIWindowDisplayNeedsMouseEvent)
+      UIWindowEventLogVerbose( nil, "requesting fake mouse motion event");
+
+   _sendFakeMouseMotionEvent = (displayBits & UIWindowDisplayNeedsMouseEvent);
+   displayBits              &= ~UIWindowDisplayNeedsMouseEvent;
+
+   return( displayBits);
 }
 
 
@@ -387,9 +427,7 @@ struct UIRenderInfo
    if( _styleMask & UIWindowStyleSingleBuffer)  
       return;
 
-#ifdef SWAP_DEBUG
-   MulleUILog( "swap");
-#endif
+   UIWindowSwapLog( "swap");
 
    context = [self activateWindowGraphicsContext];
    {
@@ -406,13 +444,12 @@ struct UIRenderInfo
       (*_didSwapBuffersCallback)( self);
 }
 
+
 - (void) swapBuffersImmediately
 {
    id <UIGraphicsContext>   context;
 
-#ifdef SWAP_DEBUG
-   MulleUILog( "swap immediately");
-#endif
+   UIWindowSwapLog( "swap immediately");
 
    context = [self activateWindowGraphicsContext];
    {
@@ -422,7 +459,6 @@ struct UIRenderInfo
    }
    [self deactivateGraphicsContext:context];
 }
-
 
 @end
 

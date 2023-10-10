@@ -165,7 +165,7 @@
    mulle_relativetime_t   usedFrameRate;
 
    assert( [NSThread mulleIsMainThread]);
-   assert( _backingStore == UIWindowBackingStoreVolatile && "Don't call eventHandlingWithFrameRate on a UIWindowStyleRetained window");
+   assert( _backingStore != UIWindowBackingStoreRetained && "Don't call eventHandlingWithFrameRate on a UIWindowStyleRetained window");
 
    /*
     * Event handling.
@@ -225,22 +225,22 @@
 }
 
 
-- (BOOL) renderAndSwapOneFrame
+
+- (void) renderAndSwapOneFrame
 {
-   NSUInteger              displayBits;
+   UIWindowDisplayBits     displayBits;
    struct CGFrameInfo      frameInfo;
-   BOOL                    didAnimate;
 
-   assert( _backingStore == UIWindowBackingStoreVolatile && "Don't call processOneFrame on a UIWindowStyleRetained window");
+   assert( _backingStore != UIWindowBackingStoreRetained && "Don't call processOneFrame on a UIWindowStyleRetained window");
 
-   displayBits  = [self needsDisplayClearIfSet];
-   displayBits |= UIWindowNeedsRedraw;
+   displayBits  = [self needsDisplayBitsClearIfSet];
+   displayBits |= UIWindowDisplayNeedsRedraw;
    [self getFrameInfo:&frameInfo];  // retrieve newest geometry
-   didAnimate = [self renderWithFrameInfo:&frameInfo
-                              displayBits:displayBits];
+   displayBits  = [self renderWithFrameInfo:&frameInfo
+                                displayBits:displayBits];
    [self setNeedsRefresh:NO];
    [self swapBuffers];
-   return( didAnimate);
+   [self setNeedsDisplayBits:displayBits];
 }
 
 

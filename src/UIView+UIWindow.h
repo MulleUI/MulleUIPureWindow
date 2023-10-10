@@ -13,22 +13,18 @@
 @interface UIView( UIWindow)
 
 //- (UIWindow *) window;
+
+// returns nil, if view is not in a window or the window isn't configured with
+// planes
 - (UIWindowPlane *) windowPlane;
 - (CGFloat) pixelsPerInchOfCurrentScreen;
 
 - (void) setNeedsDisplay;
 
-// calls sizeThatFits:context: with the renderContext of the window,
-// this will abort, if we are not in render/layout phase but the view is
-// part of a window. If there is no window, context will be nil... good luck
-- (CGSize) sizeThatFits:(CGSize) size;
-
-
 // this flag is forwarded to the enclosing UIWindow
 // will assert if none is present
 - (void) setNeedsLayout;
 - (BOOL) needsLayout;
-
 
 - (void) mouseEntered:(UIMouseTrackingEvent *) event;
 - (void) mouseMoved:(UIMouseTrackingEvent *) event;

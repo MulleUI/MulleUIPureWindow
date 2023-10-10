@@ -115,6 +115,40 @@ static void   MulleObjCAtomicPointerClearBit( mulle_atomic_pointer_t *pointer, u
 MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
 
+static struct
+{
+   NSUInteger   _debugEnabled;
+} Self;
+
+
++ (void) initialize
+{
+   char   *s;
+
+   s = getenv( "UIWindowDebugEnabled");
+   if( s)
+      Self._debugEnabled = strtol( s, NULL, 0);
+   else
+   {
+#ifdef UIWINDOW_DEBUG_ENABLED
+      Self._debugEnabled = UIWINDOW_DEBUG_ENABLED;
+#endif
+   }
+}
+
+
++ (void) deinitialize
+{
+}
+
+
++ (void) setDebugEnabled:(NSUInteger) flag
+{
+   Self._debugEnabled = flag;
+}
+
+
+
 + (instancetype) windowWithFrame:(CGRect) frame;
 {
    return( [[[self alloc] initWithFrame:frame] autorelease]);
@@ -140,25 +174,25 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    UIWindow     *window;
 
    autoresizingMask = [view autoresizingMask];
-   if( autoresizingMask & UIViewAutoresizingFlexible)
+   if( UIViewAutoresizingIsScaling( autoresizingMask) ||
+       UIViewAutoresizingIsFlexible( autoresizingMask))
+   {
       styleMask |= UIWindowStyleResizable;
+   }
 
    rect = UIEdgeInsetsExtrudeRect( [view frame], [view margins]);
    if( rect.size.width < 32)
       rect.size.width = 32;
    if( rect.size.height < 32)
       rect.size.height = 32;
-   if( ! (autoresizingMask & ~UIViewAutoresizingFlexible))
-      [view setAutoresizingMask:autoresizingMask|UIViewAutoresizingStickToCenter];
 
-   // hein ? CAOpenGLLayer can set here its preference for a OpenGL3 layer
-   // with no forwarding
-   styleMask  |= [[view layer] windowStyleMaskBits];
+   [view setAutoresizingMask:autoresizingMask];
+
    rect.origin = CGPointZero;
    window      = [self windowWithFrame:rect
                        titleUTF8String:title ? title : "Demo"
                              styleMask:styleMask];
-   [[window contentPlane] addSubview:view];
+   [[window contentView] addSubview:view];
    return( window);
 }
 
@@ -168,7 +202,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 {
    return( [self windowWithView:view 
                  titleUTF8String:title
-                       styleMask:UIWindowStyleMaskDefault]);
+                       styleMask:UIWindowStyleMaskDefault & ~UIWindowStylePanes]);
 }
 
 
@@ -191,8 +225,9 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
    [layer setFrame:frame];
 
    view = [UIView viewWithLayer:layer];
+   [view setDebugNameUTF8String:"layerContainerView"];
    [view setMargins:margins];
-   [view setAutoresizingMask:UIViewAutoresizingFlexible|UIViewAutoresizingStickToCenter];
+   [view setAutoresizingMask:UIViewAutoresizingScaleToFill];
    return( [self windowWithView:view
                titleUTF8String:title
                      styleMask:styleMask]);
@@ -203,7 +238,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 {
    return( [self windowWithLayer:layer 
                  titleUTF8String:title
-                       styleMask:UIWindowStyleMaskDefault]);
+                       styleMask:UIWindowStyleMaskDefault & ~UIWindowStylePanes]);
 }
 
 
@@ -259,39 +294,42 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 //
 - (void) setupContentPlanesInRect:(CGRect) frame 
 {
-   frame.origin  = CGPointZero;
    _contentPlane = [UIView viewWithFrame:frame];
 
    [_contentPlane setDebugNameUTF8String:"Window/ContentPlane"];
-   [_contentPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
+   [_contentPlane setAutoresizingMask:UIViewAutoresizingScaleToFill];
    [_contentPlane setClipsToBounds:NO];
    [self addSubview:_contentPlane];
 
    _toolTipPlane = [UIView viewWithFrame:frame];
    [_toolTipPlane setDebugNameUTF8String:"Window/ToolTipPlane"];
-   [_toolTipPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
+   [_toolTipPlane setAutoresizingMask:UIViewAutoresizingScaleToFill];
    [_toolTipPlane setClipsToBounds:NO];
    [self addSubview:_toolTipPlane];
+   // why is hiding this a good idea ?
    [_toolTipPlane setHidden:YES];
 
    _menuPlane = [UIView viewWithFrame:frame];
-   [_menuPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
+   [_menuPlane setAutoresizingMask:UIViewAutoresizingScaleToFill];
    [_menuPlane setDebugNameUTF8String:"Window/MenuPlane"];
    [_menuPlane setClipsToBounds:NO];
    [self addSubview:_menuPlane];
+   // why is hiding this a good idea ?
    [_menuPlane setHidden:YES];
 
    _dragAndDropPlane = [UIView viewWithFrame:frame];
-   [_dragAndDropPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
+   [_dragAndDropPlane setAutoresizingMask:UIViewAutoresizingScaleToFill];
    [_dragAndDropPlane setDebugNameUTF8String:"Window/DragAndDropPlane"];
    [_dragAndDropPlane setClipsToBounds:NO];
    [self addSubview:_dragAndDropPlane];
+   // why is hiding this a good idea ?
    [_dragAndDropPlane setHidden:YES];
 
    _alertPlane = [UIView viewWithFrame:frame];
-   [_alertPlane setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
+   [_alertPlane setAutoresizingMask:UIViewAutoresizingScaleToFill];
    [_alertPlane setDebugNameUTF8String:"Window/AlertPlane"];
    [_alertPlane setClipsToBounds:NO];
+   // why is hiding this a good idea ?
    [_alertPlane setHidden:YES];
    [self addSubview:_alertPlane];
 }
@@ -309,15 +347,14 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (instancetype) _initWithFrame:(CGRect) frame
 {
-   char   *s;
-
    // UIView init
    [super initWithFrame:frame];
 
    _frame = frame;
-   s      = getenv( "UIWindowDebugEnabled");
-   if( s)
-      _debugEnabled = strtol( s, NULL, 0);
+
+   _debugEnabled = Self._debugEnabled;
+   if( _debugEnabled)
+      MulleUILog( "_initWithFrame");
 
    assert( frame.size.height == _frame.size.height);
    assert( frame.size.width == _frame.size.width);
@@ -332,9 +369,10 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    _mulle_atomic_pointer_nonatomic_write( &_needsRefresh, (void *) 1);
    _mulle_atomic_pointer_nonatomic_write( &_needsDisplay, (void *) ~0);
 
-   _oldSwapInterval        = NSIntegerMax;
-   _rawFrameCallback       = UIWindowDefaultRawFrameCallback;
-   _didRenderFrameCallback = UIWindowDefaultDidRenderFrameCallback;
+   _oldSwapInterval         = NSIntegerMax;
+   _willRenderFrameCallback = UIWindowDefaultWillRenderFrameCallback;
+   _rawFrameCallback        = UIWindowDefaultRawFrameCallback;
+   _didRenderFrameCallback  = UIWindowDefaultDidRenderFrameCallback;
 
    // its kinda pointless to inherit clipRects down for views, that are full
    // window size
@@ -345,7 +383,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    _windowEventCallback   = defaultWindowEventCallback;
    _window                = self;
    _trackingAreasEnabled  = YES;
-   _keepOSGraphicsContext = YES;  // now the default
+   _keepOSGraphicsContextActive = YES;  // now the default
+   _loadDefaultFont             = YES;
 
    UIInputStateInit( &_inputState, CGPointMake( -1, -1), 0, 0);
 
@@ -359,7 +398,6 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    [self _initInvocationQueues];
    [self _initResourceStorage:&_resourceStorage];
 
-   [self setupContentPlanesInRect:frame];
    return( self);
 }
 
@@ -424,11 +462,12 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
                titleUTF8String:(char *) title
                      styleMask:(NSUInteger) styleMask
 {
-   id <UIOSWindow>   window;
+   id <UIOSWindow>   osWindow;
    id <UIOSWindow>   offscreenWindow;
    NSUInteger        hints;
    Class             osWindowClass;
    Class             Self;
+   Class             contextClass;
 
    assert( [NSThread mulleIsMainThread]);
 
@@ -450,6 +489,22 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    // default for now
    _backingStore       = UIWindowBackingStoreVolatile;
    _offscreenStyleMask = styleMask;
+
+   //
+   // if we want antialiasing (usually) and the graphics context doesn't
+   // support it (GLES 2.0), then force edge anti alias, so that the windows
+   // aren't configured for MSAA uselessly
+   //
+   if( styleMask & UIWindowStyleAntiAlias)
+   {
+      contextClass = [[self class] osGraphicsContextClass];
+      if( [contextClass supportsAntiAliasing] == NO)
+      {
+         _offscreenStyleMask &= ~UIWindowStyleAntiAlias;
+         _offscreenStyleMask |= UIWindowStyleForceEdgeAntiAlias;
+      }
+   }
+
    // buffered with offscreen window is the default,
    if( styleMask & (UIWindowStyleRetained|UIWindowStyleRetainedOnMainThread))
    {
@@ -481,11 +536,19 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
                         : UIWindowBackingStoreRetained;
 
       // reduce styleMask for main window
-      styleMask &= ~(UIWindowStyleEdgeAntialias|UIWindowStyleStencilStrokes);
+      // also remove UIWindowStyleAntiAlias
+
+      // if the offscreenWindow uses MSAA4 the osWindow also needs to support
+      // it, otherwise its still jaggy ?  maybe not looks
+
+      if( [offscreenWindow isAntiAliasing] == NO)
+         styleMask &= ~(UIWindowStyleAntiAlias|UIWindowStyleForceEdgeAntiAlias|UIWindowStyleClearType|UIWindowStyleStencilStrokes);
+      else
+         styleMask &= ~(UIWindowStyleForceEdgeAntiAlias|UIWindowStyleStencilStrokes|UIWindowStyleClearType);
    }
 
    _styleMask = styleMask;
-   window     = [[[osWindowClass alloc] initWithFrame:frame
+   osWindow   = [[[osWindowClass alloc] initWithFrame:frame
                                       titleUTF8String:title
                                             styleMask:styleMask
                                         graphicsHints:hints
@@ -493,9 +556,13 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    MulleObjCObjectSetDuplicatedUTF8String( self, &_titleUTF8String, title);
 
-   return( [self initWithOSWindow:window
-                offscreenOSWindow:offscreenWindow]);
+   self = [self initWithOSWindow:osWindow
+               offscreenOSWindow:offscreenWindow];
+   if( styleMask & UIWindowStylePanes)
+      [self setupContentPlanesInRect:[self contentRect]];
+   return( self);
 }
+
 
 
 - (instancetype) initWithFrame:(CGRect) frame
@@ -750,7 +817,18 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 }
 
 
-- (void) setNeedsDisplayBit:(NSUInteger) value
+
+- (void) setNeedsDisplayBits:(UIWindowDisplayBits) value
+{
+   _mulle_atomic_pointer_write( &_needsDisplay, (void *) value);
+
+#ifdef FLAG_DEBUG
+   MulleUILog( "(%p)", _mulle_atomic_pointer_read( &_needsDisplay));
+#endif
+}
+
+
+- (void) setNeedsDisplayBit:(UIWindowDisplayBits) value
 {
    assert( value);
 
@@ -762,7 +840,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 }
 
 
-- (NSUInteger) needsDisplay
+- (UIWindowDisplayBits) needsDisplay
 {
    void   *value;
 
@@ -771,7 +849,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 }
 
 
-- (NSUInteger) needsDisplayClearIfSet
+- (UIWindowDisplayBits) needsDisplayBitsClearIfSet
 {
    return( (NSUInteger) MulleObjCAtomicPointerReadClearIfSet( &_needsDisplay));
 }
@@ -779,37 +857,37 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (void) setNeedsLayout
 {
-   [self setNeedsDisplayBit:UIWindowNeedsLayout];
+   [self setNeedsDisplayBit:UIWindowDisplayNeedsLayout];
 }
 
 
 - (BOOL) needsLayout
 {
-   return( [self needsDisplay] & UIWindowNeedsLayout ? YES : NO);
+   return( [self needsDisplay] & UIWindowDisplayNeedsLayout ? YES : NO);
 }
 
 
 - (void) setNeedsAnimation
 {
-   [self setNeedsDisplayBit:UIWindowNeedsAnimation];
+   [self setNeedsDisplayBit:UIWindowDisplayNeedsAnimation];
 }
 
 
 - (BOOL) needsAnimation
 {
-   return( [self needsDisplay] & UIWindowNeedsAnimation ? YES : NO);
+   return( [self needsDisplay] & UIWindowDisplayNeedsAnimation ? YES : NO);
 }
 
 
 - (void) setNeedsRedraw
 {
-   [self setNeedsDisplayBit:UIWindowNeedsRedraw];
+   [self setNeedsDisplayBit:UIWindowDisplayNeedsRedraw];
 }
 
 
 - (BOOL) needsRedraw
 {
-   return( [self needsDisplay] & UIWindowNeedsRedraw ? YES : NO);
+   return( [self needsDisplay] & UIWindowDisplayNeedsRedraw ? YES : NO);
 
 }
 
@@ -821,6 +899,12 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    if( ! _windowThread)
       return( [NSThread mulleIsMainThread]);
    return( [NSThread currentThread] == _windowThread);
+}
+
+
+- (BOOL) isTracking
+{
+   return( mulle_pointerarray_get_count( &_trackingViews) != 0);
 }
 
 //
@@ -1139,6 +1223,21 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 
    // defined in UIView
    mulle_pointerarray_remove( &_delegateViews, view);
+}
+
+
+- (void) setContentView:(UIView *) view
+{
+   assert( ! view || [view window] == self);
+   _contentView = view;
+}
+
+
+- (UIView *) contentView
+{
+   if( ! _contentView)
+      return( _contentPlane ? _contentPlane : self);
+   return( _contentView);
 }
 
 
