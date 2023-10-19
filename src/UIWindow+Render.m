@@ -84,15 +84,14 @@
 
 - (void) willRenderWithAbsoluteTime:(mulle_absolutetime_t) renderStart
 {
-   struct mulle_pointerarrayenumerator   rover;
-   UIView                                *view;
+   UIView    *view;
 
-   UIWindowRenderLog( "%g", renderStart);
+   UIWindowRenderLog( "%.6f", renderStart);
 
-   rover = mulle_pointerarray_enumerate( &_delegateViews);
-   while(  mulle_pointerarrayenumerator_next( &rover, (void **) &view))
+   mulle_pointerarray_for( &_delegateViews, view)
+   {
       [view willRenderWithAbsoluteTime:renderStart];
-   mulle_pointerarrayenumerator_done( &rover);
+   }
 }
 
 
@@ -125,6 +124,8 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIWindow *self)
                                                  animationRate:animationRate];
    if( _didAnimateCallback)
       (*_didAnimateCallback)( self, context, info, 0);
+
+   UIWindowRenderLog( "preLayoutAnimator did %sanimate", didAnimate ? "" : "not ");
 
    return( didAnimate);
 }
@@ -159,6 +160,8 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIWindow *self)
                                                   animationRate:animationRate];
    if( _didAnimateCallback)
       (*_didAnimateCallback)( self, context, info, 1);
+
+   UIWindowRenderLog( "postLayoutAnimator did %sanimate", didAnimate ? "" : "not ");
 
    return( didAnimate);
 }
@@ -287,6 +290,118 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIWindow *self)
 }
 
 
+
+
+// use very basic drawing
+// render everything line by line
+//
+// typedef struct CGFrameInfo
+// {
+//    struct CGWindowInfo    window;
+//    struct MulleIntegerRect    viewportFrame;    // used for the viewport (use: 0, 0, frameSize)
+//    CGFloat                alpha;            // set to 1.0
+//    mulle_absolutetime_t   now;              // mulle_absolutetime_t
+// } CGFrameInfo;
+//
+// typedef struct CGWindowInfo
+// {
+//    CGRect                 frame;            // window coordinates frame
+//    struct MulleIntegerSize    framebufferSize;  // actual pixels (frameSize * pixelRatio)
+//    CGVector               UIScale;
+//    CGFloat                pixelRatio;
+// } CGWindowInfo;
+
+struct UIWindowDebugInfo
+{
+   struct CGFrameInfo  *info;
+   NSUInteger          numberOfFrames;
+   NSUInteger          activeAnimations;
+   NSUInteger          runningAnimations;
+   NSUInteger          finishedAnimations;
+};
+
+
+- (void) renderDebugInfo:(struct UIWindowDebugInfo *) p
+                 atPoint:(CGPoint) point
+                hexColor:(NSUInteger) color
+         graphicsContext:(id <UIGraphicsDrawing>) context
+{
+   struct mulle_buffer   buffer;
+   struct CGFrameInfo    *info;
+
+   assert( p);
+
+   info = p->info;
+
+   mulle_buffer_init( &buffer, NULL);
+   {
+      mulle_buffer_sprintf( &buffer, "frame              : %s\n",   CGRectUTF8String( info->window.frame));
+      mulle_buffer_sprintf( &buffer, "framebufferSize    : %s\n",   MulleIntegerSizeUTF8String( info->window.framebufferSize));
+      mulle_buffer_sprintf( &buffer, "UIScale            : %s\n",   CGVectorUTF8String( info->window.UIScale));
+      mulle_buffer_sprintf( &buffer, "pixelRatio         : %.3f\n", info->window.pixelRatio);
+      mulle_buffer_sprintf( &buffer, "viewportFrame      : %s\n",   MulleIntegerRectUTF8String( info->viewportFrame));
+      mulle_buffer_sprintf( &buffer, "alpha              : %.3f\n", info->alpha);
+      mulle_buffer_sprintf( &buffer, "now                : %.6f\n", info->now);
+      mulle_buffer_sprintf( &buffer, "numberOfFrames     : %tu\n",  p->numberOfFrames);
+      mulle_buffer_sprintf( &buffer, "activeAnimations   : %td\n",  p->activeAnimations);
+      mulle_buffer_sprintf( &buffer, "runningAnimations  : %td\n",  p->runningAnimations);
+      mulle_buffer_sprintf( &buffer, "finishedAnimations : %td\n",  p->finishedAnimations);
+      mulle_buffer_add_byte( &buffer, 0);
+
+      [context drawAtPoint:point
+            textUTF8String:mulle_buffer_get_bytes( &buffer)
+        fontNameUTF8String:"mono"
+                  fontSize:11.0
+                  hexColor:color];
+   }
+   mulle_buffer_done( &buffer);
+}
+
+
+- (void) renderDisplayBits:(NSUInteger) displayBits
+                   atPoint:(CGPoint) point
+           graphicsContext:(id <UIGraphicsDrawing>) context
+{
+//   UIWindowDisplayNeedsRedraw     = 0x1,   // needs immediate attention
+//   UIWindowDisplayNeedsLayout     = 0x2,   // needs immediate attention, forces redraw
+//   UIWindowDisplayNeedsAnimation  = 0x4,   // needs attention according to animationRate
+//   UIWindowDisplayNeedsMouseEvent = 0x8    // layout change needs to retrack mouse
+   CGFloat      distance    = 8.0;
+   CGFloat      diameter    = 7.0;
+   CGFloat      radius      = diameter / 2.0;
+   CGPoint      center;
+   CACircle     circle;
+   uint32_t     backColor   = 0x202020FF;
+   uint32_t     offColor    = 0x101010FF;
+   uint32_t     onColor;
+   uint32_t     greenColor  = 0x20D020FF;
+   uint32_t     orangeColor = 0xD04010FF;
+   uint32_t     yellowColor = 0xD0D020FF;
+   uint32_t     blueColor   = 0x0087FFFF;
+   NSUInteger   bit;
+
+   center = CGPointMake( point.x + radius, point.y + radius);
+
+   for( bit = UIWindowDisplayNeedsMouseEvent; bit; bit >>= 1)
+   {
+      circle = CACircleMake( center, radius);
+      [context fillCircle:circle
+                 hexColor:backColor];
+      circle = CACircleMake( center, radius - 0.75);
+      switch( bit)
+      {
+      case UIWindowDisplayNeedsAnimation  : onColor = orangeColor; break;
+      case UIWindowDisplayNeedsLayout     : onColor = greenColor; break;
+      case UIWindowDisplayNeedsMouseEvent : onColor = yellowColor; break;
+      default                             : onColor = blueColor; break;
+      }
+      [context fillCircle:circle
+                 hexColor:(displayBits & bit) ? onColor : offColor];
+      center.x += distance;
+   }
+}
+
+
 - (void) drawFrame:(struct CGFrameInfo *) info
    graphicsContext:(id <UIGraphicsContext>) context
 {
@@ -318,13 +433,13 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIWindow *self)
       [context drawObjects:&_drawingQueue];
       UIWindowRenderLogVerbose( "drew objects");
 
-      if( _didDrawObjectsCallback)
-         (*_didDrawObjectsCallback)( self, context, info);
-
       // reset for frameDelegate (and debug drawing)
       [context reset];
 
-      if( _debugEnabled & UIWindowDrawFramebufferIdRect)
+      if( _didDrawObjectsCallback)
+         (*_didDrawObjectsCallback)( self, context, info);
+
+      if( _debugEnabled & UIWindowDebugFramebufferIdRect)
       {
          if( [context conformsToProtocol:@protocol( UIGraphicsDrawing)])
          {
@@ -343,12 +458,42 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIWindow *self)
                       didDrawFrame:info
                    graphicsContext:context];
 
-#ifdef RENDER_FRAMEINFO_DEBUG
-      [self renderFrameInfo:info
-                    atPoint:CGPointMake( 20, 20)
-                      color:CGColorMakeRed()
-            graphicsContext:context];
-#endif
+      if( self->_debugEnabled & UIWindowDebugRenderFrameInfo)
+      {
+         struct UIWindowDebugInfo    debugInfo;
+
+         memset( &debugInfo, 0, sizeof( debugInfo));
+         debugInfo.info                = info;
+         debugInfo.numberOfFrames      = [context numberOfFrames];
+
+         debugInfo.activeAnimations    = [_preLayoutAnimator numberOfActiveAnimations];
+         debugInfo.runningAnimations   = [_preLayoutAnimator numberOfRunningAnimations];
+         debugInfo.finishedAnimations  = [_preLayoutAnimator numberOfFinishedAnimations];
+
+         debugInfo.activeAnimations   += [_postLayoutAnimator numberOfActiveAnimations];
+         debugInfo.runningAnimations  += [_postLayoutAnimator numberOfRunningAnimations];
+         debugInfo.finishedAnimations += [_postLayoutAnimator numberOfFinishedAnimations];
+
+         [self renderDebugInfo:&debugInfo
+                       atPoint:CGPointMake( 20, 20)
+                      hexColor:0xC03000FF
+               graphicsContext:context];
+      }
+
+      if( self->_debugEnabled & UIWindowDebugRenderDisplayBits)
+      {
+         UIWindowRenderLogVerbose( "display=0x%tx return=0x%tx", _debugDisplayBits, _debugReturnBits);
+
+         [self renderDisplayBits:_debugDisplayBits
+                         atPoint:CGPointMake( info->window.frame.size.width - 50,
+                                              info->window.frame.size.height - 21)
+                 graphicsContext:context];
+
+         [self renderDisplayBits:_debugReturnBits
+                         atPoint:CGPointMake( info->window.frame.size.width - 50,
+                                              info->window.frame.size.height - 12)
+                 graphicsContext:context];
+      }
 
       [context suspendRender];
 
@@ -379,57 +524,8 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIWindow *self)
 }
 
 
-// use very basic drawing
-// render everything line by line
 //
-// typedef struct CGFrameInfo
-// {
-//    struct CGWindowInfo    window;
-//    struct MulleIntegerRect    viewportFrame;    // used for the viewport (use: 0, 0, frameSize)
-//    CGFloat                alpha;            // set to 1.0
-//    mulle_absolutetime_t   now;              // mulle_absolutetime_t
-// } CGFrameInfo;
-//
-// typedef struct CGWindowInfo
-// {
-//    CGRect                 frame;            // window coordinates frame
-//    struct MulleIntegerSize    framebufferSize;  // actual pixels (frameSize * pixelRatio)
-//    CGVector               UIScale;
-//    CGFloat                pixelRatio;
-// } CGWindowInfo;
-
-- (void) renderFrameInfo:(struct CGFrameInfo *) info
-                 atPoint:(CGPoint) point
-                hexColor:(NSUInteger) color
-         graphicsContext:(id <UIGraphicsDrawing>) context
-{
-   struct mulle_buffer    buffer;
-
-   assert( info);
-
-   mulle_buffer_init( &buffer, NULL);
-   {
-      mulle_buffer_sprintf( &buffer, "frame           : %s\n",   CGRectUTF8String( info->window.frame));
-      mulle_buffer_sprintf( &buffer, "framebufferSize : %s\n",   MulleIntegerSizeUTF8String( info->window.framebufferSize));
-      mulle_buffer_sprintf( &buffer, "UIScale         : %s\n",   CGVectorUTF8String( info->window.UIScale));
-      mulle_buffer_sprintf( &buffer, "pixelRatio      : %.3f\n", info->window.pixelRatio);
-      mulle_buffer_sprintf( &buffer, "viewportFrame   : %s\n",   MulleIntegerRectUTF8String( info->viewportFrame));
-      mulle_buffer_sprintf( &buffer, "alpha           : %.3f\n", info->alpha);
-      mulle_buffer_sprintf( &buffer, "now             : %.6f\n", info->now);
-      mulle_buffer_add_byte( &buffer, 0);
-
-      [context drawAtPoint:point
-            textUTF8String:mulle_buffer_get_bytes( &buffer)
-        fontNameUTF8String:NULL
-                  fontSize:12.0
-                  hexColor:color];
-   }
-   mulle_buffer_done( &buffer);
-}
-
-
-//
-// this is default renderFrame callback
+// The default "rawFrameCallback" used in -renderWithFrameInfo:displayBits:
 //
 UIWindowDisplayBits
    UIWindowDefaultRawFrameCallback( UIWindow *self,
@@ -446,7 +542,6 @@ UIWindowDisplayBits
       [self->_frameDelegate window:self
                     willBeginFrame:info
                    graphicsContext:context];
-
 
    if( self->_frameCallback)
    {
@@ -470,6 +565,12 @@ UIWindowDisplayBits
    else
    {
       returnBits = 0;
+
+      // if we are forced to render, we do one final redraw
+      // fixes the issue that debug output looks one frame late
+      // when there is no actual animation running any more
+      if( displayBits & UIWindowDisplayNeedsAnimation)
+         displayBits |= UIWindowDisplayNeedsRedraw;
 
       [self willRenderWithAbsoluteTime:info->now];
 
@@ -513,6 +614,10 @@ UIWindowDisplayBits
       // drawFrame: does beginRender/endRender...
       if( displayBits & UIWindowDisplayNeedsRedraw)
       {
+         // ugliness for debugging
+         self->_debugDisplayBits = displayBits;
+         self->_debugReturnBits  = returnBits;
+
          [self drawFrame:info
          graphicsContext:context];
       }

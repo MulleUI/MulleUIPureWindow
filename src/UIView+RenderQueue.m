@@ -36,7 +36,7 @@ static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
 }
 
 
-#ifndef CG_COLOR_H__
+#ifndef cg_color_h__
 
 static inline int   CGAlphaIsTransparentWithBitDepth( float a, unsigned int depth)
 {

@@ -3,21 +3,27 @@
 
 enum
 {
-   UIWindowDebug                 = UIViewDebug,
-   UIWindowDebugVerbose          = UIViewDebugVerbose,
+   UIWindowDebug                  = UIViewDebug,
+   UIWindowDebugVerbose           = UIViewDebugVerbose,
 
-   UIWindowDebugRender           = 0x004,
-   UIWindowDebugRenderVerbose    = 0x004000,
-   UIWindowDebugThread           = 0x008,
-   UIWindowDebugThreadVerbose    = 0x008000,
-   UIWindowDebugSwap             = 0x010,
+   UIWindowDebugRender            = 0x004,
+   UIWindowDebugRenderVerbose     = 0x004000,
+   UIWindowDebugThread            = 0x008,
+   UIWindowDebugThreadVerbose     = 0x008000,
+   UIWindowDebugSwap              = 0x010,
+   UIWindowDebugDisplayBits       = 0x040,
+   UIWindowDebugRefreshBits       = 0x080,
 
-   UIWindowDebugEvent            = UIViewDebugEvent,
-   UIWindowDebugEventVerbose     = UIViewDebugEventVerbose,
-   UIWindowDebugMouseMotionEvent = UIViewDebugMouseMotionEvent,
-   UIWindowDebugWindowEvent      = 0x020,
+   UIWindowDebugEvent             = UIViewDebugEvent,
+   UIWindowDebugEventVerbose      = UIViewDebugEventVerbose,
+   UIWindowDebugMouseMotionEvent  = UIViewDebugMouseMotionEvent,
+   UIWindowDebugWindowEvent       = 0x020,
 
-   UIWindowAbortOnEventOverflow  = 0x80000000
+   UIWindowDebugDumpFrameToFile   = 0x08000000,
+   UIWindowDebugRenderDisplayBits = 0x10000000,
+   UIWindowDebugFramebufferIdRect = 0x20000000,
+   UIWindowDebugRenderFrameInfo   = 0x40000000,
+   UIWindowAbortOnEventOverflow   = 0x80000000,
 };
 
 
@@ -104,6 +110,27 @@ do                                                                          \
 while( 0)
 
 
+#define UIWindowDisplayBitsLog( format, ...)                                \
+do                                                                          \
+{                                                                           \
+   assert( [self __isUIWindow]);                                            \
+   if( self->_debugEnabled & UIWindowDebugDisplayBits)                      \
+      mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,        \
+                                       (char *) format, ## __VA_ARGS__);    \
+}                                                                           \
+while( 0)
+
+#define UIWindowRefreshBitsLog( format, ...)                                \
+do                                                                          \
+{                                                                           \
+   assert( [self __isUIWindow]);                                            \
+   if( self->_debugEnabled & UIWindowDebugRefreshBits)                      \
+      mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,        \
+                                       (char *) format, ## __VA_ARGS__);    \
+}                                                                           \
+while( 0)
+
+
 #define UIWindowEventLog( event, format, ...)                               \
 do                                                                          \
 {                                                                           \
@@ -158,6 +185,8 @@ while( 0)
 #define UIWindowThreadLog( format, ...)                   do {} while( 0)
 #define UIWindowThreadLogVerbose( format, ...)            do {} while( 0)
 #define UIWindowSwapLog( format, ...)                     do {} while( 0)
+#define UIWindowDisplayBitsLog( format, ...)              do {} while( 0)
+#define UIWindowRefreshBitsLog( format, ...)              do {} while( 0)
 #define UIWindowEventLog( event, format, ...)             do {} while( 0)
 #define UIWindowEventLogVerbose( event, format, ...)      do {} while( 0)
 #define UIWindowMouseMotionEventLog( event, format, ...)  do {} while( 0)

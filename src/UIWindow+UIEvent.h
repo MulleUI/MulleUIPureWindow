@@ -25,6 +25,9 @@
 
 - (void) sendWindowFramebufferGeometryEvent:(struct CGWindowInfo *) info;
 
+- (BOOL) isMouseMotionEventsEnabled;
+- (void) setMouseMotionEventsEnabled:(BOOL) flag;
+
 @end
 
 
