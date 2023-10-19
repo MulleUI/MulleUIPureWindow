@@ -14,7 +14,7 @@ static struct mulle_container_keyvaluecallback   callback;
 + (void) load 
 {
    callback.keycallback   = mulle_container_keycallback_copied_cstring;
-   callback.valuecallback = *MulleObjCContainerValueRetainCallback;
+   callback.valuecallback = *MulleObjCContainerRetainValueCallback;
 }
 
 

@@ -7,6 +7,7 @@
 
 #import "import-private.h"
 
+#import "UIWindow+UIEvent.h"
 #import "UIWindow+Frame.h"
 #import "UIWindow+Render.h"
 #import "UIWindow+Thread.h"
@@ -24,6 +25,7 @@
 - (void) writeOSWindowPropertyChangesIfNeeded
 {
    NSUInteger   changes;
+   NSUInteger   discardEventsMask;
    CGRect       frame;
    char         *title;
    void         *cursor;
@@ -51,8 +53,7 @@
    {
       title = [self titleUTF8String];
 #ifdef DEBUG
-      MulleUILog( "push title %s",
-                              title);
+      MulleUILog( "push title %s", title);
 #endif
       [_OSWindow os_setTitleUTF8String:title];
    }
@@ -64,6 +65,15 @@
       MulleUILog( "change cursor %p", cursor);
 #endif
       [_OSWindow os_setCursor:cursor];
+   }
+
+   if( changes & UIWindowPropertyChangeDiscardEventsMask)
+   {
+      discardEventsMask = [self discardEventsMask];
+#ifdef DEBUG
+      MulleUILog( "change discardEventsMask 0x%tx", discardEventsMask);
+#endif
+      [_OSWindow setDiscardEventsMask:discardEventsMask];
    }
 }
 
@@ -77,15 +87,16 @@
    struct CGFrameInfo      frameInfo;
    struct UIOSWindowInfo   windowInfo;
    UIWindowDisplayBits     displayBits;
+   BOOL                    refreshForRetained;
 
    assert( [NSThread mulleIsMainThread]);
 
-   displayBits  = 0;
-   needsRefresh = [self needsRefreshClearIfSet];
+   displayBits        = 0;
+   needsRefresh       = [self needsRefreshClearIfSet];
+   refreshForRetained = NO;
 
    // this checks "refresh" events only, it can be NO, but still "display"
    // may be set. The user usually never touches the refresh flag
-   UIWindowRenderLogVerbose( "needsRefresh=%s", needsRefresh ? "YES" : "NO");
 
    // We get called, but do we really need to do something already ?
    //
@@ -102,29 +113,19 @@
       // main thread: handle refresh request
       if( needsRefresh)
       {
-         UIWindowRenderLog( "refresh and swap");
-
          if( _backingStore == UIWindowBackingStoreRetainedOnMainThread)
          {
-            displayBits = [self needsDisplayBitsClearIfSet];
-            [self getFrameInfo:&frameInfo];  // retrieve newest geometry
-            displayBits = [self renderWithFrameInfo:&frameInfo
-                                        displayBits:displayBits];
+            UIWindowRenderLog( "render and refresh and swap");
+
+            refreshForRetained = YES;
+            goto render_like_volatile;
          }
+
+         UIWindowRenderLog( "refresh and swap");
          [self refresh];
          [self swapBuffers];
-         [self setNeedsDisplayBits:displayBits];
       }
 
-      if( displayBits & UIWindowDisplayNeedsAnimation)
-      {
-         desiredFrameRate = UIWindowGetAnimationRate( self);         
-
-         UIWindowRenderLogVerbose( "wait %.6fs", desiredFrameRate);
-         return( desiredFrameRate);  // call me for events only ?
-      }
-
-      UIWindowRenderLog( "wait inf");
       return( INFINITY);  // call me for events only ?
    }
 
@@ -152,12 +153,12 @@
 
    UIWindowRenderLog( "UIWindowBackingStoreVolatile -> renderFrame and swapBuffers (%.6f)",
                          remainingFrameTime);
-
    //
    // After swapBuffers we can safely release the CGLayers that were
    // possibly generated during the render. But not earlier, except if
    // one diligently calls flushRender
    //
+render_like_volatile:
    displayBits  = [self needsDisplayBitsClearIfSet];
    displayBits |= UIWindowDisplayNeedsRedraw;
    [self getFrameInfo:&frameInfo];  // retrieve newest geometry
@@ -165,8 +166,12 @@
                                 displayBits:displayBits];
 
    // no refresh in UIWindowBackingStoreVolatile
+   if( refreshForRetained)
+      [self refresh];
+
    [self swapBuffers];
    [self setNeedsDisplayBits:displayBits];
+   [self setMouseMotionEventsEnabled:[self isTracking]];
 
    // now is the old now...
    UIWindowDisplayFrameStatisticsUpdate( &_mainThreadStatistics, now, mulle_absolutetime_now());

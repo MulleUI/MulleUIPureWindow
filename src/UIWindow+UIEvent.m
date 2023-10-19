@@ -222,15 +222,14 @@
          break;
 
       case UIEventKeyF11 :
-         if( [self respondsToSelector:@selector( dumpRenderQueue)])
+         if( [self respondsToSelector:@selector( dumpAnimations)])
          {
-            [self performSelector:@selector( dumpRenderQueue)
-                        withObject:(id) &_drawingQueue];
+            [self performSelector:@selector( dumpAnimations)];
             return( nil);
          }
          break;
 
-      case UIEventKeyF10 :
+      case UIEventKeyF9 :
          if( [self respondsToSelector:@selector( writeScreenshotToPNGUTF8String:)])
          {
             if( [self performSelector:@selector( writeScreenshotToPNGUTF8String:)
@@ -444,6 +443,30 @@
    return( [self willDiscardEvent:event]);
 }
 
+
+- (BOOL) isMouseMotionEventsEnabled
+{
+   NSUInteger    discardEventsMask;
+
+   discardEventsMask = [_OSWindow discardEventsMask];
+   return( (discardEventsMask & UIEventTypeMotion) ? NO : YES);  
+} 
+
+
+- (void) setMouseMotionEventsEnabled:(BOOL) flag 
+{
+   NSUInteger    discardEventsMask;
+
+// not true anymore...
+//   assert( [self isWindowThread]);
+
+   discardEventsMask = [self discardEventsMask];
+   if( flag)
+      discardEventsMask &= ~UIEventTypeMotion;  // enable by clearing bit
+   else
+      discardEventsMask |= UIEventTypeMotion;   // disable by setting bit
+   [self setDiscardEventsMask:discardEventsMask];
+}
 
 //
 // Discard events queue for the window. This has to be called by the window

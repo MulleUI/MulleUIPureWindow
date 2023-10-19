@@ -328,17 +328,6 @@
    }
 }
 
-
-struct UIRenderInfo
-{
-   UIWindow                 *window;
-   struct CGFrameInfo       frameInfo;
-   id <UIGraphicsContext>   context;
-   UIWindowDisplayBits      displayBits;
-   BOOL                     didAnimate;
-};
-
-
 - (UIWindowDisplayBits) renderWithFrameInfo:(struct CGFrameInfo *) info
                                 displayBits:(UIWindowDisplayBits) displayBits
 {

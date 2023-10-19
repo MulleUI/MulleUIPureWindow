@@ -2,6 +2,7 @@
 
 #import "UIWindow.h"
 
+#import "UIWindow+DebugPrivate.h"
 #import "UIWindow+Frame.h"
 #import "UIWindow+Render.h"
 #import "UIWindow+Thread.h"
@@ -125,6 +126,10 @@ static struct
 {
    char   *s;
 
+   // don't rerun for subclass
+   if( MulleObjCClassGetID( self) != @selector( UIWindow))
+      return;
+
    s = getenv( "UIWindowDebugEnabled");
    if( s)
       Self._debugEnabled = strtol( s, NULL, 0);
@@ -146,7 +151,6 @@ static struct
 {
    Self._debugEnabled = flag;
 }
-
 
 
 + (instancetype) windowWithFrame:(CGRect) frame;
@@ -777,18 +781,14 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 - (void) setNeedsRefresh
 {
    _mulle_atomic_pointer_write( &_needsRefresh, (void *) 1);
-#ifdef FLAG_DEBUG
-   MulleUILog( "(%p)", _mulle_atomic_pointer_read( &_needsRefresh));
-#endif
+   UIWindowRefreshBitsLog( "needsRefresh: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsRefresh));
 }
 
 
 - (void) setNeedsRefresh:(BOOL) value
 {
    _mulle_atomic_pointer_write( &_needsRefresh, (void *) value);
-#ifdef FLAG_DEBUG
-   MulleUILog( "(%p)", _mulle_atomic_pointer_read( &_needsRefresh));
-#endif
+   UIWindowRefreshBitsLog( "needsRefresh: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsRefresh));
 }
 
 
@@ -803,7 +803,11 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (BOOL) needsRefreshClearIfSet
 {
-   return( (BOOL) (NSUInteger) MulleObjCAtomicPointerReadClearIfSet( &_needsRefresh));
+   BOOL   flag;
+
+   flag = (BOOL) (NSUInteger) MulleObjCAtomicPointerReadClearIfSet( &_needsRefresh);
+   UIWindowRefreshBitsLog( "needsRefresh: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsRefresh));
+   return( flag);
 }
 
 
@@ -811,9 +815,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 {
    _mulle_atomic_pointer_write( &_needsDisplay, (void *) ~0);
 
-#ifdef FLAG_DEBUG
-   MulleUILog( "(%p)", _mulle_atomic_pointer_read( &_needsDisplay));
-#endif
+   UIWindowDisplayBitsLog( "needsDisplay: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsDisplay));
 }
 
 
@@ -822,9 +824,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 {
    _mulle_atomic_pointer_write( &_needsDisplay, (void *) value);
 
-#ifdef FLAG_DEBUG
-   MulleUILog( "(%p)", _mulle_atomic_pointer_read( &_needsDisplay));
-#endif
+   UIWindowDisplayBitsLog( "needsDisplay: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsDisplay));
 }
 
 
@@ -834,9 +834,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    MulleObjCAtomicPointerSetBit( &_needsDisplay, value);
 
-#ifdef FLAG_DEBUG
-   MulleUILog( "(%p)", _mulle_atomic_pointer_read( &_needsDisplay));
-#endif
+   UIWindowDisplayBitsLog( "needsDisplay: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsDisplay));
 }
 
 
@@ -1118,7 +1116,9 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 {
    UICursor   *rval;
 
-   MulleObjCNSLockProtectedAssignReadAccessor( _cursor, _windowPropertyLock, rval);
+   MulleObjCNSLockProtectedAssignReadAccessor( _cursor,
+                                               _windowPropertyLock,
+                                               rval);
    return( rval);
 }
 
@@ -1140,6 +1140,34 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
    [self windowPropertySet:@selector( unlocked_setCursor:)
                 parameters:cursor
                        bit:UIWindowPropertyChangeCursor];
+}
+
+
+- (NSUInteger) discardEventsMask
+{
+   NSUInteger   rval;
+
+   MulleObjCNSLockProtectedAssignReadAccessor( _discardEventsMask,
+                                               _windowPropertyLock,
+                                               rval);
+   return( rval);
+}
+
+
+- (BOOL) unlocked_setDiscardEventsMask:(NSUInteger) discardEventsMask
+{
+   if( _discardEventsMask == discardEventsMask)
+      return( NO);
+   _discardEventsMask = discardEventsMask;
+   return( YES);
+}
+
+
+- (void) setDiscardEventsMask:(NSUInteger) discardEventsMask
+{
+   [self windowPropertySet:@selector( unlocked_setDiscardEventsMask:)
+                parameters:(void *) discardEventsMask
+                       bit:UIWindowPropertyChangeDiscardEventsMask];
 }
 
 
@@ -1256,5 +1284,12 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
    return( _postLayoutAnimator);
 }
 
-@end
 
+
+- (void) dumpAnimations
+{
+   fprintf( stderr, "Pre Layout:\n%s\n", [_preLayoutAnimator UTF8String]);
+   fprintf( stderr, "Post Layout:\n%s\n", [_postLayoutAnimator UTF8String]);
+}
+
+@end

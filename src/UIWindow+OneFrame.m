@@ -241,6 +241,7 @@
    [self setNeedsRefresh:NO];
    [self swapBuffers];
    [self setNeedsDisplayBits:displayBits];
+   [self setMouseMotionEventsEnabled:[self isTracking]];
 }
 
 

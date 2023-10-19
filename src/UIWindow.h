@@ -185,14 +185,11 @@ typedef NS_OPTIONS( NSUInteger, UIWindowPropertyChange)
 {
    UIWindowPropertyChangeFrame  = 0x1,
    UIWindowPropertyChangeTitle  = 0x2,
-   UIWindowPropertyChangeCursor = 0x4
+   UIWindowPropertyChangeCursor = 0x4,
+   UIWindowPropertyChangeDiscardEventsMask = 0x8
 //   UIWindowPropertyChangeIcon  = 0x4
 };
 
-typedef NS_OPTIONS( NSUInteger, UIWindowDebugBit)
-{
-   UIWindowDrawFramebufferIdRect = 0x1
-};
 
 @class UIMouseTrackingEvent;
 
@@ -311,10 +308,13 @@ struct MulleClickDragDifferentiator
    struct CGWindowInfo             _previousWindowInfo;
    struct CGWindowInfo             _currentWindowInfo;
 
+   // used by LED display... so ugly
+   NSUInteger                      _debugDisplayBits;
+   NSUInteger                      _debugReturnBits;
+
    // used for showing menus
    char                            _oldUserInteractionEnabled;
    char                            _oldMenuPlaneHidden;
-
 }
 
 @property( retain, readonly) id <UIOSWindow>         OSWindow;
@@ -335,6 +335,9 @@ struct MulleClickDragDifferentiator
 @property( assign) UICursor                        *defaultCursor;
 
 @property( assign, getter=areTrackingAreasEnabled) BOOL   trackingAreasEnabled;
+
+// changed by UIWindow to enable/disable mouse events
+@property( assign) NSUInteger                      discardEventsMask;
 
 @property( assign, readonly) struct UIInputState   inputState;
 @property( dynamic, assign, readonly) CGPoint      mouseLocation;
