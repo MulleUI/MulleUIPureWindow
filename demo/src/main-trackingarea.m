@@ -2,11 +2,13 @@
 
 #import <string.h>
 
+#import <MulleUIView/UIView+DebugPrivate.h>
 
 @interface TrackingView : UIView
 
 @property CGColor  selectColor;
 @property CGColor  deselectColor;
+@property CGColor  hoverColor;
 
 - (void) setColors:(CGColor) color;
 
@@ -23,25 +25,61 @@
    [self setDeselectColor:color];
    [self setBackgroundColor:color];
    CGColorGetHSLAComponents( color, components);
-   components[ 2] = 0.7;
+   components[ 2] = fmod( components[ 2] + 0.2, 1.0);
    [self setSelectColor:CGColorMakeWithHSLAComponents( components)];
+
+   components[ 0] = fmod( components[ 0] + 0.3, 1.0);
+   [self setHoverColor:CGColorMakeWithHSLAComponents( components)];
 }
 
 
-- (void) mouseEntered:(UIMouseMotionEvent *) event
+- (void) mouseEntered:(UIMouseTrackingEvent *) event
 {
+   [super mouseEntered:event];
+
+   MulleUILog( self, "%#@", event);
+
    [self setBackgroundColor:[self selectColor]];
    [self setNeedsDisplay];
 }
 
 
-- (void) mouseMoved:(UIMouseMotionEvent *) event
+- (void) mouseHoverStarted:(UIMouseTrackingEvent *) event
 {
+//   [super mouseHoverStarted:event];
+
+   MulleUILog( self, "%#@", event);
+
+   [self setBackgroundColor:[self hoverColor]];
+   [self setNeedsDisplay];
 }
 
 
-- (void) mouseExited:(UIMouseMotionEvent *) event
+- (void) mouseHoverEnded:(UIMouseTrackingEvent *) event
 {
+// [super mouseHoverEnded:event];
+
+   MulleUILog( self, "%#@", event);
+
+   [self setBackgroundColor:[self selectColor]];
+   [self setNeedsDisplay];
+}
+
+
+- (void) mouseMoved:(UIMouseTrackingEvent *) event
+{
+   [super mouseMoved:event];
+
+   MulleUILog( self, "%#@", event);
+}
+
+
+- (void) mouseExited:(UIMouseTrackingEvent *) event
+{
+   [super mouseExited:event];
+
+   MulleUILog( self, "%#@", event);
+
    [self setBackgroundColor:[self deselectColor]];
    [self setNeedsDisplay];
 }
@@ -61,8 +99,9 @@ void   setupScene( UIWindow *window)
 
    contentView = [window contentView];
 
-   frame   = CGSizeCenterInRect( CGSizeMake( 200, 200), [window contentRect]);
+   frame   = CGSizeCenterInRect( CGSizeMake( 200, 200), [contentView contentRect]);
    subview = [TrackingView viewWithFrame:frame];
+   [subview setDebuggingFlags:[window debuggingFlags]];
    [subview setDebugNameUTF8String:"tracking"];
    [subview setColors:CGColorMakeGreen()];
    [subview setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
@@ -76,9 +115,9 @@ void   setupScene( UIWindow *window)
    [subview addSubview:helperView];
 
    area = [UITrackingArea trackingAreaWithRect:rect
-                                        options:0
-                                          owner:subview
-                                       userInfo:nil];
+                                      options:UITrackingMouseHover
+                                        owner:subview
+                                     userInfo:nil];
    [area setCursor:[UIApp cursorWithStandardShape:UICursorDrag]];
    [area setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
    [subview addTrackingArea:area];
@@ -104,5 +143,5 @@ int   main()
 
    [app addWindow:window];
 
-   return( [app run]);
+   return( [app runApp]);
 }

@@ -4,7 +4,7 @@
 
 #import "import-private.h"
 
-#import "UIWindow+Frame.h"
+#import "UIWindow+FrameInfo.h"
 #import "UIWindow+InvocationQueue.h"
 #import "UIWindow+Thread.h"
 #import "UIWindow+NSTimer.h"
@@ -75,7 +75,10 @@
       // if we are in the main thread, we can use wait
       //
       if( isMainThread)
-         [UIEvent os_waitEventsWithTimeout:diff];
+      {
+         assert( _application);
+         [_application os_waitEventsWithTimeout:diff];
+      }
 
       [self pollInvocationQueues];
 
@@ -195,36 +198,6 @@
    }
 }
 
-//
-// does a screenshot of the primary context (front buffer)
-// TODO: could grab hidden framebuffer, maybe even more easy ?
-//
-- (struct CGBitmap) screenshotBitmap
-{
-   id <UIGraphicsContext>   context;
-   struct CGBitmap          bitmap;
-   struct CGFrameInfo       frameInfo;
-   struct MulleIntegerRect      rect;
-
-   context = [self activateWindowGraphicsContext];
-   @autoreleasepool
-   {
-      [self getFrameInfo:&frameInfo];
-
-      rect  = MulleIntegerRectMake( 0,
-                                    0,
-                                    frameInfo.window.framebufferSize.width,
-                                    frameInfo.window.framebufferSize.height);
-      bitmap = [context readFramebufferBitmap:rect
-                        framebufferBitmapType:CGFramebufferRGBABytes
-                                    allocator:NULL];
-   }
-   [self deactivateGraphicsContext:context];
-
-   return( bitmap);
-}
-
-
 
 - (void) renderAndSwapOneFrame
 {
@@ -241,7 +214,7 @@
    [self setNeedsRefresh:NO];
    [self swapBuffers];
    [self setNeedsDisplayBits:displayBits];
-   [self setMouseMotionEventsEnabled:[self isTracking]];
+   [self setMouseMotionEventsEnabled:[self receivesMouseMotionEvents]];
 }
 
 

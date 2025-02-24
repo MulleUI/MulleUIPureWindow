@@ -16,7 +16,7 @@ static void  usage( void)
 "   volatile : draw in window in main thread (volatile)\n"
 "\n"
 "Other flags\n"
-"   double   : use doublebuffer in volatile display mode\n"
+"   single   : use single buffering in volatile display mode (likely broken)\n"
 "   interval : set swap interval to 1 (0)\n"
 "   limiter  : use frequency as limiting frequency\n"
 "\n");
@@ -28,7 +28,7 @@ static void  usage( void)
 #define LARGE_FONT      32
 
 
-static BOOL   drawStuff( CALayer *layer, CGContext *context)
+static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *context)
 {
    auto char               buf[ 64];
    CGFont                  *font;
@@ -50,8 +50,8 @@ static BOOL   drawStuff( CALayer *layer, CGContext *context)
 
    vg = CGContextGetNVGContext( context);
 
-   nvgTextColor( vg, CGColorMakeWithHexColor( 0x0000000FF));
-   nvgTextBackgroundColor( vg, CGColorMakeWithHexColor( 0xFFFFFFFF));
+   nvgTextColor( vg, CGColorMakeWhite());
+   nvgTextBackgroundColor( vg, CGColorMakeBlue());
    nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 
    font = [context fontWithNameUTF8String:"sans"];
@@ -75,7 +75,6 @@ static BOOL   drawStuff( CALayer *layer, CGContext *context)
             sprintf( buf, "frameRate : synced");
          else
             sprintf( buf, "frameRate : %.2f Hz", 1.0 / frameRate);
-
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 3 + 2, buf, NULL);
 
    [window getOSWindowInfo:&windowInfo];
@@ -86,12 +85,14 @@ static BOOL   drawStuff( CALayer *layer, CGContext *context)
    sprintf( buf, "fastestFrameRate : %.3f (%.2f Hz)",  UIOSWindowInfoGetFastestFrameRate( &windowInfo),  1.0 /  UIOSWindowInfoGetFastestFrameRate( &windowInfo));
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 5 + 2, buf, NULL);
 
-   sprintf( buf, "OSContextInfo : %s", [osWindow os_contextInfoUTF8String]);
+   sprintf( buf, "OSContextInfo : %s", [NSThread mulleIsMainThread] ? [osWindow os_contextInfoUTF8String] : "N/A");
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 6 + 2, buf, NULL);
 
-   sprintf( buf, "OSWindowInfo : %s", [osWindow os_windowInfoUTF8String]);
+   sprintf( buf, "OSWindowInfo : %s", [NSThread mulleIsMainThread] ? [osWindow os_windowInfoUTF8String] : "N/A");
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 7 + 2, buf, NULL);
 
+   mulle_sprintf( buf, "thread : %@", [NSThread currentThread]);
+   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 8 + 2, buf, NULL);
 
    nvgFontSize( vg, LARGE_FONT);
    sprintf( buf, "%td frames", [context numberOfFrames]);
@@ -105,20 +106,25 @@ static BOOL   drawStuff( CALayer *layer, CGContext *context)
 
 //   sprintf( buf, "%.6f display+refresh", [window displayAndRefreshRate]);
 //   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 3 + 8, buf, NULL);
+
+// need this for singlebuffer and also need to flush out nvg calls
+// NO LONGER WELL SUPPORTED AS WAYLAND / EGL CAN'T DO IT
+
+   glFlush();
    return( YES);
 }
 
 
 
-static UIEvent   *handleEvent( UIView *view, UIEvent *event)
-{
-   UIWindow   *window;
-
-   window = (UIWindow *) [view window];
-   mulle_fprintf( stderr, "*** %@ : force refresh @ %.6f\n", window, mulle_absolutetime_now());
-   [window setNeedsDisplay];
-   return( nil);
-}
+//static UIEvent   *handleEvent( UIView *view, UIEvent *event)
+//{
+//   UIWindow   *window;
+//
+//   window = (UIWindow *) [view window];
+//   mulle_fprintf( stderr, "*** %@ : force refresh @ %.6f\n", window, mulle_absolutetime_now());
+//   [window setNeedsDisplay];
+//   return( nil);
+//}
 
 
 static void   setupSceneInWindow( UIWindow *window)
@@ -131,8 +137,8 @@ static void   setupSceneInWindow( UIWindow *window)
    frame       = [contentView contentRect];
 
    view  = [UIView viewWithFrame:frame];
-   [view setBackgroundColor:CGColorMakeWithRGBA( 1.0, 1.0, 1.0, 1.0)];
-   [(CALayer *) [view layer] setDrawCallback:(CALayerDrawCallback_t *) drawStuff];
+   [view setBackgroundColor:CGColorMakeBlue()];
+   [(CGGraphicsLayer *) [view layer] setDrawCallback:(CGGraphicsLayerDrawCallback_t *) drawStuff];
    [view setUserInteractionEnabled:YES];
    [contentView addSubview:view];
 }
@@ -156,7 +162,7 @@ int   main( int argc, char *argv[])
    limiter          = NO;
    isRetained       = NO;
    isMainThread     = YES;
-   isDoubleBuffered = NO;
+   isDoubleBuffered = YES;
    swapInterval     = 0;
 
    for( i = 1; i < argc; i++)
@@ -164,12 +170,20 @@ int   main( int argc, char *argv[])
       {
       default  : usage();
       case 'a' : rate = UIWindowFrameRateAsync; break;
-      case 's' : rate = UIWindowFrameRateSynced; break;
+      case 's' :
+         switch( argv[ i][ 1])
+         {
+         case 'i' :
+            isDoubleBuffered = NO; break;
+         default :
+            rate = UIWindowFrameRateSynced; break;
+         }
+         break;
       case 'u' : rate = UIWindowFrameRateUnsynced; break;
 
       case 'm' : isRetained = YES; isMainThread = YES; break;
       case 'r' : isRetained = YES; isMainThread = NO; break;
-      case 'v' : isRetained = NO; isMainThread = YES; break;
+      case 'v' : isRetained = NO;  isMainThread = YES; break;
 
       case 'd' : isDoubleBuffered = YES; break;
       case 'i' : swapInterval = 1; break;
@@ -199,7 +213,7 @@ int   main( int argc, char *argv[])
    app = [UIApplication sharedInstance];
    {
       // UIWindowStyleRenderNonRetainedOnly
-      styleMask  = UIWindowStyleMaskDefault;
+      styleMask = UIWindowStyleMaskDefault;
       if( ! isRetained)
          styleMask &= ~UIWindowStyleRetained;
       else
@@ -207,28 +221,46 @@ int   main( int argc, char *argv[])
             styleMask |= UIWindowStyleRetainedOnMainThread;
 
       if( ! isDoubleBuffered)
-         styleMask |= UIWindowStyleSingleBuffer;
+         if( isRetained == NO && isMainThread == YES)
+            styleMask |= UIWindowStyleSingleBuffer;
+         else
+         {
+            mulle_fprintf( stderr, "single buffer only supported for volatile mode\n");
+            return( 1);
+         }
 
       styleMask |= UIWindowStyleResizable;
+      //
+      // spacing looks nicer with subsequent window output
+      //
+      mulle_fprintf( stderr, "frameRate               : %s\n", UIWindowFrameRateUTF8String( rate));
+      mulle_fprintf( stderr, "styleMask               : %s\n", UIWindowStyleUTF8String( styleMask));
+      mulle_fprintf( stderr, "swapInterval            : %ld\n", swapInterval);
+      mulle_fprintf( stderr, "limiter                 : %bld\n", limiter);
+      mulle_fprintf( stderr, "mainThread              : %bld\n", isMainThread);
+      mulle_fprintf( stderr, "retained                : %bld\n", isRetained);
+      mulle_fprintf( stderr, "double buffer           : %bld\n", isDoubleBuffered);
 
       window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800, 600)
                          titleUTF8String:"Demo"
                                styleMask:styleMask];
 
       setupSceneInWindow( window);
+      [window setBackgroundColor:CGColorMakeChartreuse()]; // should not show, just for debug
       [window setFrameRate:rate];
       [window setFrameRateLimiter:limiter];
       [window setSwapInterval:swapInterval];
       // grab mouse motion events here
-      [window setEventCallback:handleEvent];
+//      [window setEventCallback:handleEvent];
+
+      perf = [MulleUIPerf object];
+      [window setFrameDelegate:perf];
 
       [app addWindow:window];
    }
 
-   perf = [MulleUIPerf object];
-   [window setFrameDelegate:perf];
 
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

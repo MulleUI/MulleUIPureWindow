@@ -7,9 +7,9 @@
 
 #import "import-private.h"
 
+#import "UIWindow+FrameInfo.h"
 #import "UIWindow+UIEvent.h"
-#import "UIWindow+Frame.h"
-#import "UIWindow+Render.h"
+#import "UIWindow+UIResponder.h"
 #import "UIWindow+Thread.h"
 #import "UIWindow+DebugPrivate.h"
 //#define DISPLAY_DEBUG
@@ -21,6 +21,22 @@
 // is also implemented by GLFWOSWindow...
 //
 @implementation UIWindow( UIWindow)
+
+mulle_relativetime_t    UIWindowGetAnimationRate( UIWindow *self)
+{
+   mulle_relativetime_t    animationRate;
+   mulle_relativetime_t    fastestFrameRate;
+   struct UIOSWindowInfo   windowInfo;
+
+   [self->_OSWindow getOSWindowInfo:&windowInfo];
+   fastestFrameRate = UIOSWindowInfoGetFastestFrameRate( &windowInfo);
+
+   animationRate = fastestFrameRate;
+   if( animationRate == UIWindowFrameRateAsync)
+      animationRate = self->_asyncAnimationRate;
+   return( animationRate);
+}
+
 
 - (void) writeOSWindowPropertyChangesIfNeeded
 {
@@ -41,38 +57,30 @@
    if( changes & UIWindowPropertyChangeFrame)
    {
       frame = [self frame];
-#ifdef DEBUG
-      MulleUILog( "push frame %.2f %.2f %.2f %.2f",
+      UIWindowLog( "push frame %.2f %.2f %.2f %.2f",
                               frame.origin.x, frame.origin.y,
                               frame.size.width, frame.size.height);
-#endif
       [_OSWindow os_setWindowFrame:frame];
    }
 
    if( changes & UIWindowPropertyChangeTitle)
    {
       title = [self titleUTF8String];
-#ifdef DEBUG
-      MulleUILog( "push title %s", title);
-#endif
+      UIWindowLog( "push title %s", title);
       [_OSWindow os_setTitleUTF8String:title];
    }
 
    if( changes & UIWindowPropertyChangeCursor)
    {
       cursor = [self cursor];
-#ifdef DEBUG
-      MulleUILog( "change cursor %p", cursor);
-#endif
+      UIWindowLog( "change cursor %p", cursor);
       [_OSWindow os_setCursor:cursor];
    }
 
    if( changes & UIWindowPropertyChangeDiscardEventsMask)
    {
       discardEventsMask = [self discardEventsMask];
-#ifdef DEBUG
-      MulleUILog( "change discardEventsMask 0x%tx", discardEventsMask);
-#endif
+      UIWindowLog( "change discardEventsMask 0x%tx", discardEventsMask);
       [_OSWindow setDiscardEventsMask:discardEventsMask];
    }
 }
@@ -87,13 +95,12 @@
    struct CGFrameInfo      frameInfo;
    struct UIOSWindowInfo   windowInfo;
    UIWindowDisplayBits     displayBits;
-   BOOL                    refreshForRetained;
+   BOOL                    flag;
 
    assert( [NSThread mulleIsMainThread]);
 
    displayBits        = 0;
    needsRefresh       = [self needsRefreshClearIfSet];
-   refreshForRetained = NO;
 
    // this checks "refresh" events only, it can be NO, but still "display"
    // may be set. The user usually never touches the refresh flag
@@ -108,35 +115,39 @@
    // flag. When the thread is done drawing it will hit us here with
    // needsRefresh.
    //
-   if( _backingStore != UIWindowBackingStoreVolatile)
+   switch( _backingStore)
    {
-      // main thread: handle refresh request
+   case UIWindowBackingStoreRetained :
       if( needsRefresh)
       {
-         if( _backingStore == UIWindowBackingStoreRetainedOnMainThread)
-         {
-            UIWindowRenderLog( "render and refresh and swap");
-
-            refreshForRetained = YES;
-            goto render_like_volatile;
-         }
-
          UIWindowRenderLog( "refresh and swap");
          [self refresh];
          [self swapBuffers];
       }
 
+      // if an empty event has hit us, we pass through here and also tell
+      // the windowthread to check stuff
+      if( _windowThread)
+         [self wakeupWindowThread];
+
       return( INFINITY);  // call me for events only ?
+
+   case UIWindowBackingStoreRetainedOnMainThread :
+      // ## **UIWindowBackingStoreRetainedOnMainThread**
+      // We usually want to redraw, except if we just need to refresh, then
+      // we can skip the redraw (except if we need to redraw anyway
+
+   case UIWindowBackingStoreVolatile :
+      //
+      // ## **UIWindowBackingStoreVolatile** 
+      //
+      // In the volatile arrangement, we have to redraw/refresh, except if
+      // frameTime is not reached yet. If we need to refresh we need to do it
+      // immediately, if we need to redraw only, we can wait until the frameTime.
+      //
+      break;
    }
-
-   //
-   // ## **UIWindowBackingStoreVolatile**
-   //
-   // In the volatile arrangement, we have to redraw/refresh, except if
-   // frameTime is not reached yet. If we need to refresh we need to do it
-   // immediately, if we need to redraw only, we can wait until the frameTime.
-   //
-
+   
    [_OSWindow getOSWindowInfo:&windowInfo];
    fastestFrameRate   = UIOSWindowInfoGetFastestFrameRate( &windowInfo);
    remainingFrameTime = [self remainingFrameTime:now
@@ -147,7 +158,7 @@
 
    if( ! needsRefresh && remainingFrameTime != 0.0)
    {
-      UIWindowRenderLogVerbose( "wait %.6f s", remainingFrameTime);
+      UIWindowRenderLogVerbose( "wait for remainingFrameTime %.6fs", remainingFrameTime);
       return( remainingFrameTime);
    }
 
@@ -158,20 +169,23 @@
    // possibly generated during the render. But not earlier, except if
    // one diligently calls flushRender
    //
-render_like_volatile:
    displayBits  = [self needsDisplayBitsClearIfSet];
-   displayBits |= UIWindowDisplayNeedsRedraw;
+   if( _backingStore == UIWindowBackingStoreVolatile)
+      displayBits |= UIWindowDisplayNeedsRedraw;
    [self getFrameInfo:&frameInfo];  // retrieve newest geometry
    displayBits  = [self renderWithFrameInfo:&frameInfo
                                 displayBits:displayBits];
 
    // no refresh in UIWindowBackingStoreVolatile
-   if( refreshForRetained)
+   // in the UIWindow case this
+   if( _backingStore == UIWindowBackingStoreRetainedOnMainThread)
       [self refresh];
 
    [self swapBuffers];
    [self setNeedsDisplayBits:displayBits];
-   [self setMouseMotionEventsEnabled:[self isTracking]];
+
+   flag = [self receivesMouseMotionEvents];
+   [self setMouseMotionEventsEnabled:flag];
 
    // now is the old now...
    UIWindowDisplayFrameStatisticsUpdate( &_mainThreadStatistics, now, mulle_absolutetime_now());

@@ -7,6 +7,7 @@
 
 #import <MulleUIView/UIView+DebugPrivate.h>
 #import "UIWindow+UITrackingArea.h"
+#import "UIWindow+NSTimer.h"
 #import "UITrackingArea.h"
 
 
@@ -36,9 +37,11 @@
 }
 
 
-- (void) addTrackingArea:(UITrackingArea *) item
-                toWindow:(UIWindow *) window
+- (void) addRetainedTrackingArea:(UITrackingArea *) item
+                       toWindow:(UIWindow *) window
 {
+   UIViewMouseTrackingEventLog( nil, "%#@ to %#@", item, window);
+
    // adding empty item is OK, because UITrackingArea init removes
    // self on empty rect
    if( ! item)
@@ -52,15 +55,21 @@
    if( ! [item owner])
       [item setOwner:self];
    [item setView:self]; // we need this for visibleRect calculations
-   [item retain];
    mulle_pointerarray_add( &_trackingAreas, item);
 }
 
 
 - (void) addTrackingArea:(UITrackingArea *) item
 {
-   return( [self addTrackingArea:item
-                        toWindow:(UIWindow *) [self window]]);
+   return( [self addRetainedTrackingArea:[item retain]
+                                toWindow:(UIWindow *) [self window]]);
+}
+
+
+- (void) addRetainedTrackingArea:(UITrackingArea *) item
+{
+   return( [self addRetainedTrackingArea:item
+                                toWindow:(UIWindow *) [self window]]);
 }
 
 
@@ -68,6 +77,8 @@
 {
    // UIWindow   *window;
    uintptr_t  index;
+
+   UIViewMouseTrackingEventLog( nil, "%#@", item);
 
    index = mulle_pointerarray_find( &_trackingAreas, item);
    if( index == mulle_not_found_e)
@@ -88,7 +99,7 @@
 {
    // UIWindow   *window;
 
-   mulle_pointerarray_autorelease_all( &_trackingAreas);
+   mulle_idarray_autorelease_all( &_trackingAreas);
    mulle_pointerarray_reset( &_trackingAreas);
 
    // not necessarily wanted though
@@ -102,7 +113,8 @@
                      inRect:(CGRect) rect
            autoresizingMask:(UIViewAutoresizing) autoresizingMask
 {
-   CGRect   frame;
+   CGRect                   frame;
+   struct UILayoutContext   context;
 
    if( ! autoresizingMask)
    {
@@ -110,9 +122,9 @@
       return;
    }
 
-   frame = [self autoresizedFrameOfObject:area
-                                   inRect:rect
-                         autoresizingMask:autoresizingMask];
+   context = UILayoutContextMake( rect, UIEdgeInsetsZero);
+   frame   = [area autoresizeWithContext:&context
+                        autoresizingMask:autoresizingMask];
 
    UIViewEventLogVerbose( nil, "Updating area %@ for rect %s to %s",
                                  area,
@@ -136,7 +148,7 @@
 
    mulle_pointerarray_for( &_trackingAreas, area)
    {
-      if( [area options] & UITrackingVisibleRectOnly)
+      if( [area trackingAreaOptions] & UITrackingVisibleRectOnly)
       {
          UIViewEventLogVerbose( nil, "set to %s", CGRectUTF8String( visibleRect));
          [area setRect:visibleRect];
@@ -150,5 +162,40 @@
    }
 }
 
+
+- (mulle_relativetime_t) hoverTimeInterval
+{
+   return( 1.0);
+}
+
+
+- (void) mouseEntered:(UIMouseTrackingEvent *) event
+{
+   UIViewMouseTrackingEventLog( event, "%#@", event);
+}
+
+
+- (void) mouseMoved:(UIMouseTrackingEvent *) event
+{
+   UIViewMouseTrackingEventLog( event, "%#@", event);
+}
+
+
+- (void) mouseExited:(UIMouseTrackingEvent *) event
+{
+   UIViewMouseTrackingEventLog( event, "%#@", event);
+}
+
+
+- (void) mouseHoverStarted:(UIMouseTrackingEvent *) event
+{
+   UIViewMouseTrackingEventLog( event, "%#@", event);
+}
+
+
+- (void) mouseHoverEnded:(UIMouseTrackingEvent *) event
+{
+   UIViewMouseTrackingEventLog( event, "%#@", event);
+}
 
 @end

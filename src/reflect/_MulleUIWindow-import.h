@@ -11,39 +11,48 @@
  *
  */
 
-// You can tweak the following #import with these commands.
-// (Use 432508D4-21E7-4787-8C7E-726645522382 instead of MulleUIView if there are duplicate entries)
-//    remove #import: : `mulle-sde dependency mark MulleUIView no-header`
-//    rename:              `mulle-sde dependency|library set MulleUIView include whatever.h`
-//    reorder:             `mulle-sde dependency move MulleUIView <up|down>`
-//    toggle #import:     `mulle-sde dependency mark MulleUIView [no-]import`
-//    toggle public:       `mulle-sde dependency mark MulleUIView [no-]public`
-//    toggle optional:     `mulle-sde dependency mark MulleUIView [no-]require`
-//    remove for platform: `mulle-sde dependency mark MulleUIView no-platform-<uname>`
+// To remove the following dependency (headers and library) completely:
+//   `mulle-sde dependency remove MulleUIView`
+// (Use 432508D4-21E7-4787-8C7E-726645522382 instead of MulleUIView, if there are duplicate entries)
+//
+// You can tweak the following #import with these commands:
+//    remove #import      : `mulle-sde dependency mark MulleUIView no-header`
+//    rename              : `mulle-sde dependency|library set MulleUIView include whatever.h`
+//    reorder             : `mulle-sde dependency move MulleUIView <up|down>`
+//    toggle #import      : `mulle-sde dependency mark MulleUIView [no-]import`
+//    toggle public       : `mulle-sde dependency mark MulleUIView [no-]public`
+//    toggle optional     : `mulle-sde dependency mark MulleUIView [no-]require`
+//    remove for platform : `mulle-sde dependency mark MulleUIView no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleUIView/MulleUIView.h>   // MulleUIView
 
-// You can tweak the following #import with these commands.
-// (Use 129AA2E7-CBAC-4C25-9860-B7E28AAAE3ED instead of MulleCA if there are duplicate entries)
-//    remove #import: : `mulle-sde dependency mark MulleCA no-header`
-//    rename:              `mulle-sde dependency|library set MulleCA include whatever.h`
-//    reorder:             `mulle-sde dependency move MulleCA <up|down>`
-//    toggle #import:     `mulle-sde dependency mark MulleCA [no-]import`
-//    toggle public:       `mulle-sde dependency mark MulleCA [no-]public`
-//    toggle optional:     `mulle-sde dependency mark MulleCA [no-]require`
-//    remove for platform: `mulle-sde dependency mark MulleCA no-platform-<uname>`
+// To remove the following dependency (headers and library) completely:
+//   `mulle-sde dependency remove MulleCA`
+// (Use 129AA2E7-CBAC-4C25-9860-B7E28AAAE3ED instead of MulleCA, if there are duplicate entries)
+//
+// You can tweak the following #import with these commands:
+//    remove #import      : `mulle-sde dependency mark MulleCA no-header`
+//    rename              : `mulle-sde dependency|library set MulleCA include whatever.h`
+//    reorder             : `mulle-sde dependency move MulleCA <up|down>`
+//    toggle #import      : `mulle-sde dependency mark MulleCA [no-]import`
+//    toggle public       : `mulle-sde dependency mark MulleCA [no-]public`
+//    toggle optional     : `mulle-sde dependency mark MulleCA [no-]require`
+//    remove for platform : `mulle-sde dependency mark MulleCA no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleCA/MulleCA.h>   // MulleCA
 
-// You can tweak the following #import with these commands.
-// (Use C260734E-5ADF-4DF6-B1B5-0AEFC5D2A9D4 instead of MulleInvocationQueue if there are duplicate entries)
-//    remove #import: : `mulle-sde dependency mark MulleInvocationQueue no-header`
-//    rename:              `mulle-sde dependency|library set MulleInvocationQueue include whatever.h`
-//    reorder:             `mulle-sde dependency move MulleInvocationQueue <up|down>`
-//    toggle #import:     `mulle-sde dependency mark MulleInvocationQueue [no-]import`
-//    toggle public:       `mulle-sde dependency mark MulleInvocationQueue [no-]public`
-//    toggle optional:     `mulle-sde dependency mark MulleInvocationQueue [no-]require`
-//    remove for platform: `mulle-sde dependency mark MulleInvocationQueue no-platform-<uname>`
+// To remove the following dependency (headers and library) completely:
+//   `mulle-sde dependency remove MulleInvocationQueue`
+// (Use C260734E-5ADF-4DF6-B1B5-0AEFC5D2A9D4 instead of MulleInvocationQueue, if there are duplicate entries)
+//
+// You can tweak the following #import with these commands:
+//    remove #import      : `mulle-sde dependency mark MulleInvocationQueue no-header`
+//    rename              : `mulle-sde dependency|library set MulleInvocationQueue include whatever.h`
+//    reorder             : `mulle-sde dependency move MulleInvocationQueue <up|down>`
+//    toggle #import      : `mulle-sde dependency mark MulleInvocationQueue [no-]import`
+//    toggle public       : `mulle-sde dependency mark MulleInvocationQueue [no-]public`
+//    toggle optional     : `mulle-sde dependency mark MulleInvocationQueue [no-]require`
+//    remove for platform : `mulle-sde dependency mark MulleInvocationQueue no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleInvocationQueue/MulleInvocationQueue.h>   // MulleInvocationQueue
 

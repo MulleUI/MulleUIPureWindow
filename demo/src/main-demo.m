@@ -46,18 +46,19 @@ static void  drawStuff( CALayer *layer, CGContext *context)
 }
 
 
-static void   setupSceneInView( UIView *contentPlane)
+static void   setupSceneInView( UIView *contentView)
 {
    UIView   *view;
    CGRect   frame;
 
-   frame = [contentPlane contentRect];
+   frame = [contentView contentRect];
    frame = UIEdgeInsetsInsetRect( frame, UIEdgeInsetsMake( 10, 10, 10, 10));
 
    view  = [UIView viewWithFrame:frame];
+   [view setAutoresizingMask:UIViewAutoresizingFlexibleSize];
    [view setBackgroundColor:BLAU];
-   [(CALayer *) [view layer] setDrawCallback:(CALayerDrawCallback_t *) drawStuff];
-   [contentPlane addSubview:view];
+   [(CGGraphicsLayer *) [view layer] setDrawCallback:(CGGraphicsLayerDrawCallback_t *) drawStuff];
+   [contentView addSubview:view];
 }
 
 
@@ -69,7 +70,10 @@ int   main( int argc, char *argv[])
    
    app = [UIApplication sharedInstance];
    {
-      styleMask = UIWindowStyleMaskDefault & ~UIWindowStyleRetained;
+      // demo runs single threaded
+      // styleMask = UIWindowStyleMaskDefault & ~(UIWindowStyleRetained|UIWindowStylePlanes);
+      // demo runs multi threaded
+      styleMask = UIWindowStyleMaskDefault & ~(UIWindowStylePlanes);
       window    = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 800.0)
                             titleUTF8String:"Demo"
                                   styleMask:styleMask];
@@ -82,7 +86,7 @@ int   main( int argc, char *argv[])
 
       [app addWindow:window];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

@@ -158,11 +158,11 @@ int   main( int argc, char *argv[])
 
       // background color will be seen when resizing
       [window setBackgroundColor:CGColorMakeWhite()];
-      [window setDrawCallback:(CALayerDrawCallback_t *) draw];
+      [window setDrawCallback:(CGGraphicsLayerDrawCallback_t *) draw];
       [window setFrameRateHz:60.0];
       [app addWindow:window];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

@@ -2,9 +2,9 @@
 
 #import "UIWindow.h"
 
+#import "UIView+UIWindow.h"
 #import "UIWindow+DebugPrivate.h"
-#import "UIWindow+Frame.h"
-#import "UIWindow+Render.h"
+#import "UIWindow+FrameInfo.h"
 #import "UIWindow+Thread.h"
 #import "UIWindow+NSTimer.h"
 #import "UIWindow+UIEvent.h"
@@ -118,7 +118,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 
 static struct
 {
-   NSUInteger   _debugEnabled;
+   NSUInteger   _debuggingFlags;
 } Self;
 
 
@@ -130,15 +130,11 @@ static struct
    if( MulleObjCClassGetID( self) != @selector( UIWindow))
       return;
 
-   s = getenv( "UIWindowDebugEnabled");
+   s = getenv( MULLE_C_STRINGIFY( UIWindow) "DebuggingFlags");
+   if( ! s)
+      s = getenv( "UIDebuggingFlags");
    if( s)
-      Self._debugEnabled = strtol( s, NULL, 0);
-   else
-   {
-#ifdef UIWINDOW_DEBUG_ENABLED
-      Self._debugEnabled = UIWINDOW_DEBUG_ENABLED;
-#endif
-   }
+      Self._debuggingFlags = strtol( s, NULL, 0);
 }
 
 
@@ -147,9 +143,9 @@ static struct
 }
 
 
-+ (void) setDebugEnabled:(NSUInteger) flag
++ (void) setDebuggingFlags:(NSUInteger) flag    MULLE_OBJC_THREADSAFE_METHOD
 {
-   Self._debugEnabled = flag;
+   Self._debuggingFlags = flag;
 }
 
 
@@ -196,7 +192,7 @@ static struct
    window      = [self windowWithFrame:rect
                        titleUTF8String:title ? title : "Demo"
                              styleMask:styleMask];
-   [[window contentView] addSubview:view];
+   [window setView:view];
    return( window);
 }
 
@@ -206,7 +202,7 @@ static struct
 {
    return( [self windowWithView:view 
                  titleUTF8String:title
-                       styleMask:UIWindowStyleMaskDefault & ~UIWindowStylePanes]);
+                       styleMask:UIWindowStyleMaskDefault & ~UIWindowStylePlanes]);
 }
 
 
@@ -228,12 +224,12 @@ static struct
    frame.origin = CGPointZero;
    [layer setFrame:frame];
 
-   view = [UIView viewWithLayer:layer];
+   view = [[self viewClass] viewWithLayer:layer];
    [view setDebugNameUTF8String:"layerContainerView"];
    [view setMargins:margins];
    [view setAutoresizingMask:UIViewAutoresizingScaleToFill];
    return( [self windowWithView:view
-               titleUTF8String:title
+                titleUTF8String:title
                      styleMask:styleMask]);
 }
 
@@ -242,7 +238,7 @@ static struct
 {
    return( [self windowWithLayer:layer 
                  titleUTF8String:title
-                       styleMask:UIWindowStyleMaskDefault & ~UIWindowStylePanes]);
+                       styleMask:UIWindowStyleMaskDefault & ~UIWindowStylePlanes]);
 }
 
 
@@ -257,12 +253,6 @@ static struct
 {
    fprintf( stderr, "Someone needs to override %s to provide a OS graphics context\n", __FUNCTION__);
    abort();
-}
-
-
-static UIWindowEvent   *defaultWindowEventCallback( UIWindow *window, UIWindowEvent *event)
-{
-   return( event);
 }
 
 
@@ -298,44 +288,52 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 //
 - (void) setupContentPlanesInRect:(CGRect) frame 
 {
-   _contentPlane = [UIView viewWithFrame:frame];
+   Class    windowPlaneClass;
+
+   assert( _view);
+
+   windowPlaneClass = [[self class] windowPlaneClass];
+
+   _contentPlane = [windowPlaneClass viewWithFrame:frame];
 
    [_contentPlane setDebugNameUTF8String:"Window/ContentPlane"];
    [_contentPlane setAutoresizingMask:UIViewAutoresizingScaleToFill];
    [_contentPlane setClipsToBounds:NO];
-   [self addSubview:_contentPlane];
+   [_view addSubview:_contentPlane];
 
-   _toolTipPlane = [UIView viewWithFrame:frame];
+   _toolTipPlane = [windowPlaneClass viewWithFrame:frame];
    [_toolTipPlane setDebugNameUTF8String:"Window/ToolTipPlane"];
    [_toolTipPlane setAutoresizingMask:UIViewAutoresizingScaleToFill];
    [_toolTipPlane setClipsToBounds:NO];
-   [self addSubview:_toolTipPlane];
    // why is hiding this a good idea ?
    [_toolTipPlane setHidden:YES];
+   [_view addSubview:_toolTipPlane];
 
-   _menuPlane = [UIView viewWithFrame:frame];
+   _menuPlane = [windowPlaneClass viewWithFrame:frame];
    [_menuPlane setAutoresizingMask:UIViewAutoresizingScaleToFill];
    [_menuPlane setDebugNameUTF8String:"Window/MenuPlane"];
    [_menuPlane setClipsToBounds:NO];
-   [self addSubview:_menuPlane];
    // why is hiding this a good idea ?
    [_menuPlane setHidden:YES];
+   [_view addSubview:_menuPlane];
 
-   _dragAndDropPlane = [UIView viewWithFrame:frame];
+   _dragAndDropPlane = [windowPlaneClass viewWithFrame:frame];
+
    [_dragAndDropPlane setAutoresizingMask:UIViewAutoresizingScaleToFill];
    [_dragAndDropPlane setDebugNameUTF8String:"Window/DragAndDropPlane"];
    [_dragAndDropPlane setClipsToBounds:NO];
-   [self addSubview:_dragAndDropPlane];
    // why is hiding this a good idea ?
    [_dragAndDropPlane setHidden:YES];
+   [_view addSubview:_dragAndDropPlane];
 
-   _alertPlane = [UIView viewWithFrame:frame];
+   _alertPlane = [windowPlaneClass viewWithFrame:frame];
+
    [_alertPlane setAutoresizingMask:UIViewAutoresizingScaleToFill];
    [_alertPlane setDebugNameUTF8String:"Window/AlertPlane"];
    [_alertPlane setClipsToBounds:NO];
    // why is hiding this a good idea ?
    [_alertPlane setHidden:YES];
-   [self addSubview:_alertPlane];
+   [_view addSubview:_alertPlane];
 }
 
 
@@ -349,15 +347,42 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 }
 
 
+- (void) _init
+{
+   _asyncAnimationRate   = 1.0 / 60.0;
+   _loadDefaultFont      = YES;
+   _oldSwapInterval      = NSIntegerMax;
+   _refreshContentMode   = CGContentModeTopLeft;
+   _trackingAreasEnabled = YES;
+}
+
+
 - (instancetype) _initWithFrame:(CGRect) frame
 {
-   // UIView init
-   [super initWithFrame:frame];
+   UIWindowDisplayBits   displayBits;
 
-   _frame = frame;
+   self = [super init];
+   if( ! self)
+   {
+      [self release];
+      return( self);
+   }
 
-   _debugEnabled = Self._debugEnabled;
-   if( _debugEnabled)
+   // this is done by startThread
+   // _windowPropertyLock = [NSLock new];
+   _viewHierarchyLock  = [NSRecursiveLock new];
+
+   _frame              = frame;
+   // not framebuffer size, the bounds need to stay in "user" render coordinates
+   _bounds.size        = frame.size;
+
+#ifdef UIWINDOW_DEBUGGING_FLAGS
+   _debuggingFlags = UIWINDOW_DEBUGGING_FLAGS;
+#else
+   _debuggingFlags = Self._debuggingFlags;
+#endif
+
+   if( _debuggingFlags)
       MulleUILog( "_initWithFrame");
 
    assert( frame.size.height == _frame.size.height);
@@ -367,28 +392,25 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    // _contentPlane can be used
 
    _mulle_pointerarray_init( &_drawingQueue, 128, MulleObjCInstanceGetAllocator( self));
-   _mulle_pointerarray_init( &_delegateViews, 8, MulleObjCInstanceGetAllocator( self));
+   _mulle_pointerarray_init( &_renderDelegates, 8, MulleObjCInstanceGetAllocator( self));
+   _mulle_pointerarray_init( &_controllers, 4, MulleObjCInstanceGetAllocator( self));
 
    // initially dirty with renderer 1, renderer go!
    _mulle_atomic_pointer_nonatomic_write( &_needsRefresh, (void *) 1);
-   _mulle_atomic_pointer_nonatomic_write( &_needsDisplay, (void *) ~0);
 
-   _oldSwapInterval         = NSIntegerMax;
-   _willRenderFrameCallback = UIWindowDefaultWillRenderFrameCallback;
-   _rawFrameCallback        = UIWindowDefaultRawFrameCallback;
-   _didRenderFrameCallback  = UIWindowDefaultDidRenderFrameCallback;
+   // don't use ~0 it traces ugly
+   displayBits = UIWindowDisplayNeedsLayout
+                 | UIWindowDisplayNeedsAnimation
+                 | UIWindowDisplayNeedsRedraw;
+   _mulle_atomic_pointer_nonatomic_write( &_needsDisplay, (void *) displayBits);
 
-   // its kinda pointless to inherit clipRects down for views, that are full
-   // window size
-   _clipsToBounds         = NO;
-   _backgroundHexColor    = 0xFFFFFFFF;
-   _refreshContentMode    = CGContentModeTopLeft;
-   _asyncAnimationRate    = 1.0 / 60.0;
-   _windowEventCallback   = defaultWindowEventCallback;
-   _window                = self;
-   _trackingAreasEnabled  = YES;
-   _keepOSGraphicsContextActive = YES;  // now the default
-   _loadDefaultFont             = YES;
+
+   // this calls _init on all categories, protocolclasses and classes from
+   // UIWindow up
+   MulleObjCObjectSpamAncestorToInheritor( self,
+                                           @selector( _init),
+                                           self,
+                                           [[UIWindow class] superclass]);
 
    UIInputStateInit( &_inputState, CGPointMake( -1, -1), 0, 0);
 
@@ -472,11 +494,20 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    Class             osWindowClass;
    Class             Self;
    Class             contextClass;
+   Class             viewClass;
+   CGRect            bounds;
+   UIView            *view;
 
    assert( [NSThread mulleIsMainThread]);
 
-   if( ! styleMask)
-      styleMask = UIWindowStyleMaskDefault;
+   Self          = [self class];
+   osWindowClass = [Self osWindowClass];
+   hints         = [Self osGraphicsHints];
+   contextClass  = [Self osGraphicsContextClass];
+
+   // TTY windows w/o graphicsContext stay at 0
+   if( ! styleMask && contextClass)
+      styleMask = UIWindowStyleMaskDefault|UIWindowStyleResizable;
 
    // if you want to create a "manual" offscreen window, this is not going
    // to be visible ever. It is kinda wasteful to have this anything else than
@@ -486,14 +517,14 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    offscreenWindow = nil;
 
-   Self          = [self class];
-   osWindowClass = [Self osWindowClass];
-   hints         = [Self osGraphicsHints];
-
    // default for now
    _backingStore       = UIWindowBackingStoreVolatile;
    _offscreenStyleMask = styleMask;
 
+   if( styleMask & UIWindowStyleProfileQueue)
+      _profileQueue = mulle_structqueue_create_default( sizeof( struct MulleWindowProfileEntry),
+                                                        alignof( struct MulleWindowProfileEntry),
+                                                        MulleObjCInstanceGetAllocator( self));
    //
    // if we want antialiasing (usually) and the graphics context doesn't
    // support it (GLES 2.0), then force edge anti alias, so that the windows
@@ -501,7 +532,6 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    //
    if( styleMask & UIWindowStyleAntiAlias)
    {
-      contextClass = [[self class] osGraphicsContextClass];
       if( [contextClass supportsAntiAliasing] == NO)
       {
          _offscreenStyleMask &= ~UIWindowStyleAntiAlias;
@@ -551,57 +581,50 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
          styleMask &= ~(UIWindowStyleForceEdgeAntiAlias|UIWindowStyleStencilStrokes|UIWindowStyleClearType);
    }
 
-   _styleMask = styleMask;
-   osWindow   = [[[osWindowClass alloc] initWithFrame:frame
-                                      titleUTF8String:title
-                                            styleMask:styleMask
-                                        graphicsHints:hints
-                                        sharingWindow:offscreenWindow] autorelease];
+   //
+   // we can keep the OSGraphicsContext active, if the window is running in its
+   // own thread, or if it can be ascertained that only one window is open
+   // ever (user resposibility then)
+   _styleMask                   = styleMask;
+   _keepOSGraphicsContextActive = (styleMask & (UIWindowStyleRetained|UIWindowStyleRetainedOnMainThread)) == UIWindowStyleRetained;
+
+   osWindow = [[[osWindowClass alloc] initWithFrame:frame
+                                    titleUTF8String:title
+                                          styleMask:styleMask
+                                      graphicsHints:hints
+                                      sharingWindow:offscreenWindow] autorelease];
 
    MulleObjCObjectSetDuplicatedUTF8String( self, &_titleUTF8String, title);
 
    self = [self initWithOSWindow:osWindow
                offscreenOSWindow:offscreenWindow];
-   if( styleMask & UIWindowStylePanes)
-      [self setupContentPlanesInRect:[self contentRect]];
+
+   if( ! (styleMask & UIWindowStyleNoView))
+   {
+      bounds       = [self bounds];
+      // UIView init, looks kinda strange passing self here but its for the
+      // benefit of TTYWindow which needs to create a layer from osWindow now
+      viewClass = [[self class] viewClass];
+      view      = [viewClass viewWithFrame:bounds];
+      [view setDebugNameUTF8String:"Window/Root"];
+      [view setAutoresizingMask:UIViewAutoresizingScaleToFill];
+      [self setView:view];
+      if( styleMask & UIWindowStylePlanes)
+         [self setupContentPlanesInRect:bounds];
+   }
    return( self);
 }
-
 
 
 - (instancetype) initWithFrame:(CGRect) frame
 {
    return( [self initWithFrame:frame
                titleUTF8String:"Demo"
-                     styleMask:UIWindowStyleMaskDefault|UIWindowStyleResizable]);
+                     styleMask:0]);
 }
 
-
-- (void) finalize
+- (void) _finalizeGraphicsContexts
 {
-   // remove events from window thread and clear display flag
-   // this is better than not doing it, but no guarantee that an event isn't
-   // processed in the background
-#ifdef DEBUG
-   MulleUILogThisMethod();
-#endif
-
-   // if we have a window thread, we need to bring it down
-   if( _windowThread)
-      [self finalizeWindowThread];
-
-   [self discardPendingTimers];
-   [self discardPendingEvents];
-   [self terminateAllInvocationQueues];
-
-   _mulle_atomic_pointer_write( &_needsDisplay, (void *) 0);
-
-   // unmount all subviews, the subviews -window method will now return nil
-   // which allows them to finalize
-   [self removeAllSubviews];
-
-   [self _finalizeResourceStorage:&_resourceStorage];
-
    if( _offscreenContext)
    {
       if( ! [_offscreenContext isActive])
@@ -636,20 +659,75 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
       [_context setActive:NO];
    }
    [_context autorelease];
-   _context = nil;
+   _context = nil;   
+}
 
+
+-(void) _finalizeOSWindows
+{
    // TODO: delete window ?
    //       remove from screen ?
    [_offscreenOSWindow mullePerformFinalize];
    [_offscreenOSWindow autorelease];
    _offscreenOSWindow = nil;
 
+   [_OSWindow setWindowEventsReceiver:nil];
+   [_OSWindow setEventsReceiver:nil];
+   [_OSWindow os_finalizeEvents];
+
    [_OSWindow mullePerformFinalize];
    [_OSWindow autorelease];
-   _OSWindow = nil;
+   _OSWindow = nil;   
+}
+
+
+- (void) finalize
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   // remove events from window thread and clear display flag
+   // this is better than not doing it, but no guarantee that an event isn't
+   // processed in the background
+#ifdef DEBUG
+   MulleUILogThisMethod();
+#endif
+
+   // this must have died before hand...
+   assert( ! _windowThread);
+
+   [self discardPendingTimers];
+   [self discardPendingEvents];
+   [self terminateAllInvocationQueues];
+
+   _mulle_atomic_pointer_write( &_needsDisplay, (void *) 0);
+
+   // unmount all subviews, the subviews -window method will now return nil
+   // which allows them to finalize
+
+   [_alertPlane removeFromSuperview];
+   _alertPlane = nil;
+   [_contentPlane removeFromSuperview];
+   _contentPlane = nil;
+   [_dragAndDropPlane removeFromSuperview];
+   _dragAndDropPlane = nil;
+   [_menuPlane removeFromSuperview];
+   _menuPlane = nil;
+   [_toolTipPlane removeFromSuperview];
+   _toolTipPlane = nil;
+
+   // get rid of controllers here
+   mulle_idarray_call_all( &_controllers, @selector( mullePerformFinalize), nil);
+
+   [_view setWindow:nil];
+   [_view mullePerformFinalize];
+   [_view autorelease];
+   _view = nil;
+
+   [self _finalizeResourceStorage:&_resourceStorage];
+   [self _finalizeGraphicsContexts];
+   [self _finalizeOSWindows];
 
    _firstResponder = nil;
-   _window = nil;
    
    [super finalize];
 }
@@ -657,6 +735,13 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (void) dealloc
 {
+   // this calls _dealloc on all categories, protocolclasses and classes from
+   // UIWindow (or current subclass) down
+   MulleObjCObjectSpamInheritorToAncestor( self,
+                                           @selector( _dealloc),
+                                           self,
+                                           [[UIWindow class] superclass]);
+
    MulleObjCObjectSetDuplicatedUTF8String( self, &_titleUTF8String, NULL);
 
    [_postLayoutAnimator release];
@@ -664,13 +749,18 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    [_reusableTrackingEvent release];
 
-   mulle_pointerarray_release_all( &_trackingViews);
+   mulle_idarray_release_all( &_controllers);
+   mulle_pointerarray_done( &_controllers);   // reset intentional=
+   mulle_idarray_release_all( &_trackingViews);
    mulle_pointerarray_done( &_trackingViews);
-   mulle_pointerarray_release_all( &_enteredAreas);
+   mulle_idarray_release_all( &_enteredAreas);
    mulle_pointerarray_done( &_enteredAreas);
-   mulle_pointerarray_done( &_delegateViews);
+   mulle_pointerarray_done( &_renderDelegates);
    mulle_pointerarray_done( &_drawingQueue);
-   _mulle__pointerset_done( &_layoutedViews, MulleObjCInstanceGetAllocator( self));
+
+
+   // now done locally in _dealloc
+   //_mulle__pointerset_done( &_layoutedViews, MulleObjCInstanceGetAllocator( self));
 
    mulle_quadtree_destroy( _quadtree);
 
@@ -680,12 +770,49 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    [self _doneResourceStorage:&_resourceStorage];
    [self _doneInvocationQueues];
 
+   UIWindowDestroyProfileQueue( _profileQueue);
+   [_viewHierarchyLock release];
+   [_windowPropertyLock release];
+
    // TODO: delete window ?
    [super dealloc];
 }
 
 
-- (struct MulleUIResourceStorage *) _resourceStorage
+//
+// gain and relinquish are tailored to transfer between the UIWindow+Thread
+// and the mainThread. Not for anything else (so far)
+//
+- (void) mulleGainAccess
+{
+   // more todo
+   [super mulleGainAccess];
+
+   [_view mulleGainAccess];
+   [_preLayoutAnimator mulleGainAccess];
+   [_postLayoutAnimator mulleGainAccess];
+   [_offscreenOSWindow mulleGainAccess];
+   [_offscreenContext mulleGainAccess];
+   [_frameDelegate mulleGainAccess];
+   [_userInfo mulleGainAccess];
+}
+
+
+- (void) mulleRelinquishAccess
+{
+   [_userInfo mulleRelinquishAccess];
+   [_frameDelegate mulleRelinquishAccess];
+   [_offscreenOSWindow mulleRelinquishAccess];
+   [_offscreenContext mulleRelinquishAccess];
+   [_postLayoutAnimator mulleRelinquishAccess];
+   [_preLayoutAnimator mulleRelinquishAccess];
+   [_view mulleRelinquishAccess];
+
+   [super mulleRelinquishAccess];
+}
+
+
+- (struct MulleUIResourceStorage *) _resourceStorage  MULLE_OBJC_THREADSAFE_METHOD
 {
    return( &_resourceStorage);
 }
@@ -698,27 +825,103 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 }
 
 
+- (void) setView:(UIView *) view
+{
+   // don't waste planes, if view is the same
+   if( view == _view)
+      return;
+
+   assert( _viewHierarchyLock);
+   [view shareRecursiveLock:_viewHierarchyLock];
+
+   [_view setWindow:nil];
+   [_view autorelease];
+   _view = [view retain];
+   [view setWindow:self];
+
+   _alertPlane       = nil;
+   _contentPlane     = nil;
+   _menuPlane        = nil;
+   _dragAndDropPlane = nil;
+   _toolTipPlane     = nil;
+}
+
+
++ (Class) viewClass
+{
+   return( [UIView class]);
+}
+
++ (Class) windowPlaneClass
+{
+   return( [UIWindowPlane class]);
+}
+
+
+
+- (UIView *) contentView
+{
+   // unsure about this assert
+   // assert( _view || [self mulleIsFinalized]);
+   return( _contentPlane ? _contentPlane : _view);
+}
+
+
+- (void) setContentView:(UIView *) view
+{
+   assert( view);
+
+   if( _contentPlane)
+   {
+      [[_contentPlane superview] replaceSubview:_contentPlane
+                                       withView:view];
+      _contentPlane = view;
+      return;
+   }
+
+   [self setView:view];
+}
+
+
+
 //
-// forward methods to _OSWindow
+// forward methods to _OSWindow (or UIView ?)
 //
 - (void *) forward:(void *) param
 {
-   assert( _OSWindow); // window should not forward...
-   return( mulle_objc_object_call_variablemethodid_inline( _OSWindow,
-                                                          (mulle_objc_methodid_t) _cmd,
-                                                          param));
+   assert( _OSWindow); // if nil, window should not forward...
+   return( mulle_objc_object_call_variable_inline( _OSWindow,
+                                                   (mulle_objc_methodid_t) _cmd,
+                                                   param));
 }
 
 
 - (void) applicationDidAddWindow:(UIApplication *) app
 {
+   assert( [NSThread mulleIsMainThread]);
+
    _application = app;
+   if( [app osKeyWindow] == nil)
+   {
+      [app setOSKeyWindow:_OSWindow];
+   }
    [self startWindowThreadMainIfNeeded];
 }
 
 
 - (void) applicationDidRemoveWindow:(UIApplication *) app
 {
+   assert( [NSThread mulleIsMainThread]);
+
+   // ok but how does the app get a new key window ?
+   // maybe the app should run a NSNotification now
+   if( [app osKeyWindow] == _OSWindow)
+   {
+      [app setOSKeyWindow:nil];
+   }
+
+   // if we have a window thread, we need to bring it down
+   [self finalizeWindowThread];
    [self mullePerformFinalize];
    _application = nil;
 }
@@ -754,7 +957,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 }
 
 
-- (struct MulleIntegerSize) framebufferSize
+- (CGPixelSize) framebufferSize
 {
    struct UIOSWindowInfo   info;
 
@@ -806,22 +1009,28 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    BOOL   flag;
 
    flag = (BOOL) (NSUInteger) MulleObjCAtomicPointerReadClearIfSet( &_needsRefresh);
-   UIWindowRefreshBitsLog( "needsRefresh: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsRefresh));
+   if( flag)
+   {
+      UIWindowRefreshBitsLog( "needsRefresh: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsRefresh));
+   }
    return( flag);
 }
 
 
 - (void) setNeedsDisplay
 {
+   assert( ! _isRendering || "window is rendering, your change will be discarded unnoticed soon");
+
    _mulle_atomic_pointer_write( &_needsDisplay, (void *) ~0);
 
    UIWindowDisplayBitsLog( "needsDisplay: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsDisplay));
 }
 
 
-
 - (void) setNeedsDisplayBits:(UIWindowDisplayBits) value
 {
+   assert( ! _isRendering || "window is rendering, your change will be discarded unnoticed soon");
+
    _mulle_atomic_pointer_write( &_needsDisplay, (void *) value);
 
    UIWindowDisplayBitsLog( "needsDisplay: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsDisplay));
@@ -831,6 +1040,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 - (void) setNeedsDisplayBit:(UIWindowDisplayBits) value
 {
    assert( value);
+   assert( ! _isRendering || "window is rendering, your change will be discarded unnoticed soon");
 
    MulleObjCAtomicPointerSetBit( &_needsDisplay, value);
 
@@ -905,6 +1115,15 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    return( mulle_pointerarray_get_count( &_trackingViews) != 0);
 }
 
+
+- (BOOL) receivesMouseMotionEvents
+{
+   if( [self isTracking])
+      return( YES);
+   return( [_firstResponder isMouseMotionEnabled]);
+}
+
+
 //
 // lets write a novel here:
 // the problem with resizing is that on resize we need to provide content
@@ -914,7 +1133,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 // middle of our frame ?
 // If we get isResizing, we should immediately abort, and provide a cheap
 // facade for resizing. The best facade would be a resizable screenshot of
-// out window.
+// our (previous) window contents.
 //
 // Problems: glReadPixels maybe too late (window manager already corrupted
 //           framebuffer ?)
@@ -959,31 +1178,31 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
  * frame/bounds (from the moved OSWindow frame. It does not set the OSWindow
  * frame.
  */
-- (void) _setFrame:(CGRect) frame
+- (void) _setFrame:(CGRect) frame   MULLE_OBJC_THREADSAFE_METHOD
 {
-   [_windowPropertyLock lock];
+   BOOL     hasChange;
+
+   MulleObjCLockDo( _windowPropertyLock)
    {
-      if( ! CGRectEqualToRect( _frame, frame))
+      hasChange = ! CGRectEqualToRect( _frame, frame);
+      if( hasChange)
       {
          _frame       = frame;
          _bounds.size = frame.size;
       }
    }
-   [_windowPropertyLock unlock];
 }
 
 //
-// - (void) _setPosition:(CGPoint) position
-// {
-//    CGRect   frame;
-//
-//    [_windowPropertyLock lock];
-//    {
-//       if( ! CGPointEqualToPoint( _frame.origin, position))
-//          _frame.origin = position;
-//    }
-//    [_windowPropertyLock unlock];
-// }
+- (void) _setPosition:(CGPoint) position  MULLE_OBJC_THREADSAFE_METHOD
+{
+   [_windowPropertyLock lock];
+   {
+      if( ! CGPointEqualToPoint( _frame.origin, position))
+         _frame.origin = position;
+   }
+   [_windowPropertyLock unlock];
+}
 //
 //
 // - (void) _setSize:(CGSize) size
@@ -1001,7 +1220,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 //    [_windowPropertyLock unlock];
 // }
 //
-// - (void) _setFramebufferSize:(struct MulleIntegerSize) size
+// - (void) _setFramebufferSize:(CGPixelSize) size
 // {
 //    MulleObjCNSLockProtectedAssignWriteAccessor( _framebufferSize, _windowPropertyLock, size);
 // }
@@ -1028,23 +1247,23 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 }
 
 
-- (void) windowPropertySet:(SEL) sel
+- (BOOL) windowPropertySet:(SEL) sel
                 parameters:(void *) param
                        bit:(NSUInteger) bit
 {
    BOOL   changed;
 
    changed = NO;    
-   [_windowPropertyLock lock];
+   MulleObjCLockDo( _windowPropertyLock)
    {
       changed = (BOOL) (intptr_t) MulleObjCObjectPerformSelector( self, sel, param);
       if( changed)
          setPropertyChangesBit( self, bit);
    }
-   [_windowPropertyLock unlock];
 
    if( changed)
       [UIEvent sendEmptyEvent];
+   return( changed);
 }
 
 
@@ -1053,11 +1272,10 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 {
    char   *s;
 
-   [_windowPropertyLock lock];
+   MulleObjCLockDo( _windowPropertyLock)
    {
       s = MulleObjC_asprintf( "%s", _titleUTF8String ? _titleUTF8String : "");
    }
-   [_windowPropertyLock unlock];
    return( s);
 }
 
@@ -1171,7 +1389,7 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 }
 
 
-- (NSUInteger) backgroundHexColor
+- (CGHexColor) backgroundHexColor
 {
    NSUInteger   rval;
 
@@ -1182,7 +1400,7 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 }
 
 
-- (void) setBackgroundHexColor:(NSUInteger) color
+- (void) setBackgroundHexColor:(CGHexColor) color
 {
    MulleObjCNSLockProtectedAssignWriteAccessor( _backgroundHexColor,
                                                 _windowPropertyLock,
@@ -1209,14 +1427,6 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 }
 
 
-- (void) setWindowEventCallback:(UIWindowEvent *(*)(UIWindow *, UIWindowEvent *)) callback
-{
-   if( ! callback)
-      callback = defaultWindowEventCallback;
-   _windowEventCallback = callback;
-}
-
-
 /*
  *
  */
@@ -1237,35 +1447,46 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 }
 
 
-- (void) addToDelegateViews:(UIView *) view
+- (void) addToRenderDelegates:(id <UIWindowRenderDelegate>) delegate
 {
-   assert( _mulle_pointerarray_find( &_delegateViews, view) == mulle_not_found_e);
+   assert( _mulle_pointerarray_find( &_renderDelegates, delegate) == mulle_not_found_e);
+   assert( [(id) delegate respondsToSelector:@selector( willRenderWithAbsoluteTime:)]);
 
-   _mulle_pointerarray_add( &_delegateViews, view);
+   _mulle_pointerarray_add( &_renderDelegates, delegate);
 }
 
 
-- (void) removeFromDelegateViews:(UIView *) view
+- (void) removeFromRenderDelegates:(id <UIWindowRenderDelegate>) delegate
 {
    extern void   mulle_pointerarray_remove( struct mulle_pointerarray *, void *);
 
+   mulle_pointerarray_remove( &_renderDelegates, delegate);
+}
+
+
+- (void) addToViewControllers:(UIViewController *) controller
+{
+   assert( _mulle_pointerarray_find( &_controllers, controller) == mulle_not_found_e);
+
+   [controller retain];
+   _mulle_pointerarray_add( &_controllers, controller);
+   [controller setWindow:self];
+}
+
+
+- (void) removeFromViewControllers:(UIViewController *) controller
+{
+   extern void   mulle_pointerarray_remove( struct mulle_pointerarray *, void *);
+   uintptr_t    index;
+
    // defined in UIView
-   mulle_pointerarray_remove( &_delegateViews, view);
-}
-
-
-- (void) setContentView:(UIView *) view
-{
-   assert( ! view || [view window] == self);
-   _contentView = view;
-}
-
-
-- (UIView *) contentView
-{
-   if( ! _contentView)
-      return( _contentPlane ? _contentPlane : self);
-   return( _contentView);
+   index = _mulle_pointerarray_find( &_controllers, controller);
+   if( index != mulle_not_found_e)
+   {
+      [controller setWindow:nil];
+      [controller autorelease];
+      _mulle_pointerarray_remove_in_range( &_controllers, mulle_range_make( index, 1));
+   }
 }
 
 
@@ -1285,11 +1506,114 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 }
 
 
+- (void) dumpWithIndent:(NSUInteger) indent
+                   FILE:(FILE *) fp
+{
+   NSUInteger   i;
+
+   for( i = 0; i < indent; i++)
+      fputc( ' ', fp);
+
+   fprintf( fp, "%s: f=[%s] b=[%s]\n",
+               [self UTF8String],
+               CGRectUTF8String( [self frame]),
+               CGRectUTF8String( [self bounds]));
+   [self->_view dumpWithIndent:indent + 1
+                                 FILE:fp];
+}
+
+
+- (void) dump
+{
+   [self dumpWithIndent:0
+                   FILE:mulleui_log_fp];
+   fflush( mulleui_log_fp);
+}
+
+
+- (void) dumpAnimationsToFILE:(FILE *) fp
+{
+   mulle_fprintf( fp, "Pre Layout:\n%@\n", _preLayoutAnimator);
+   mulle_fprintf( fp, "Post Layout:\n%@\n", _postLayoutAnimator);
+}
+
 
 - (void) dumpAnimations
 {
-   fprintf( stderr, "Pre Layout:\n%s\n", [_preLayoutAnimator UTF8String]);
-   fprintf( stderr, "Post Layout:\n%s\n", [_postLayoutAnimator UTF8String]);
+   [self dumpAnimationsToFILE:mulleui_log_fp];
+   fflush( mulleui_log_fp);
 }
+
+
+void   UIWindowDestroyProfileQueue( struct mulle_structqueue *queue)
+{
+   struct MulleWindowProfileEntry  *entry;
+
+   mulle_structqueue_for( queue, entry)
+   {
+      if( entry->flags.mode & MulleWindowProfileEntryFreeFunction)
+         mulle_free( entry->function);
+      if( entry->flags.mode & MulleWindowProfileEntryFreeStacktrace)
+         mulle_free( entry->stacktrace);
+   }
+   mulle_structqueue_destroy( queue);
+}
+
+
+- (struct mulle_structqueue *) extractProfileQueue
+{
+   struct mulle_structqueue  *queue;
+
+   queue = _profileQueue;
+   if( queue)
+   {
+      _profileQueue = mulle_structqueue_create_default( sizeof( struct MulleWindowProfileEntry),
+                                                        alignof( struct MulleWindowProfileEntry),
+                                                        MulleObjCInstanceGetAllocator( self));
+   }
+   return( queue);
+}
+
+
+- (void) dumpProfileQueueToFile:(FILE *) fp
+{
+   struct MulleWindowProfileEntry   *entry;
+   char                             *sep;
+   char                             *first;
+
+   if( ! _profileQueue)
+   {
+      mulle_fprintf( stderr, "Enable profiling with UIWindowStyleProfileQueue\n");
+      return;
+   }
+
+   mulle_fprintf( fp, "(");
+   first = "\n   ";
+   sep   = first;
+
+   MulleObjCLockDo( _windowPropertyLock)
+   {
+      mulle_structqueue_for( _profileQueue, entry)
+      {
+         mulle_fprintf( fp, "%s{ %.9f, %d, \"%#s\" }", sep,
+                                                       entry->timestamp,
+                                                       entry->flags.action,
+                                                       entry->function);
+         sep = ",\n   ";
+      }
+      mulle_structqueue_reset( _profileQueue);
+   }
+   if( sep != first)
+      mulle_fprintf( fp, "\n");
+   mulle_fprintf( fp, ")\n");
+}
+
+
+- (void) dumpProfileQueue
+{
+   [self dumpProfileQueueToFile:mulleui_log_fp];
+   fflush( mulleui_log_fp);
+}
+
 
 @end

@@ -5,6 +5,7 @@ int   main( void)
 {
    UIWindow               *window;
    MulleInvocationQueue   *queue;
+   NSInvocation           *invocation;
 
    window = [UIWindow object];
    [window _initInvocationQueues];
@@ -16,7 +17,8 @@ int   main( void)
       [window setInvocationQueue:queue
                forNameUTF8String:"whatevs"];
    }
-   [queue addInvocation:[NSInvocation object]];
+   invocation = [NSInvocation object];
+   [queue addInvocation:invocation];
    [window removeInvocationQueueForNameUTF8String:"whatevs"];
 
    return( 0);

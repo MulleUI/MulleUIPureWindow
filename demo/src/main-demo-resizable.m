@@ -22,9 +22,8 @@
 //
 // drawStuff and main are left unchanged.
 //
-static BOOL  drawStuff( CALayer *layer, void *uicontext)
+static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *context)
 {
-   CGContext             *context = uicontext;
    CGFloat               radius;
    CGFloat               strokeWidth;
    CGFont                *font;
@@ -92,7 +91,7 @@ static void   setupSceneInView( UIView *contentPlane)
    //
    [view setMargins:UIEdgeInsetsMake( 10, 10, 10, 10)];
 
-   [(CALayer *) [view layer] setDrawCallback:drawStuff];
+   [(CGGraphicsLayer *) [view layer] setDrawCallback:drawStuff];
    [contentPlane addSubview:view];
 }
 
@@ -123,7 +122,7 @@ int   main( int argc, char *argv[])
 
       [app addWindow:window];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

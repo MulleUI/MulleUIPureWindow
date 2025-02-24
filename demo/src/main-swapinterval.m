@@ -87,7 +87,7 @@ static void   drawColorwheel(NVGcontext* vg, float x, float y, float w, float h,
 }
 
 
-static BOOL  drawStuff( CALayer *layer, void *_context)
+static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *_context)
 {
    CGContext  *context = _context;
    CGFloat    diameter;
@@ -133,7 +133,7 @@ static void   setupSceneInView( UIView *contentPlane)
 
    view  = [[[UIView alloc] initWithFrame:frame] autorelease];
    [view setBackgroundColor:CGColorMakeWithRGBA( 0.0, 0.0, 0.0, 1.0)];
-   [(CALayer *) [view layer] setDrawCallback:drawStuff];
+   [(CGGraphicsLayer *) [view layer] setDrawCallback:drawStuff];
    [contentPlane addSubview:view];
 }
 
@@ -162,13 +162,13 @@ int   main( int argc, char *argv[])
       [window setSwapInterval:swapInterval];
       setupSceneInView( [window contentView]);
 
+      perf = [MulleUIPerf object];
+      [window setFrameDelegate:perf];
+
       [app addWindow:window];
    }
 
-   perf = [MulleUIPerf object];
-   [window setFrameDelegate:perf];
-
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

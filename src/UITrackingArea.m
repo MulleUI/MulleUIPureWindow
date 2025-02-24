@@ -4,8 +4,11 @@
 
 #import "UIWindow.h"
 #import "UIView+UIWindow.h"
-#import "UIView+UIResponder.h"
+#import "UIView+UITrackingArea.h"
+#import "UIView+UIFirstResponder.h"
+#import "UIWindow+NSTimer.h"
 #import "UIWindow+UIResponder.h"
+#import "UIWindow+UITrackingArea.h"
 
 
 @implementation UITrackingArea 
@@ -21,7 +24,7 @@
 
 
 + (instancetype) trackingAreaWithRect:(CGRect) rect
-                              options:(NSUInteger) options
+                              options:(UITrackingAreaOptions) options
                                 owner:(id) owner 
                              userInfo:(id) userInfo
 {
@@ -33,7 +36,7 @@
 
 
 - (instancetype) initWithRect:(CGRect) rect 
-                      options:(NSUInteger) options
+                      options:(UITrackingAreaOptions) options
                         owner:(id) owner 
                      userInfo:(id) userInfo
 {
@@ -43,19 +46,27 @@
       return( nil);
    }
 
-   self->_owner    = owner;
-   self->_rect     = rect;
+   self->_owner                = owner;
+   self->_rect                 = rect;
+   self->_trackingAreaOptions  = options;
+
    if( ! (options & UITrackingAssignUserInfo))
       userInfo = [userInfo retain];
    self->_userInfo = userInfo;
-   self->_options  = options;
    return( self);
+}
+
+
+- (void) finalize
+{
+   [_hoverTimer mullePerformFinalize]; // oughta be superflous or ?
+   [super finalize];
 }
 
 
 - (void) dealloc
 {
-   if( ! (self->_options & UITrackingAssignUserInfo))
+   if( ! (self->_trackingAreaOptions & UITrackingAssignUserInfo))
       [self->_userInfo release];
    [super dealloc];
 }
@@ -68,13 +79,13 @@
    CGRect   rect;
    UIView   *hitView;
 
-   if( _options & UITrackingActiveWhenFirstResponder)
+   if( _trackingAreaOptions & UITrackingActiveWhenFirstResponder)
    {
       if( [window firstResponder] != _view)
          return( NO);
    }
 
-   if( _options & UITrackingAreaReceivesObscuredEvents)
+   if( _trackingAreaOptions & UITrackingAreaReceivesObscuredEvents)
       return( YES);
 
    // try to keep it as cheap as possible
@@ -87,13 +98,99 @@
    if( ! CGRectContainsPoint( rect, location))
       return( NO);
 
-   if( _options & UITrackingVisibleRectOnly)
+   if( _trackingAreaOptions & UITrackingVisibleRectOnly)
    {
-      hitView = [window hitTest:location
-                      withEvent:nil];
+      hitView  = [window contentView];
+      hitView  = [hitView hitTest:location
+                        withEvent:nil];
       return( hitView == _view);
    }
    return( YES);
+}
+
+
+- (CGRect) frame
+{
+   return( _rect);
+}
+
+
+- (void) setCursor:(UICursor *) cursor
+{
+   if( cursor)
+      _trackingAreaOptions |= UITrackingSetCursor;
+   else
+      _trackingAreaOptions &= ~UITrackingSetCursor;
+
+   _cursor = cursor;
+}
+
+
+- (void) setUserInfo:(id) userInfo
+{
+   if( ! (self->_trackingAreaOptions & UITrackingAssignUserInfo))
+   {
+      [self->_userInfo autorelease];
+      userInfo = [userInfo retain];
+   }
+
+   _userInfo = userInfo;
+}
+
+
+static void   UITrackingAreaHoverTimerCallback( NSTimer *inTimer, id userInfo)
+{
+   UITrackingArea   *self = userInfo;
+   UIWindow         *window;
+
+   MulleUICLog( "timer=%#@ userInfo=%#@", inTimer, userInfo);
+
+   window = MULLE_OBJC_CLASS_CAST( UIWindow, [self->_view window]);
+   [window startMouseHoverOverTrackingArea:self];
+}
+
+
+/*
+ * Hover support
+ */
+
+- (void) stopHoverTimerWithWindow:(UIWindow *) window
+{
+   if( self->_hoverTimer)
+   {
+      [window removeTimer:self->_hoverTimer];
+      self->_hoverTimer = nil;
+   }
+}
+
+
+// MEMO could also put _hoverTimer on UITrackingArea really and do all
+// of this in UIWindow or ?
+- (void) startHoverTimerWithWindow:(UIWindow *) window
+{
+   if( self->_hoverTimer)
+      [self stopHoverTimerWithWindow:window];
+
+   assert( ! self->_hoverTimer);
+   self->_hoverTimer = [[NSTimer alloc] mulleInitWithRelativeTimeInterval:[_view hoverTimeInterval]
+                                                           repeatInterval:0.0
+                                                                 callback:UITrackingAreaHoverTimerCallback
+                                                                 userInfo:self];
+
+   window = MULLE_OBJC_CLASS_CAST( UIWindow, [_view window]);
+   [window addTimer:self->_hoverTimer];
+}
+
+
+- (void) resetHoverTimerWithWindow:(UIWindow *) window
+{
+   if( ! self->_hoverTimer)
+   {
+      [self startHoverTimerWithWindow:window];
+      return;
+   }
+
+   [window resetTimer:self->_hoverTimer];
 }
 
 
@@ -112,33 +209,19 @@
 }
 
 
-- (CGRect) frame
+- (void) dumpWithIndent:(NSUInteger) indent
+                   FILE:(FILE *) fp
 {
-   return( _rect);
+   NSUInteger   i;
+
+   for( i = 0; i < indent; i++)
+      fputc( ' ', fp);
+
+   fprintf( fp, "<%s %p>: rect=[%s] tag=[%td]\n",
+               MulleObjCObjectGetClassNameUTF8String( self),
+               self,
+               CGRectUTF8String( [self rect]),
+               [self tag]);
 }
-
-
-- (void) setCursor:(UICursor *) cursor
-{
-   if( cursor)
-      _options |= UITrackingSetCursor;
-   else
-      _options &= ~UITrackingSetCursor;
-
-   _cursor = cursor;
-}
-
-
-- (void) setUserInfo:(id) userInfo
-{
-   if( ! (self->_options & UITrackingAssignUserInfo))
-   {
-      [self->_userInfo autorelease];
-      userInfo = [userInfo retain];
-   }
-
-   _userInfo = userInfo;
-}
-
 
 @end 

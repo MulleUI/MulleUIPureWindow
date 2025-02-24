@@ -1,47 +1,28 @@
 #import "import.h"
 
 
-static const GLfloat   vertices[4][2] =
-{
-    { -0.5f, -0.5f },
-    { -0.5f,  0.5f },
-    {  0.5f,  0.5f },
-    {  0.5f, -0.5f }
-};
-
+//
+// This demo shows how you can share a texture between two windows and
+// therefore also two contexts.
+//
 #define BLAU   CGColorMakeWithRGBA( 0.1, 0.1, 0.4, 1.0)
 #define GRUEN  CGColorMakeWithRGBA( 0.1, 0.4, 0.1, 1.0)
 #define WEISS  CGColorMakeWithRGBA( 1.0, 1.0, 1.0, 1.0)
+#define GRAU   CGColorMakeWithRGBA( 0.85, 0.85, 0.85, 0.75)
 
-#define R   { 0xFF, 0, 0, 0xFF }
-#define G   { 0, 0xFF, 0, 0xFF }
-#define B   { 0, 0, 0xFF, 0xFF }
-
-static unsigned char   stupidtex[ 8][ 8][ 4] =
-{
-   { R, R, R, R,   R, R, R, R },
-   { R, R, B, B,   G, G, R, R },
-   { R, R, B, B,   G, G, R, R },
-   { R, B, B, B,   G, G, G, R },
-
-   { R, B, B, B,   G, G, G, R },
-   { R, R, B, B,   G, G, R, R },
-   { R, R, B, B,   G, G, R, R },
-   { R, R, R, R,   R, R, R, R }
-};
 
 static UIBitmapImage   *image;
 static CGImage         *cgImage;
 
 
-static void  drawPrettyBackground( CALayer *layer, CGContext *context)
+static void  drawPrettyBackground( CGGraphicsLayer *layer, CGContext *context)
 {
-   CGFloat                    radius;
-   CGFloat                    strokeWidth;
-   CGFont                     *font;
-   CGRect                     canvas;
-   CGRect                     rect;
-   struct NVGcontext          *vg;
+   CGFloat             radius;
+   CGFloat             strokeWidth;
+   CGFont              *font;
+   CGRect              canvas;
+   CGRect              rect;
+   struct NVGcontext   *vg;
 
    canvas      = [layer canvas];
    strokeWidth = 20.0;
@@ -53,7 +34,7 @@ static void  drawPrettyBackground( CALayer *layer, CGContext *context)
    nvgBeginPath( vg);
    {
       nvgCircle( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), radius);
-      nvgStrokeColor( vg, WEISS);
+      nvgStrokeColor( vg, GRAU);
       nvgStrokeWidth( vg, strokeWidth);
    }
    nvgStroke( vg);
@@ -68,13 +49,11 @@ static void  drawPrettyBackground( CALayer *layer, CGContext *context)
    nvgTextColor( vg, WEISS);
    nvgTextBackgroundColor( vg, BLAU);
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), "1848", NULL);
-
 }
 
 
-static BOOL  drawStuff( CALayer *layer, void *_context)
+static BOOL  drawStuff( CGGraphicsLayer *layer, CGContext *context)
 {
-   CGContext                  *context = _context;
    struct CGDrawableOptions   options;
    static CGImage             *cgImage[ 2];
    static CGContext           *contexts[ 2];
@@ -92,7 +71,10 @@ static BOOL  drawStuff( CALayer *layer, void *_context)
    else
       if( ! cgImage[ 1])
       {
-         cgImage[ 1]  = [[cgImage[ 0] shareWithContext:context] retain];
+         assert( contexts[ 0] != context);
+
+         cgImage[ 1]  = [[cgImage[ 0] shareWithContext:context
+                                          textureFlags:0] retain];
          contexts[ 1] = context;
       }
 
@@ -103,35 +85,35 @@ static BOOL  drawStuff( CALayer *layer, void *_context)
                     context:context];
    }
    else
-      {
-         [cgImage[ 1] drawRect:CGRectMake( 32, 32, 128, 160)
-                       options:&options
-                       context:context];
-      }
+   {
+      [cgImage[ 1] drawRect:CGRectMake( 32, 32, 128, 160)
+                    options:&options
+                    context:context];
+   }
 
    return( YES);
 }
 
 
-
-static void   setupSceneInView( UIView *contentPlane, CGColor color)
+static void   setupSceneInBareWindow( UIWindow *window, CGColor color)
 {
    UIView   *view;
    CGRect   frame;
 
-   frame = [contentPlane contentRect];
+   frame = [window bounds];
    frame = UIEdgeInsetsInsetRect( frame, UIEdgeInsetsMake( 10, 10, 10, 10));
 
    view  = [UIView viewWithFrame:frame];
    [view setBackgroundColor:color];
-   [(CALayer *) [view layer] setDrawCallback:drawStuff];
-   [contentPlane addSubview:view];
+   [(CGGraphicsLayer *) [view layer] setDrawCallback:drawStuff];
+   [window setView:view];
 }
 
 
 int   main( int argc, char *argv[])
 {
    GLFWOSWindow    *glfwWindow[ 2];
+   GLFWOSWindow    *sharingWindow;
    UIApplication   *app;
    UIWindow        *window[ 2];
    NSUInteger      i;
@@ -143,22 +125,29 @@ int   main( int argc, char *argv[])
       image = (UIBitmapImage *) [UIImage imageWithContentsOfFileCString:"parrot.png"];
       assert( image);
 
+      // for testing sharing, we use singlebuffer (to obscure a current double
+      // buffer error)
       for( i = 0; i < 2; i++)
       {
-         frame = CGRectMake( 0.0 + 500 * i, 100.0, 400.0, 300.0);
+         frame          = CGRectMake( 0.0 + 500 * i, 100.0, 400.0, 300.0);
+
+         //
+         // if you set sharingWindow to nil always, the cockatoo won't show
+         // up in the right window
+         //
+         sharingWindow  = i ? glfwWindow[ 0] : nil;
          glfwWindow[ i] = [[[GLFWOSWindow alloc] initWithFrame:frame
                                                 titleUTF8String:! i ? "Demo" : "Demo2"
-                                                      styleMask:0
+                                                      styleMask:GLFWOSWindowStyleMaskDefault //|UIWindowStyleSingleBuffer
                                                   graphicsHints:0
-                                                  sharingWindow:i ? glfwWindow[ 0] : NULL] autorelease];
+                                                  sharingWindow:sharingWindow] autorelease];
 
          window[ i] = [[[UIWindow alloc] initWithOSWindow:glfwWindow[ i]
                                         offscreenOSWindow:nil] autorelease];
          assert( window[ i]);
 
+         setupSceneInBareWindow( window[ i], i ? BLAU : GRUEN);
          [window[ i] setBackgroundColor:WEISS];
-
-         setupSceneInView( [window[ i] contentPlane], i ? BLAU : GRUEN);
 
          [app addWindow:window[ i]];
       }
@@ -170,15 +159,16 @@ int   main( int argc, char *argv[])
       {
          if( ! closed[ 0])
          {
-            closed[ 0] = [window[ 0] processOneFrame];
+            closed[ 0] = ! [window[ 0] processOneFrame];
             if( closed[ 0])
-               fprintf( stderr, "0 closed\n");
+               fprintf( stderr, "window[ 0] closed\n");
          }
+
          if( ! closed[ 1])
          {
-            closed[ 1] = [window[ 1] processOneFrame];
+            closed[ 1] = ! [window[ 1] processOneFrame];
             if( closed[ 1])
-               fprintf( stderr, "1 closed\n");
+               fprintf( stderr, "window[ 1] closed\n");
          }
       }
    }

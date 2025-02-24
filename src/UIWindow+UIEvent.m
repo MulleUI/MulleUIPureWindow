@@ -4,13 +4,13 @@
 
 #import "import-private.h"
 
-#import "UIWindow+Frame.h"
+#import "UIWindow+FrameInfo.h"
 #import "UIWindow+Thread.h"
 #import "UIWindow+DebugPrivate.h"
 #import "UIWindow+UITrackingArea.h"
 #import "UIWindow+UIResponder.h"
 #import "UIView+UITrackingArea.h"
-#import "UIView+UIResponder.h"
+#import "UIView+UIFirstResponder.h"
 #import "UIView+UIWindow.h"
 
 
@@ -18,31 +18,6 @@
 //#define ABORT_ON_EVENT_OVERFLOW
 
 
-
-#ifdef FAKE_MOUSE_MOTION_CALLBACK_DEBUG
-@interface UIMouseMotionFakeEvent : UIMouseMotionEvent
-@end
-
-@implementation UIMouseMotionFakeEvent
-
-// need to do this as we can't partake in reuse
-+ (id) alloc
-{
-   return( NSAllocateObject( self, 0, NULL));
-}
-
-
-- (void) dealloc
-{
-   NSDeallocateObject( self);
-}
-
-@end
-
-
-#else
-# define UIMouseMotionFakeEvent   UIMouseMotionEvent
-#endif
 
 
 #define UIEventTypeWindowFramebufferGeometry  1001
@@ -86,10 +61,10 @@
 
 @interface UIWindow( Private)
 
-//- (void) _setPosition:(CGPoint) position;
+- (void) _setPosition:(CGPoint) position MULLE_OBJC_THREADSAFE_METHOD;
 //- (void) _setSize:(CGSize) size;
 - (void) _setFrame:(CGRect) rect;
-//- (void) _setFramebufferSize:(struct MulleIntegerSize) size;
+//- (void) _setFramebufferSize:(CGPixelSize) size;
 
 @end
 
@@ -104,13 +79,9 @@
  * evens also come in over the mainThread put are then queued for the
  * window thread.
  */
-- (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event
+- (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event  MULLE_OBJC_THREADSAFE_METHOD
 {
    struct CGFrameInfo   info;
-
-   event = (*_windowEventCallback)( self, event);
-   if( ! event)
-      return( event);
 
    assert( [NSThread mulleIsMainThread]);
 
@@ -126,11 +97,13 @@
       return( nil);
 
    case UIWindowEventTypeFramebufferResize :
+      // TODO: should set bounds ?
       // [self _setFramebufferSize:[(UIWindowFramebufferResizeEvent *) event size]];
       [self setNeedsDisplayBits:~0];
       return( nil);
 
    case UIWindowEventTypeResize :
+      // TODO: should set bounds & frame ?
       // [self _setSize:CGSizeMakeWithIntegerSize( [(UIWindowResizeEvent *) event size])];
       _isResizing = YES;
 
@@ -142,7 +115,8 @@
    // but we always get a refresh afterwards, so don't do it twice
    // But how sure is that ?
    case UIWindowEventTypeMove :
-      // [self _setPosition:CGPointMakeWithIntegerPoint( [(UIWindowMoveEvent *) event origin])];
+      // keep this is sync
+      [self _setPosition:CGPointMakeWithIntegerPoint( [(UIWindowMoveEvent *) event origin])];
       return( nil);
       // fall thru
 
@@ -192,7 +166,6 @@
 
    if( [self isTracking])
    {
-      UIWindowMouseMotionEventLog( event, "trackingAreasEnabled: %btd", _trackingAreasEnabled);
       if( _trackingAreasEnabled)
       {
          inDrag = [event buttonStates] != 0;
@@ -208,19 +181,16 @@
 
 - (UIInputEvent *) acceptDebugKeyboardEvent:(UIKeyboardEvent *) keyEvent
 {
-   if( [keyEvent action] == UIEventButtonActionDown)
+   NSUInteger   action;
+   NSUInteger   key;
+
+   action = [keyEvent action];
+   if( action == UIEventButtonActionDown)
    {
       // F12 key: 301
-      switch( [keyEvent key])
+      key = [keyEvent key];
+      switch( key)
       {
-      case UIEventKeyF12 :
-         if( [self respondsToSelector:@selector( dump)])
-         {
-            [self performSelector:@selector( dump)];
-            return( nil);
-         }
-         break;
-
       case UIEventKeyF11 :
          if( [self respondsToSelector:@selector( dumpAnimations)])
          {
@@ -229,7 +199,24 @@
          }
          break;
 
+      // change from F12, because CLion snarfs it and F10
       case UIEventKeyF9 :
+         if( [self respondsToSelector:@selector( dump)])
+         {
+            [self performSelector:@selector( dump)];
+            return( nil);
+         }
+         break;
+
+      case UIEventKeyF8 :
+         if( [self respondsToSelector:@selector( dumpProfileQueue)])
+         {
+            [self performSelector:@selector( dumpProfileQueue)];
+            return( nil);
+         }
+         break;
+
+      case UIEventKeyF7 :
          if( [self respondsToSelector:@selector( writeScreenshotToPNGUTF8String:)])
          {
             if( [self performSelector:@selector( writeScreenshotToPNGUTF8String:)
@@ -244,35 +231,8 @@
 }
 
 
-- (UIInputEvent *) receiveInputEvent:(UIInputEvent *) event
-{
-   CGPoint       location;
-   CGPoint       contentLocation;
-   UIView        *view;
-   UIInputEvent  *changableEvent;
-
-// from UIView+CGGeometry
-   location        = [(UIInputEvent *) event locationInWindow];
-   contentLocation = [self contentLocationForLocation:location];
-
-   UIWindowEventLogVerbose( event, "translated: %s -> %s [c=%s]\n",
-                                        CGPointUTF8String( location),
-                                        CGPointUTF8String( contentLocation),
-                                        CGRectUTF8String( [self contentRect]));
-
-   if( ! [self directHitTest:contentLocation
-              withInputEvent:event])
-      return( event);
-
-   changableEvent = event;
-   view = [self hitSearchSubviews:contentLocation
-            withInputEventPointer:&changableEvent];
-   if( changableEvent)
-      changableEvent = (UIInputEvent *) [view handleEvent:changableEvent];
-   return( changableEvent);
-}
-
-
+// MEMO: we don't have a C callback here, because the OSWindow already
+//       has a C callback for events
 - (UIEvent *) receiveEvent:(UIEvent *) event
 {
    id <UIResponder>   firstResponder;
@@ -290,7 +250,7 @@
    {
    case UIEventTypePresses :
 #ifdef DEBUG
-      if( [event eventType] == UIEventTypePresses)
+      if( eventType == UIEventTypePresses)
       {
          event     = [self acceptDebugKeyboardEvent:(UIKeyboardEvent *) event];
          eventType = [event eventType];
@@ -299,7 +259,8 @@
       break;
 
    case UIEventTypeTouches :
-      _inputState = [(UIInputEvent *) event inputState];
+      _previousInputState = _inputState;
+      _inputState         = [(UIInputEvent *) event inputState];
 
       // TODO: if view supports mouseDragged; don't pass down touches unless
       //       there are no follow up mouse motion events. Would need to
@@ -315,7 +276,8 @@
       break;
 
    case UIEventTypeMotion :
-      _inputState = [(UIInputEvent *) event inputState];
+      _previousInputState = _inputState;
+      _inputState         = [(UIInputEvent *) event inputState];
 
       // TODO: filter out drag events only for views which implement mouseDragged: methods
       //       or have a callback that makes them interested in these events (as Apple does)
@@ -374,9 +336,18 @@
       // setting break points
       if( eventType == UIEventTypeMotion)
          event = [firstResponder handleMouseMotionEvent:(UIMouseMotionEvent *) event];
-      else
-         event = [firstResponder handleEvent:event];
-      eventType = [event eventType];
+
+      if( [event isInputEvent])
+      {
+         event     = [firstResponder handleInputEvent:(UIInputEvent *) event];
+         eventType = [event eventType];
+      }
+
+      if( event)
+      {
+         event     = [firstResponder handleEvent:event];
+         eventType = [event eventType];
+      }
    }
 
    //
@@ -384,19 +355,21 @@
    // which should only be consumed by firstResponder
    //
    // TODO: make this configurable though
-   if( eventType != UIEventTypeMotion && [event isInputEvent])
+   if( eventType == UIEventTypeMotion)
    {
-      event     = [self receiveInputEvent:(UIInputEvent *) event];
+      return( event);
+//         event = [self->_view handleMouseMotionEvent:(UIMouseMotionEvent *) event];
+   }
+
+   if( [event isInputEvent])
+   {
+      event     = [self->_view handleInputEvent:(UIInputEvent *) event];
       eventType = [event eventType];
    }
 
    if( event)
    {
-      // UIResponder now does stuff for UIWindow
-      if( eventType == UIEventTypeMotion)
-         event = [self handleMouseMotionEvent:(UIMouseMotionEvent *) event];
-      else
-         event = [self handleEvent:event];
+      event     = [self->_view handleEvent:event];
       eventType = [event eventType];
    }
 
@@ -432,7 +405,7 @@
 - (BOOL) willDiscardOverflowEvent:(UIEvent *) event
 {
    UIWindowEventLog( event, "*** discard event due to queue overflow");
-   if( _debugEnabled & UIWindowAbortOnEventOverflow)
+   if( _debuggingFlags & UIWindowAbortOnEventOverflow)
       abort();
    return( [self willDiscardEvent:event]);
 }
@@ -446,7 +419,7 @@
 
 - (BOOL) isMouseMotionEventsEnabled
 {
-   NSUInteger    discardEventsMask;
+   NSUInteger   discardEventsMask;
 
    discardEventsMask = [_OSWindow discardEventsMask];
    return( (discardEventsMask & UIEventTypeMotion) ? NO : YES);  
@@ -455,17 +428,22 @@
 
 - (void) setMouseMotionEventsEnabled:(BOOL) flag 
 {
-   NSUInteger    discardEventsMask;
+   NSUInteger   discardEventsMask;
+   NSUInteger   newDiscardEventsMask;
 
 // not true anymore...
 //   assert( [self isWindowThread]);
 
    discardEventsMask = [self discardEventsMask];
    if( flag)
-      discardEventsMask &= ~UIEventTypeMotion;  // enable by clearing bit
+      newDiscardEventsMask = discardEventsMask & ~UIEventTypeMotion;  // enable by clearing bit
    else
-      discardEventsMask |= UIEventTypeMotion;   // disable by setting bit
-   [self setDiscardEventsMask:discardEventsMask];
+      newDiscardEventsMask = discardEventsMask & UIEventTypeMotion;   // disable by setting bit
+   if( newDiscardEventsMask != discardEventsMask)
+   {
+      UIWindowMouseMotionEventLog( nil, "%sbles mouse motion events", flag ? "en" : "dis");
+      [self setDiscardEventsMask:discardEventsMask];
+   }
 }
 
 //
@@ -509,6 +487,8 @@
    NSUInteger          mask;
    NSAutoreleasePool   *pool;
 
+   MulleWindowProfileBegin();
+
    //
    // the event must be handled by the windowThread, if we have one
    //
@@ -524,20 +504,22 @@
          // get proper exit/enter signals after a relayout, when their area
          // moved relative to the (static) mouse cursor. It has to be sent
          // ahead of other input queued input events.
-         // _sendFakeMouseMotionEvent get sets by the frame render mechanism.
+         // _sendFakeMouseMotionEvent gets set by the frame render mechanism.
          //
          if( _sendFakeMouseMotionEvent)
          {
             _sendFakeMouseMotionEvent = 0;
 
-            event = [[UIMouseMotionFakeEvent alloc] initWithInputState:&_inputState];
-            UIWindowEventLogVerbose( event, "sending fake mouse motion event: %@", event);
+            event = [[UIMouseMotionNonPhysicalEvent alloc] initWithInputState:&_inputState];
+            UIWindowMouseMotionEventLog( event, "sending fake mouse motion event: %@", event);
          }
          else
          {
             event = ui_window_pointer_fifo_read_barrier( &_eventQueue);
             if( ! event)
                break;
+            // make event available to this thread
+            [event mulleGainAccess];
          }
          [event autorelease];
 
@@ -545,10 +527,12 @@
          [self receiveEvent:event];
          mask |= [event eventType];
 
-         [pool mulleReleaseAllObjects];
+         [pool mulleReleaseAllPoolObjects];
       }
    }
    [pool release];
+
+   MulleWindowProfileEnd();
 
    return( mask);
 }
@@ -559,6 +543,7 @@
    assert( [NSThread mulleIsMainThread]);
    assert( event);
 
+   MulleWindowProfileBegin();
    //
    // if this is a "bare" mainthread window handle the event immediately
    // otherwise queue it up
@@ -568,31 +553,32 @@
        assert( _backingStore != UIWindowBackingStoreRetained);
 
        [self receiveEvent:[event autorelease]];
+       MulleWindowProfileEnd();
        return;
    }
 
    //
    // events that can not be queued will have to be discarded
    //
+   // As the window thread will pick it up, we need to relinquish access to
+   // the event here. (this implicitly retains it, so if we discard we need
+   // to gain access back)
+
+   [event mulleRelinquishAccess];
    if( ui_window_pointer_fifo_write( &_eventQueue, event))
    {
+      // OK, fine give it back to me (but doesn't this autorelease (?)
+      [event mulleGainAccess];
       if( [self willDiscardOverflowEvent:event]) // window can figure out something
       {                                          // for super important events
          [event release]; // don't autorelease, we may not be in a releasepool
       }
+      MulleWindowProfileEnd();
       return;
    }
 
    [self wakeupWindowThread];
-}
-
-
-- (void) sendRetainedEvent:(UIEvent *) event
-{
-   UIWindowEventLog( nil, "send %@", event);
-
-   [self receiveRetainedEvent:event];
-   [self wakeupWindowThread];
+   MulleWindowProfileEnd();
 }
 
 
@@ -604,7 +590,10 @@
 
    // TODO: sendRetainedEvent is superflous no ? As receiveRetainedEvent will
    // call wakeupWindowThread if needed
-   [self sendRetainedEvent:event];
+
+   UIWindowEventLog( nil, "send %@", event);
+   [self receiveRetainedEvent:event];
+   [self wakeupWindowThread];
 }
 
 @end

@@ -70,11 +70,11 @@ int   main( int argc, char *argv[])
       [window setOpaque:YES];
 
       [window setBackgroundColor:CGColorMakeGreen()];
-      [window setDrawCallback:(CALayerDrawCallback_t *) draw];
+      [window setDrawCallback:(CGGraphicsLayerDrawCallback_t *) draw];
       [window setFrameRateHz:60.0];
       [UIApp addWindow:window];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

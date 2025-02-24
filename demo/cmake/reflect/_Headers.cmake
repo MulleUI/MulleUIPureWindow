@@ -32,6 +32,15 @@ src/include-private.h
 )
 
 #
+# contents selected with patternfile ??-header--project-only-headers
+#
+set( PROJECT_ONLY_HEADERS
+src/draw-flag.inc
+src/main-window-no-view.inc
+src/main-window-view.inc
+)
+
+#
 # contents selected with patternfile ??-header--public-generated-headers
 #
 set( PUBLIC_GENERATED_HEADERS
@@ -54,7 +63,6 @@ src/include.h
 #
 set( PUBLIC_HEADERS
 src/demos-version.h
-src/draw-flag.inc
 src/gl.h
 src/khrplatform.h
 src/linmath.h

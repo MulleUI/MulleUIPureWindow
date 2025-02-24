@@ -13,3 +13,5 @@
 - (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now;
 
 @end
+
+mulle_relativetime_t    UIWindowGetAnimationRate( UIWindow *self);

@@ -12,14 +12,28 @@
 #import "import.h"
 
 
+//
+// just a self documentating bit, that tells the user that the method is
+// technically thread-safe, as it can only be accessed by the main thread
+// that being asserted, there is no need for locking code
+//
+
+
 @interface UIWindow( Thread)
 
 - (void) startWindowThreadMainIfNeeded;
-- (void) finalizeWindowThread;
-- (void) wakeupWindowThread;
-- (mulle_relativetime_t) windowThreadTimeoutIsAnimating:(BOOL) flag;
+- (void) finalizeWindowThread    MULLE_UI_MAIN_THREAD_ONLY;
+- (void) wakeupWindowThread      MULLE_UI_MAIN_THREAD_ONLY;
 
-- (void) refresh;
+- (void) windowThreadMain:(NSLock *) windowThreadLock MULLE_OBJC_THREADSAFE_METHOD;
+
+- (mulle_relativetime_t) windowThreadTimeoutIsAnimating:(BOOL) flag;
 
 @end
 
+
+@interface UIWindow( ThreadFuture)
+
+- (void) refresh     MULLE_UI_MAIN_THREAD_ONLY;
+
+@end

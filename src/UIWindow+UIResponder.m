@@ -2,8 +2,8 @@
 
 #import "UIWindow+DebugPrivate.h"
 
-#import "UIView+UIResponder.h"
-#import "UIView+UIResponderSearch.h"
+#import "UIView+UIFirstResponder.h"
+#import "UIView+UIFirstResponderSearch.h"
 
 //#define FIRST_RESPONDER_DEBUG
 
@@ -17,14 +17,27 @@
 
 - (BOOL) makeFirstResponder:(id <UIResponder>) responder
 {
+   BOOL   changed;
+
    // the original _firstResponder if present must have resigned before
    // we can set any non-nil value
    assert( ! responder || ! _firstResponder);
 
-   if( responder != _firstResponder)
+   changed = responder != _firstResponder;
+   _firstResponder = responder;
+
+   if( changed)
+   {
       UIWindowEventLog( nil, "change firstResponder to %#@", responder);
 
-   _firstResponder = responder;
+      // MEMO: this is obscure, but for views that do mouse tracking, they
+      //       need to have the window subscribed to mouse motion events.
+      //       But mouse motion events subscription is only passed down to
+      //       the OSWindow when a display occurs. If you do
+      //       makeFirstResponder: in mouseDown: and no other changes, the
+      //       request for mouseMotion events will not propagate.
+      [self setNeedsDisplay];
+   }
    return( YES);
 }
 
@@ -32,13 +45,13 @@
 - (id <UIResponder>) firstResponderSearchInPrimaryDirection:(CADirection) primaryDirection
                                          secondaryDirection:(CADirection) secondaryDirection
 {
-   struct UIResponderSearch   search;
+   struct UIFirstResponderSearch   search;
    id <UIResponder>           best;
 
-   UIResponderSearchInit( &search, _firstResponder, primaryDirection, secondaryDirection);
+   UIFirstResponderSearchInit( &search, _firstResponder, primaryDirection, secondaryDirection);
    [[self contentView] _firstResponderSearch:&search];
-   best = UIResponderSearchGetResult( &search);
-   UIResponderSearchDone( &search);
+   best = UIFirstResponderSearchGetResult( &search);
+   UIFirstResponderSearchDone( &search);
    
    return( best);
 }

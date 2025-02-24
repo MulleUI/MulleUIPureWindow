@@ -11,65 +11,80 @@
  *
  */
 
-// You can tweak the following #import with these commands.
-// (Use 382BE750-03EC-4BF7-82AD-3A80161F864A instead of MulleCG if there are duplicate entries)
-//    remove #import: : `mulle-sde dependency mark MulleCG no-header`
-//    rename:              `mulle-sde dependency|library set MulleCG include whatever.h`
-//    reorder:             `mulle-sde dependency move MulleCG <up|down>`
-//    toggle #import:     `mulle-sde dependency mark MulleCG [no-]import`
-//    toggle public:       `mulle-sde dependency mark MulleCG [no-]public`
-//    toggle optional:     `mulle-sde dependency mark MulleCG [no-]require`
-//    remove for platform: `mulle-sde dependency mark MulleCG no-platform-<uname>`
+// To remove the following dependency (headers and library) completely:
+//   `mulle-sde dependency remove MulleCG`
+// (Use 382BE750-03EC-4BF7-82AD-3A80161F864A instead of MulleCG, if there are duplicate entries)
+//
+// You can tweak the following #import with these commands:
+//    remove #import      : `mulle-sde dependency mark MulleCG no-header`
+//    rename              : `mulle-sde dependency|library set MulleCG include whatever.h`
+//    reorder             : `mulle-sde dependency move MulleCG <up|down>`
+//    toggle #import      : `mulle-sde dependency mark MulleCG [no-]import`
+//    toggle public       : `mulle-sde dependency mark MulleCG [no-]public`
+//    toggle optional     : `mulle-sde dependency mark MulleCG [no-]require`
+//    remove for platform : `mulle-sde dependency mark MulleCG no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleCG/MulleCG.h>   // MulleCG
 
-// You can tweak the following #import with these commands.
-// (Use 2E95F005-47DA-4EB0-A79D-B4113717DF09 instead of MulleUIWindow if there are duplicate entries)
-//    remove #import: : `mulle-sde dependency mark MulleUIWindow no-header`
-//    rename:              `mulle-sde dependency|library set MulleUIWindow include whatever.h`
-//    reorder:             `mulle-sde dependency move MulleUIWindow <up|down>`
-//    toggle #import:     `mulle-sde dependency mark MulleUIWindow [no-]import`
-//    toggle public:       `mulle-sde dependency mark MulleUIWindow [no-]public`
-//    toggle optional:     `mulle-sde dependency mark MulleUIWindow [no-]require`
-//    remove for platform: `mulle-sde dependency mark MulleUIWindow no-platform-<uname>`
+// To remove the following dependency (headers and library) completely:
+//   `mulle-sde dependency remove MulleUIWindow`
+// (Use 2E95F005-47DA-4EB0-A79D-B4113717DF09 instead of MulleUIWindow, if there are duplicate entries)
+//
+// You can tweak the following #import with these commands:
+//    remove #import      : `mulle-sde dependency mark MulleUIWindow no-header`
+//    rename              : `mulle-sde dependency|library set MulleUIWindow include whatever.h`
+//    reorder             : `mulle-sde dependency move MulleUIWindow <up|down>`
+//    toggle #import      : `mulle-sde dependency mark MulleUIWindow [no-]import`
+//    toggle public       : `mulle-sde dependency mark MulleUIWindow [no-]public`
+//    toggle optional     : `mulle-sde dependency mark MulleUIWindow [no-]require`
+//    remove for platform : `mulle-sde dependency mark MulleUIWindow no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleUIWindow/MulleUIWindow.h>   // MulleUIWindow
 
-// You can tweak the following #import with these commands.
-// (Use CD9E2749-A72F-44D4-A4E9-6C86DCFD61D4 instead of MulleUIPerf if there are duplicate entries)
-//    remove #import: : `mulle-sde dependency mark MulleUIPerf no-header`
-//    rename:              `mulle-sde dependency|library set MulleUIPerf include whatever.h`
-//    reorder:             `mulle-sde dependency move MulleUIPerf <up|down>`
-//    toggle #import:     `mulle-sde dependency mark MulleUIPerf [no-]import`
-//    toggle public:       `mulle-sde dependency mark MulleUIPerf [no-]public`
-//    toggle optional:     `mulle-sde dependency mark MulleUIPerf [no-]require`
-//    remove for platform: `mulle-sde dependency mark MulleUIPerf no-platform-<uname>`
+// To remove the following dependency (headers and library) completely:
+//   `mulle-sde dependency remove MulleUIGraphicsImage`
+// (Use 2AD089B5-978B-4B4E-8E33-EB4A4FC884B5 instead of MulleUIGraphicsImage, if there are duplicate entries)
+//
+// You can tweak the following #import with these commands:
+//    remove #import      : `mulle-sde dependency mark MulleUIGraphicsImage no-header`
+//    rename              : `mulle-sde dependency|library set MulleUIGraphicsImage include whatever.h`
+//    reorder             : `mulle-sde dependency move MulleUIGraphicsImage <up|down>`
+//    toggle #import      : `mulle-sde dependency mark MulleUIGraphicsImage [no-]import`
+//    toggle public       : `mulle-sde dependency mark MulleUIGraphicsImage [no-]public`
+//    toggle optional     : `mulle-sde dependency mark MulleUIGraphicsImage [no-]require`
+//    remove for platform : `mulle-sde dependency mark MulleUIGraphicsImage no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
+#import <MulleUIGraphicsImage/MulleUIGraphicsImage.h>   // MulleUIGraphicsImage
+
+// To remove the following dependency (headers and library) completely:
+//   `mulle-sde dependency remove MulleUIWidgets`
+// (Use 7488A99A-76BC-41A8-9372-A16071309EAB instead of MulleUIWidgets, if there are duplicate entries)
+//
+// You can tweak the following #import with these commands:
+//    remove #import      : `mulle-sde dependency mark MulleUIWidgets no-header`
+//    rename              : `mulle-sde dependency|library set MulleUIWidgets include whatever.h`
+//    reorder             : `mulle-sde dependency move MulleUIWidgets <up|down>`
+//    toggle #import      : `mulle-sde dependency mark MulleUIWidgets [no-]import`
+//    toggle public       : `mulle-sde dependency mark MulleUIWidgets [no-]public`
+//    toggle optional     : `mulle-sde dependency mark MulleUIWidgets [no-]require`
+//    remove for platform : `mulle-sde dependency mark MulleUIWidgets no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
+#import <MulleUIWidgets/MulleUIWidgets.h>   // MulleUIWidgets
+
+// To remove the following dependency (headers and library) completely:
+//   `mulle-sde dependency remove MulleUIPerf`
+// (Use CD9E2749-A72F-44D4-A4E9-6C86DCFD61D4 instead of MulleUIPerf, if there are duplicate entries)
+//
+// You can tweak the following #import with these commands:
+//    remove #import      : `mulle-sde dependency mark MulleUIPerf no-header`
+//    rename              : `mulle-sde dependency|library set MulleUIPerf include whatever.h`
+//    reorder             : `mulle-sde dependency move MulleUIPerf <up|down>`
+//    toggle #import      : `mulle-sde dependency mark MulleUIPerf [no-]import`
+//    toggle public       : `mulle-sde dependency mark MulleUIPerf [no-]public`
+//    toggle optional     : `mulle-sde dependency mark MulleUIPerf [no-]require`
+//    remove for platform : `mulle-sde dependency mark MulleUIPerf no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
 #import <MulleUIPerf/MulleUIPerf.h>   // MulleUIPerf
-
-// You can tweak the following #import with these commands.
-// (Use CD4253E3-5A07-4FCC-A3F3-090CAF8294DE instead of MulleUIImage if there are duplicate entries)
-//    remove #import: : `mulle-sde dependency mark MulleUIImage no-header`
-//    rename:              `mulle-sde dependency|library set MulleUIImage include whatever.h`
-//    reorder:             `mulle-sde dependency move MulleUIImage <up|down>`
-//    toggle #import:     `mulle-sde dependency mark MulleUIImage [no-]import`
-//    toggle public:       `mulle-sde dependency mark MulleUIImage [no-]public`
-//    toggle optional:     `mulle-sde dependency mark MulleUIImage [no-]require`
-//    remove for platform: `mulle-sde dependency mark MulleUIImage no-platform-<uname>`
-//        (use `mulle-sourcetree-to-c --unames` to list known values)
-#import <MulleUIImage/MulleUIImage.h>   // MulleUIImage
-
-// You can tweak the following #import with these commands.
-// (Use 7488A99A-76BC-41A8-9372-A16071309EAB instead of MulleUIControl if there are duplicate entries)
-//    remove #import: : `mulle-sde dependency mark MulleUIControl no-header`
-//    rename:              `mulle-sde dependency|library set MulleUIControl include whatever.h`
-//    reorder:             `mulle-sde dependency move MulleUIControl <up|down>`
-//    toggle #import:     `mulle-sde dependency mark MulleUIControl [no-]import`
-//    toggle public:       `mulle-sde dependency mark MulleUIControl [no-]public`
-//    toggle optional:     `mulle-sde dependency mark MulleUIControl [no-]require`
-//    remove for platform: `mulle-sde dependency mark MulleUIControl no-platform-<uname>`
-//        (use `mulle-sourcetree-to-c --unames` to list known values)
-#import <MulleUIControl/MulleUIControl.h>   // MulleUIControl
 
 #ifdef __has_include
 # if __has_include( "_demos-include.h")

@@ -1,7 +1,6 @@
 #import "UIWindow.h"
 
 
-
 //
 // A window _receives_ and event the event is then _handled_ which means
 // the views and other recipients are sought out, the recipient then
@@ -9,12 +8,13 @@
 // the event is forwarded to the next in line.
 //
 
-@interface UIWindow( UIEvent) <UIEventReceiver>
+@interface UIWindow( UIEvent) < UIEventReceiver>
 
 - (void) discardPendingEvents;
 
-// hardcore event handling
-- (void) receiveRetainedEvent:(UIEvent *) event;
+// hardcore event handling, must be called from MainThread
+- (void) receiveRetainedEvent:(UIEvent *) event                MULLE_UI_MAIN_THREAD_ONLY;
+- (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event  MULLE_UI_MAIN_THREAD_ONLY;
 
 
 - (BOOL) willDiscardEvent:(UIEvent *) event;
@@ -23,10 +23,11 @@
 
 - (NSUInteger) executeEventQueue;
 
-- (void) sendWindowFramebufferGeometryEvent:(struct CGWindowInfo *) info;
+- (void) sendWindowFramebufferGeometryEvent:(struct CGWindowInfo *) info   MULLE_OBJC_THREADSAFE_METHOD;
 
 - (BOOL) isMouseMotionEventsEnabled;
 - (void) setMouseMotionEventsEnabled:(BOOL) flag;
+
 
 @end
 

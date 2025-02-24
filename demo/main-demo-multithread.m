@@ -56,7 +56,7 @@ static void   setupSceneInView( UIView *contentPlane)
 
    view  = [UIView viewWithFrame:frame];
    [view setBackgroundColor:BLAU];
-   [(CALayer *) [view layer] setDrawCallback:(CALayerDrawCallback_t *) drawStuff];
+   [(CGGraphicsLayer *) [view layer] setDrawCallback:(CGGraphicsLayerDrawCallback_t *) drawStuff];
    [contentPlane addSubview:view];
 }
 
@@ -82,7 +82,7 @@ int   main( int argc, char *argv[])
          [app addWindow:window[ i]];
       }
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

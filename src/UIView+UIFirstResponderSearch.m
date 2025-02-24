@@ -1,11 +1,11 @@
 //
 // Copyright (c) 2022 Nat!, Mulle kybernetiK
 //
-#import "UIView+UIResponderSearch.h"
+#import "UIView+UIFirstResponderSearch.h"
 
 #import "import-private.h"
 
-#import "UIView+UIResponder.h"
+#import "UIView+UIFirstResponder.h"
 
 
 // #define SEARCH_DEBUG      
@@ -67,10 +67,10 @@ static inline BOOL  isRightDirection( CGFloat a)
 }
 
 
-void  UIResponderSearchInit( struct UIResponderSearch *p, 
-                             id <UIResponder> responder,
-                             CADirection primaryDirection,
-                             CADirection secondaryDirection)
+void   UIFirstResponderSearchInit( struct UIFirstResponderSearch *p,
+                                   id <UIResponder> responder,
+                                   CADirection primaryDirection,
+                                   CADirection secondaryDirection)
 {
    CGRect   frame;
    UIView   *view;
@@ -102,7 +102,7 @@ void  UIResponderSearchInit( struct UIResponderSearch *p,
 
    p->fummelX            = roundf( FUMMEL_X_DEFAULT);
    p->fummelY            = roundf( view ? (p->referenceViewFrame.size.height / FUMMEL_Y_FACTOR) 
-                                       : FUMMEL_Y_DEFAULT);
+                                        : FUMMEL_Y_DEFAULT);
 }
 
 
@@ -110,22 +110,22 @@ void  UIResponderSearchInit( struct UIResponderSearch *p,
 // to get rid of small errors in placement and rounding only 
 // make the floats more coarse. Be more coarse in Y direction
 // 
-static inline CGFloat   UIResponderSearchFummelFloatX( struct UIResponderSearch *p, 
+static inline CGFloat   UIResponderSearchFummelFloatX( struct UIFirstResponderSearch *p,
                                                        CGFloat value)
 {
    return( roundf( value / p->fummelX) * p->fummelX);
 } 
 
 
-static inline CGFloat   UIResponderSearchFummelFloatY( struct UIResponderSearch *p, 
+static inline CGFloat   UIResponderSearchFummelFloatY( struct UIFirstResponderSearch *p,
                                                        CGFloat value)
 {
    return( roundf( value / p->fummelY) * p->fummelY);
 } 
 
 
-static void  UIResponderSearchAddView( struct UIResponderSearch *p, 
-                                            UIView *view)
+static void  UIResponderSearchAddView( struct UIFirstResponderSearch *p,
+                                       UIView *view)
 {
    CGRect   screenFrame;
    CGFloat  x;
@@ -307,7 +307,7 @@ static void  UIResponderSearchAddView( struct UIResponderSearch *p,
 @implementation UIView( UIResponderSearch)
 
 
-- (void) _firstResponderSearch:(struct UIResponderSearch *) search
+- (void) _firstResponderSearch:(struct UIFirstResponderSearch *) search
 {
    UIView   *view;
 
@@ -333,7 +333,7 @@ static void  UIResponderSearchAddView( struct UIResponderSearch *p,
       MulleUILog( "is firstResponder already");
 #endif      
    }
-   mulle_pointerarray_for( &_subviews, view)
+   UIViewSubviewsFor( self, view)
    {
       [view _firstResponderSearch:search];
    }

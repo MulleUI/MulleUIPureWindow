@@ -31,7 +31,7 @@ int   main( int argc, char *argv[])
 
       [app addWindow:window];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

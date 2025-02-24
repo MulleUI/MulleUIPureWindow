@@ -118,7 +118,7 @@ static void   setupSceneInWindow( UIWindow *window)
 
    view  = [UIView viewWithFrame:frame];
    [view setBackgroundColor:CGColorMakeWithRGBA( 0.0, 0.0, 0.0, 1.0)];
-   [(CALayer *) [view layer] setDrawCallback:drawStuff];
+   [(CGGraphicsLayer *) [view layer] setDrawCallback:drawStuff];
    [contentPlane addSubview:view];
 }
 
