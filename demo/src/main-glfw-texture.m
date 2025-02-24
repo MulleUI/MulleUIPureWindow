@@ -194,7 +194,7 @@ static void   timerCallback( NSTimer *timer, id userInfo)
 // This is new.
 static void   receiveWindowEvents( GLFWOSWindow *window, UIWindowEvent *event)
 {
-   struct MulleIntegerSize   size;
+   CGPixelSize   size;
 
    switch( [event windowEventType])
    {
@@ -260,7 +260,7 @@ int   main( int argc, char *argv[])
       [window setFrameRateHz:100.0];
 //    glutMainLoop();
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

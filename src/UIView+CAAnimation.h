@@ -1,3 +1,9 @@
+#ifdef __has_include
+# if __has_include( "UIView.h")
+#  import "UIView.h"
+# endif
+#endif
+
 #import "import.h"
 
 

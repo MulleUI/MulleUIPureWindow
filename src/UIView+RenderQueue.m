@@ -5,7 +5,6 @@
 
 #import "import-private.h"
 
-#import "UIWindow.h"
 
 
 @interface NSObject (Forward)
@@ -18,9 +17,9 @@
 @implementation UIView ( RenderQueue)
 
 
-static void   renderQueueAddLayer( struct mulle_pointerarray *renderQueue,
-                                   id <UILayer> layer,
-                                   struct UIRenderQueueContext *v)
+- (void)    addLayer:(id <UILayer>) layer
+       toRenderQueue:(struct mulle_pointerarray *) renderQueue
+             context:(struct UIRenderQueueContext *) v
 {
    [layer setTransform:v->xform];
    [layer setAlpha:v->alpha];
@@ -98,7 +97,9 @@ static inline int   CGAlphaIsTransparent( float a)
 #ifdef HAVE_RENDER_CACHE
    if( _cacheLayer)
    {
-      renderQueueAddLayer( renderQueue, _cacheLayer, &v);
+      [self addLayer:_cacheLayer
+       toRenderQueue:renderQueue,
+             context:&v];
    }
    else
 #endif
@@ -111,22 +112,30 @@ static inline int   CGAlphaIsTransparent( float a)
          // we don't clip the shadowLayer
          memo                  = v.clipRect.size.width;
          v.clipRect.size.width = INFINITY;
-         renderQueueAddLayer( renderQueue, _shadowLayer, &v);
+         [self addLayer:_shadowLayer
+          toRenderQueue:renderQueue
+                context:&v];
          v.clipRect.size.width = memo;
       }
 
-      renderQueueAddLayer( renderQueue, _mainLayer, &v);
+      // memo: as there is usually only one layer, it probably not much
+      //       use to IMP this
+      [self addLayer:_mainLayer
+       toRenderQueue:renderQueue
+             context:&v];
 
       mulle_pointerarray_for( &_layers, layer)
       {
-         renderQueueAddLayer( renderQueue, layer, &v);
+         [self addLayer:layer
+          toRenderQueue:renderQueue
+                context:&v];
       }
    }
 
    /*
     * Subviews
     */
-   mulle_pointerarray_for( &_subviews, view)
+   UIViewSubviewsFor( self, view)
    {
       // we cull clipped views completely here
       frame      = [view frame];
@@ -158,30 +167,3 @@ static inline int   CGAlphaIsTransparent( float a)
 @end
 
 
-@implementation UIWindow( RenderQueue)
-
-- (void) setClipsToBounds:(BOOL) flag
-{
-   assert( ! flag);
-}
-
-
-// not UIView because of the clipping rectangle and identity transform
-// start
-- (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue
-{
-   UIView                       *view;
-   struct UIRenderQueueContext  v;
-
-   v.xform    = CGAffineTransformMakeIdentity();
-   v.clipRect = CGRectMake( -INFINITY, -INFINITY, INFINITY, INFINITY);
-   v.alpha    = 1.0;
-
-   mulle_pointerarray_for( &_subviews, view)
-   {
-      [view createRenderQueue:renderQueue
-                      context:&v];
-   }
-}
-
-@end

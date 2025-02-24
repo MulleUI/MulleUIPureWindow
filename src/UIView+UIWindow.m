@@ -7,7 +7,7 @@
 
 #import "UIWindow+UIEvent.h"
 #import "UIWindow+UITrackingArea.h"
-#import "UIView+UIResponder.h"
+#import "UIView+UIFirstResponder.h"
 #import "UIView+UITrackingArea.h"
 
 #import <MulleUIView/UIView+DebugPrivate.h>
@@ -15,7 +15,7 @@
 
 @interface NSObject ( UIWindow)
 
-- (BOOL) __isUIWindow;
+- (BOOL) __isUIWindow     MULLE_OBJC_THREADSAFE_METHOD;
 
 @end
 
@@ -51,7 +51,7 @@
 
    self->_window = newWindow;
 
-   mulle_pointerarray_for( &_subviews, view)
+   UIViewSubviewsFor( self, view)
       [view setWindow:newWindow];
 
    if( mulle_pointerarray_get_count( &_trackingAreas))
@@ -116,6 +116,8 @@
 {
    UIWindow   *window;
 
+   UIViewDisplayBitsLog( "");
+
    window = (UIWindow *) [self window];
    if( ! window)
       UIViewLog( "view has no window, so setNeedsDisplay does nothing");
@@ -176,17 +178,5 @@
 //   }
 }
 
-
-- (void) mouseEntered:(UIMouseTrackingEvent *) event
-{
-} 
-
-- (void) mouseMoved:(UIMouseTrackingEvent *) event
-{
-}
-
-- (void) mouseExited:(UIMouseTrackingEvent *) event
-{
-}
 
 @end

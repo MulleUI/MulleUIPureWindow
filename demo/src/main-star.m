@@ -70,7 +70,7 @@ static CGFloat  rotation( NSUInteger frameCount, CGFloat divisor)
 #endif
 }
 
-static void   draw( CALayer *layer, CGContext *context)
+static void   draw( CGGraphicsLayer *layer, CGContext *context)
 {
    CGRect       canvas;
    NSUInteger   frameCount;
@@ -163,20 +163,20 @@ int   main( int argc, char *argv[])
                                styleMask:UIWindowStyleMaskDefault];
 
       [window setBackgroundColor:CGColorMakeWithGrayByte( 102)];
-      [window setDrawCallback:(CALayerDrawCallback_t *) draw];
+      [window setDrawCallback:(CGGraphicsLayerDrawCallback_t *) draw];
       [window setFrameRateHz:60.0];
       [app addWindow:window];
 
 #ifdef RECORD_GIF
       gif = [UIAnimatedGIF animatedGIFWithUTF8String:"animated.gif"
-                                          bitmapSize:MulleIntegerSizeMake( 360, 200)
-                                           frameRate:1.0 / 60.0
+                                          bitmapSize:CGPixelSizeMake( 360, 200)
+                                       animationRate:1.0 / 60.0
                                                 loop:YES];
       [window setUserInfo:gif];
       [window setDidDrawCallback:didDraw];
 #endif
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

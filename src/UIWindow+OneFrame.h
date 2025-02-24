@@ -3,12 +3,12 @@
 #import "UIWindow+UIWindow.h"
 
 //
-// This is supoort for the "conventional" GLFW render/waitForEvents loop
+// This is support for the "conventional" GLFW render/waitForEvents loop
 // which has fallen out of favor for UIApplication
 //
 @interface UIWindow( OneFrame)
 
-// returns ored bits of handled events
+// returns ORed bits of handled events
 - (NSUInteger) waitForEventsUntil:(mulle_absolutetime_t) timeout
                      returnsEarly:(BOOL) returnsEarly;
 
@@ -29,9 +29,6 @@
 
 // as processOneFrame
 - (void) renderAndSwapOneFrame;
-
-// activate and deactivates window context
-- (struct CGBitmap) screenshotBitmap;
 
 @end
 

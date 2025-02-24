@@ -123,7 +123,7 @@ static void   setupSceneInWindow( UIWindow *window)
 
    view  = [UIView viewWithFrame:frame];
    [view setBackgroundColor:CGColorMakeWithRGBA( 0.0, 0.0, 0.0, 1.0)];
-   [(CALayer *) [view layer] setDrawCallback:(CALayerDrawCallback_t *) drawStuff];
+   [(CGGraphicsLayer *) [view layer] setDrawCallback:(CGGraphicsLayerDrawCallback_t *) drawStuff];
    [contentPlane addSubview:view];
 }
 
@@ -216,7 +216,7 @@ int   main( int argc, char *argv[])
             {
                image     = [window[ 0] screenshotBitmapImage];
                assert( image);
-               imageView = (UIImageView *) [window[ 1] findSubviewWithTag:1];
+               imageView = (UIImageView *) [[window[ 1] view] findViewWithTag:1];
                assert( imageView);
                [imageView setImage:image];
             }

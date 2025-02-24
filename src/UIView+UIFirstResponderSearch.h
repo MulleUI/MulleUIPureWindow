@@ -12,7 +12,7 @@
 #import "import.h"
 
 
-struct UIResponderSearch
+struct UIFirstResponderSearch
 {
    UIView        *referenceView;
    CGRect        referenceViewFrame;
@@ -28,25 +28,25 @@ struct UIResponderSearch
 };
 
 
-void  UIResponderSearchInit( struct UIResponderSearch *p, 
+void  UIFirstResponderSearchInit( struct UIFirstResponderSearch *p,
                              id <UIResponder> responder,
                              CADirection primaryDirection,
                              CADirection secondaryDirection);
 
 
-static inline UIView   *UIResponderSearchGetResult( struct UIResponderSearch *p)
+static inline UIView   *UIFirstResponderSearchGetResult( struct UIFirstResponderSearch *p)
 {
    return( p ? p->best : nil);
 }
 
 
-static inline void  UIResponderSearchDone( struct UIResponderSearch *p)
+static inline void  UIFirstResponderSearchDone( struct UIFirstResponderSearch *p)
 {
 }
 
 
-@interface UIView( UIResponderSearch)
+@interface UIView( UIFirstResponderSearch)
 
-- (void) _firstResponderSearch:(struct UIResponderSearch *) search;
+- (void) _firstResponderSearch:(struct UIFirstResponderSearch *) search;
 
 @end

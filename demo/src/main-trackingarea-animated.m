@@ -31,7 +31,7 @@
 }
 
 
-- (void) mouseEntered:(UIMouseMotionEvent *) event
+- (void) mouseEntered:(UIMouseTrackingEvent *) event
 {
 #ifdef TRACKING_DEBUG
    MulleUILog( "*enter*");
@@ -41,12 +41,12 @@
 }
 
 
-- (void) mouseMoved:(UIMouseMotionEvent *) event
+- (void) mouseMoved:(UIMouseTrackingEvent *) event
 {
 }
 
 
-- (void) mouseExited:(UIMouseMotionEvent *) event
+- (void) mouseExited:(UIMouseTrackingEvent *) event
 {
 #ifdef TRACKING_DEBUG
    MulleUILog( "*exit*");
@@ -134,5 +134,5 @@ int   main()
 
    [app addWindow:window];
 
-   return( [app run]);
+   return( [app runApp]);
 }

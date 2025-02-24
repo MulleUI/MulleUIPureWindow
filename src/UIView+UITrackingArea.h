@@ -14,6 +14,7 @@
 
 @class UITrackingArea;
 @class UIWindow;
+@class UIMouseTrackingEvent;
 
 
 @interface UIView( UITrackingArea)
@@ -24,8 +25,10 @@
 - (NSUInteger) numberOfTrackingAreas;
 - (UITrackingArea *) trackingAreaAtIndex:(NSUInteger) i;
 
-- (void) addTrackingArea:(UITrackingArea *) item
-                toWindow:(UIWindow *) window;
+- (void) addRetainedTrackingArea:(UITrackingArea *) item
+                        toWindow:(UIWindow *) window;
+
+- (void) addRetainedTrackingArea:(UITrackingArea *) area;
 
 // this convenience will use (UIWindow *) [self window] as the target window and will
 // set [item owner] to self, if not already set
@@ -38,5 +41,17 @@
 // option UITrackingVisibleRectOnly set. Other areas will stale away, if
 // this method isn't overridden.
 - (void) updateTrackingAreas;
+
+
+- (mulle_relativetime_t) hoverTimeInterval;
+
+//
+// these do nothing (except trace) so you don't need to super these
+//
+- (void) mouseEntered:(UIMouseTrackingEvent *) event;
+- (void) mouseMoved:(UIMouseTrackingEvent *) event;
+- (void) mouseExited:(UIMouseTrackingEvent *) event;
+- (void) mouseHoverStarted:(UIMouseTrackingEvent *) event;
+- (void) mouseHoverEnded:(UIMouseTrackingEvent *) event;
 
 @end

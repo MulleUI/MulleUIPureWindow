@@ -16,14 +16,16 @@
 - (void) updateTrackingArea:(UITrackingArea *) area
                        type:(NSUInteger) type
 {
-   _area = area;
-   _type = type;
+   self->_trackingArea = area;
+   self->_type         = type;
 }
 
 
 - (void) updateWithInputEvent:(UIInputEvent *) event
 {
-   memcpy( self, event, sizeof( UIInputEvent));
+   self->_inputState     = event->_inputState;
+   self->_location       = CGPointMake( INFINITY, 0);
+   self->_locationView   = nil;
 }
 
 
@@ -52,7 +54,7 @@
    [view retain];
    _mulle_pointerarray_add( &_trackingViews, view);
 
-   _quadtreeNeedsSetup = YES;
+   [self invalidateQuadTree];
 }
 
 
@@ -71,7 +73,7 @@
    mulle_pointerarray_remove_in_range( &_trackingViews, mulle_range_make( i, 1));
    [view autorelease];
 
-   _quadtreeNeedsSetup = YES;
+   [self invalidateQuadTree];
 }
 
 
@@ -103,6 +105,8 @@
 
    mulle_pointerarray_for( &_enteredAreas, area)
    {
+      // stop those over timers
+      [area stopHoverTimerWithWindow:self];
       if( [area view] == view)
          [area autorelease];
       else
@@ -110,7 +114,7 @@
    }
 
    mulle_pointerarray_reset( &_enteredAreas);
-   mulle_pointerarray_absorb( &_enteredAreas, &areas);
+   mulle_pointerarray_absorb_array( &_enteredAreas, &areas);
    mulle_pointerarray_done( &areas);   
 }
 
@@ -120,7 +124,7 @@
    // TODO: tie tracking areas definitetly to views
    assert( view);
 
-   UIWindowMouseMotionEventLog( nil, "Invalidate areas of %@", view);
+   UIWindowMouseTrackingEventLog( nil, "Invalidate areas of %@", view);
 
    if( [self _hasEnteredAreasForView:view])
       [self _removeEnteredAreasForView:view];
@@ -138,6 +142,9 @@
    CGRect           rect;
    CGRect           converted;
 
+   //
+   // if we edit the tracking areas, we forget about these
+   //
    assert( ! view || [view isKindOfClass:[UIView class]]);
    assert( [view window] == (id <UIWindow>) self || ! [view window]);
 
@@ -157,12 +164,12 @@
       // if the rect is zero sized, there is nothing to track
       if( CGRectGetArea( rect) == 0.0)
       {
-         UIWindowMouseMotionEventLog( nil, "ignored area %@ with empty rect %s", area, CGRectUTF8String( rect));
+         UIWindowMouseTrackingEventLog( nil, "ignored area %@ with empty rect %s", area, CGRectUTF8String( rect));
          continue;
       }
 
-      converted = [self convertRect:rect
-                           fromView:view];
+      converted = [view convertRect:rect
+                             toView:nil];
 
       assert( _quadtree);
       mulle_quadtree_insert( _quadtree, converted, area);
@@ -173,11 +180,13 @@
 - (void) setupQuadtree
 {
    CGRect       bounds;
-   NSUInteger   level;
-   NSUInteger   extent;
    UIView       *view;
 
    bounds = [self bounds];
+
+#if 0
+   NSUInteger   level;
+   NSUInteger   extent;
 
    // TODO: not used, as limits are hardcoded
    level  = 0;
@@ -189,6 +198,7 @@
       level++;
       extent >>= 1;
    }
+#endif
 
    //
    // 1. create quadtree only, when we get an event ?
@@ -247,22 +257,61 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
 // Global cursor changes (like for drag and drop)
 //
 
+- (void) startMouseHoverOverTrackingArea:(UITrackingArea *) area
+{
+   CGPoint   point;
+   UIView    *view;
+
+   assert( _reusableTrackingEvent);
+
+   // so the event needs to exist, but how can it not
+   // ergo it contains the proper last mouse position already and since
+   // only one area can be active, this must be the correct one
+
+   view  = [area view];
+   [view setMouseHovering:YES];
+
+   point = [view convertPoint:[self->_reusableTrackingEvent locationInWindow]
+                     fromView:nil];
+
+   [self->_reusableTrackingEvent _setLocation:point
+                                      forView:view];
+   [self->_reusableTrackingEvent updateTrackingArea:area
+                                               type:UIMouseTrackingHoverStartedEventType];
+   [[area owner] mouseHoverStarted:_reusableTrackingEvent];
+}
+
+
+- (void) stopMouseHoverOverTrackingArea:(UITrackingArea *) area
+{
+   [[area view] setMouseHovering:NO];
+   [_reusableTrackingEvent updateTrackingArea:area
+                                         type:UIMouseTrackingHoverEndedEventType];
+   [[area owner] mouseHoverEnded:_reusableTrackingEvent];
+}
+
+
 - (UICursor *) handleTrackingAreaPointerArray:(struct mulle_pointerarray *) areas
                                    inputEvent:(UIInputEvent *) event
                                        inDrag:(BOOL) inDrag
 {
-   NSUInteger                  options;
+   UITrackingAreaOptions       options;
    struct mulle_allocator      *allocator;
    struct mulle_pointerarray   remaining;
    UITrackingArea              *area;
+   UIView                      *view;
    UICursor                    *cursor;
    BOOL                        isOutside;
+   id                          owner;
+   BOOL                        isPhysicalEvent;
 
    cursor = NULL;
 
    if( !_reusableTrackingEvent)
       _reusableTrackingEvent = [UIMouseTrackingEvent new];
    [_reusableTrackingEvent updateWithInputEvent:event];
+
+   isPhysicalEvent = [event isPhysicalEvent];
 
    // first remove all views from enteredViews which are not in views
    // and send them a MouseExited event
@@ -275,16 +324,28 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
    {
       assert( area);
 
-      options   = [area options];
+      options   = [area trackingAreaOptions];
+      owner     = [area owner]; // somehat ugly, public ?
+      view      = [area view];
       isOutside = _mulle_pointerarray_find( areas, area) == mulle_not_found_e;
 
+      UIWindowMouseTrackingEventLog( nil,
+                                     "handling the already entered %#@ with options %#tx (isOutside=%bd)",
+                                      area, options, isOutside);
       if( isOutside)
       {
+         if( options & UITrackingMouseHover)
+         {
+            [area stopHoverTimerWithWindow:self]; // this will change view isMouseHovering
+            if( [view isMouseHovering])
+               [self stopMouseHoverOverTrackingArea:area];
+         }
+
          if( ! (options & UITrackingIgnoreMouseEnteredAndExited))
          {
             [_reusableTrackingEvent updateTrackingArea:area
                                                   type:UIMouseTrackingExitedEventType];
-            [[area owner] mouseExited:_reusableTrackingEvent];
+            [owner mouseExited:_reusableTrackingEvent];
          }
          continue;
       }
@@ -292,11 +353,18 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
       // will be sent later by regular event handling code anyway
       if( ! inDrag)
       {
+         if( isPhysicalEvent && (options & UITrackingMouseHover))
+         {
+            [area resetHoverTimerWithWindow:self]; // this will change view isMouseHovering
+            if( [view isMouseHovering])
+               [self stopMouseHoverOverTrackingArea:area];
+         }
+
          if( options & UITrackingMouseMoved)
          {
             [_reusableTrackingEvent updateTrackingArea:area
                                                   type:UIMouseTrackingMovedEventType];
-            [[area owner] mouseMoved:_reusableTrackingEvent];
+            [owner mouseMoved:_reusableTrackingEvent];
          }
       }
 
@@ -311,7 +379,7 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
    //
    // In "remaining" are now the remaining active enteredAreas, where we don't
    // need to do anything, as they already received "entered",
-   // all others get an enter. event
+   // all others get an enter event now
    //
    mulle_pointerarray_for( areas, area)
    {
@@ -322,7 +390,12 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
       if( _mulle_pointerarray_find( &remaining, area) != mulle_not_found_e)
          continue;
 
-      options = [area options];
+      options = [area trackingAreaOptions];
+
+      UIWindowMouseTrackingEventLog( nil,
+                                     "handling the non-entered %#@ with options %#tx (isOutside=%bd)",
+                                      area, options, isOutside);
+
       if( ! (options & UITrackingIgnoreMouseEnteredAndExited))
       {
          // prefer recently entered regions
@@ -333,15 +406,23 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
          [[area owner] mouseEntered:_reusableTrackingEvent];
       }
 
+      if( options & UITrackingMouseHover)
+      {
+         [area startHoverTimerWithWindow:self];
+      }
+
       _mulle_pointerarray_add( &remaining, area);
    }
 
+   // we want to make sure, that if we entered an area, only one is running
+   // the hover timer, but which one ?
+
    // release old ones, retain new ones
-   mulle_pointerarray_autorelease_all( &_enteredAreas);
-   mulle_pointerarray_retain_all( &remaining);
+   mulle_idarray_autorelease_all( &_enteredAreas);
+   mulle_idarray_retain_all( &remaining);
 
    mulle_pointerarray_reset( &_enteredAreas);
-   mulle_pointerarray_absorb( &_enteredAreas, &remaining);
+   mulle_pointerarray_absorb_array( &_enteredAreas, &remaining);
 
    return( cursor);
 }
@@ -381,8 +462,8 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
                                      point,
                                      collect_hit_areas,
                                      &areas);
-      UIWindowMouseMotionEventLog( nil, "handle %u tracking areas (of %u total)",
-                        n, mulle_quadtree_count( quadtree));
+      UIWindowMouseTrackingEventLog( nil, "Hit %u tracking areas (of %u total)",
+                                          n, mulle_quadtree_count( quadtree));
 
       //
       // we set the cursor shape for the tracking rectangle now, so that
@@ -407,6 +488,7 @@ static void   collect_hit_areas( CGRect rect, void *payload, void *userinfo)
             ++p;
          }
       }
+
       //
       // if we have *no* entered views and *nothing* is hit, then there is nothing
       // to do

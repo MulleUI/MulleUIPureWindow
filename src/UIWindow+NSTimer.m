@@ -11,25 +11,23 @@
 @implementation UIWindow( NSTimer)
 
 
-- (BOOL) willDiscardTimer:(NSTimer *) timer
-{
-   return( YES);
-}
-
-
 - (BOOL) willDiscardOverflowTimer:(NSTimer *) timer
 {
+   assert( [NSThread mulleIsMainThread]);
+
    fprintf( stderr, "*** windows %p (%p) discards timer due to queue overflow\n", self, self->_windowThread);
 #ifdef ABORT_ON_EVENT_OVERFLOW
    abort();
 #endif
-   return( [self willDiscardTimer:timer]);
+   return( YES);
 }
 
 
 - (BOOL) willDiscardPendingTimer:(NSTimer *) timer
 {
-   return( [self willDiscardTimer:timer]);
+   assert( [self isWindowThread]);
+
+   return( YES);
 }
 
 
@@ -101,10 +99,12 @@
    NSTimer      *timer;
    NSUInteger   mask;
 
+   MulleWindowProfileBegin();
+
    //
    // the timer must be handled by the windowThread, if we have one
    //
-   assert( ! _windowThread || [NSThread currentThread] == _windowThread);
+   assert( [self isWindowThread]);
 
    mask = 0;
    for(;;)
@@ -121,6 +121,9 @@
          mask |= _UIEventTypeTimer;
       }
    }
+
+   MulleWindowProfileEnd();
+
    return( mask);
 }
 

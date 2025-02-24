@@ -8,15 +8,15 @@
 #if 0
 - (void) _beginAccumulateRender
 {
-   CGLayer   *oldLayer;
+   CGFramebuffer   *oldLayer;
 
    oldLayer = nil;
 
    if( !_accumulateLayer || 
-       ! MulleIntegerSizeEqualToIntegerSize( _currentFrameInfo.window.framebufferSize, [_accumulateLayer bitmapSize]))
+       ! CGPixelSizeEqualToPixelSize( _currentFrameInfo.window.framebufferSize, [_accumulateLayer bitmapSize]))
    {
       oldLayer         = [_accumulateLayer autorelease];
-      _accumulateLayer = [[self layerWithSize:_currentFrameInfo.window.framebufferSize
+      _accumulateLayer = [[self framebufferWithSize:_currentFrameInfo.window.framebufferSize
                                  textureFlags:0] retain];
    }
 
@@ -98,11 +98,11 @@ int   main( int argc, char *argv[])
 
       // background color will be seen when resizing
       [window setBackgroundColor:CGColorMakeGreen()];
-      [window setDrawCallback:(CALayerDrawCallback_t *) draw];
+      [window setDrawCallback:(CGGraphicsLayerDrawCallback_t *) draw];
       [window setFrameRateHz:60.0];
       [app addWindow:window];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

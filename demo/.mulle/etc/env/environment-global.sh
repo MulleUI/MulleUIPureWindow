@@ -40,3 +40,9 @@ export KITCHEN_DIR="/tmp/MulleUIWindow/demo/kitchen"
 export MULLE_SOURCETREE_STASH_DIR="/tmp/MulleUIWindow/demo/stash"
 
 
+#
+#
+#
+export OTHER_CFLAGS="-DMULLE_CG_GLVERSION=1"
+
+

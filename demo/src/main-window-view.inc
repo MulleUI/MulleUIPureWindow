@@ -1,22 +1,46 @@
-#define _GNU_SOURCE
-
-#import "import-private.h"
-
-
 //
-// This demo uses a frameCallback to draw stuff into an UIWindow without
-// UIViews. It's a little more convenient, than doing it with GLFWOSWindow
-// but not much. 
+// This demo uses drawStuff callback to draw stuff in a UIView (like normally)
 //
+static CGColor  first_colors[ 3] =
+{
+   CGColorDataRed,
+   CGColorDataBlack,
+   CGColorDataYellow
+};
+
+
+static CGColor  second_colors[ 3] =
+{
+   CGColorDataWhite,
+   CGColorDataRed,
+   CGColorDataBlue
+};
+
+
+
+static CGColor  third_colors[ 3] =
+{
+   CGColorDataBlue,
+   CGColorDataGold,
+   CGColorDataRed
+};
+
+
 static void   drawStuff( CGContext *context, CGRect canvas)
 {
    struct NVGcontext   *vg;
+   NSUInteger          color_index;
+   NSUInteger          numberOfFrames;
 
-   MulleUICLog( "canvas: %s, context %#@", CGRectUTF8String( canvas), context);
+   numberOfFrames = [context numberOfFrames];
 
-   vg = CGContextGetNVGContext( context);
+   MulleUICLog( "%tu canvas: %s, context: %#@", numberOfFrames,
+                                                CGRectUTF8String( canvas),
+                                                context);
 
-   canvas.size.height  /= 3.0;
+   vg                  = CGContextGetNVGContext( context);
+   canvas.size.height /= 3.0;
+   color_index         = numberOfFrames % 3;
 
    // red stripe
    nvgBeginPath( vg);
@@ -24,7 +48,7 @@ static void   drawStuff( CGContext *context, CGRect canvas)
                 canvas.origin.y,
                 canvas.size.width,
                 canvas.size.height);
-   nvgFillColor( vg, nvgRGBAf( 0.95, 0.0, 0.0, 1.0));
+   nvgFillColor( vg, first_colors[ color_index]);
    nvgFill( vg);
 
    // white stripe
@@ -33,7 +57,7 @@ static void   drawStuff( CGContext *context, CGRect canvas)
                 canvas.origin.y + canvas.size.height * 1,
                 canvas.size.width,
                 canvas.size.height);
-   nvgFillColor( vg, nvgRGBAf( 1.0, 1.0, 1.0, 1.0));
+   nvgFillColor( vg, second_colors[ color_index]);
    nvgFill( vg);
 
    // blue stripe
@@ -42,14 +66,15 @@ static void   drawStuff( CGContext *context, CGRect canvas)
                 canvas.origin.y + canvas.size.height * 2,
                 canvas.size.width,
                 canvas.size.height);
-   nvgFillColor( vg, nvgRGBAf( 0.0, 0.0, 1.0, 1.0));
+   nvgFillColor( vg, third_colors[ color_index]);
    nvgFill( vg);
 }
 
 
 static int   display( UIWindow *window,
-                       id <UIGraphicsContext> context,
-                       struct CGFrameInfo *frameInfo)
+                      id <UIGraphicsContext> context,
+                      struct CGFrameInfo *frameInfo,
+                      UIWindowDisplayBits displayBits)
 {
    drawStuff( (CGContext *) context, CGFrameInfoGetContentRect( frameInfo));
    return( 0);
@@ -61,15 +86,16 @@ int   main( int argc, char *argv[])
    UIWindow        *window;
    UIApplication   *app;
 
+
    app = [UIApplication sharedInstance];
 
    window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 400.0, 400.0)
                       titleUTF8String:"Demo"
-                            styleMask:UIWindowStyleMaskDefault]; // & ~UIWindowStyleRetained];
+                            styleMask:STYLEMASK & ~UIWindowStylePlanes];
    assert( window);
 
    [window setFrameCallback:display];
-//      [window setFrameRate:UIWindowFrameRateSynced];
+   [window setFrameRate:FRAMERATE];
    [window setFrameDelegate:[MulleUIPerf object]];
    return( UIApplicationRunWindow( window));
 }

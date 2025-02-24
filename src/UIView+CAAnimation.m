@@ -129,7 +129,7 @@ UI_VIEW_ANIMATABLE_PROPERTIES;
 
    if( ! (mode & UIViewForgetImplicitAnimationsSkipSubviews))
    {
-      mulle_pointerarray_for( &_subviews, view)
+      UIViewSubviewsFor( self, view)
       {
          [view forgetImplicitAnimations:mode & ~UIViewForgetImplicitAnimationsSkipSelf];
       }

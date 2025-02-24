@@ -27,11 +27,11 @@ int   main( int argc, char *argv[])
 
       view = [UIView viewWithFrame:frame];
       [view setBackgroundColor:BLAU];
-      [window addSubview:view];
+      [contentView addSubview:view];
 
       [app addWindow:window];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

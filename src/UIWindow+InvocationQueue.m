@@ -14,7 +14,7 @@ static struct mulle_container_keyvaluecallback   callback;
 + (void) load 
 {
    callback.keycallback   = mulle_container_keycallback_copied_cstring;
-   callback.valuecallback = *MulleObjCContainerRetainValueCallback;
+   callback.valuecallback = MulleObjCContainerRetainValueCallback;
 }
 
 
@@ -61,10 +61,14 @@ static struct mulle_container_keyvaluecallback   callback;
    char                   *key;
    MulleInvocationQueue   *queue;
 
+   MulleWindowProfileBegin();
+
    mulle_map_for( &_invocationQueueMap, key, queue)
    {
       [queue poll]; // this will call delegate methods
    }
+
+   MulleWindowProfileEnd();
 }
 
 
@@ -75,7 +79,7 @@ static struct mulle_container_keyvaluecallback   callback;
    unsigned int           i, n;
 
    n = mulle_map_get_count( &_invocationQueueMap);
-   mulle_flexarray_do( queues, MulleInvocationQueue *, 16, n)
+   mulle_alloca_do( queues, MulleInvocationQueue *, n)
    {
       i = 0; 
       mulle_map_for( &_invocationQueueMap, key, queue)

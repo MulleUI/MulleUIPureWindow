@@ -28,19 +28,19 @@
 }
 
 
-- (void) mouseEntered:(UIMouseMotionEvent *) event
+- (void) mouseEntered:(UIMouseTrackingEvent *) event
 {
    [self setBackgroundColor:[self selectColor]];
    [self setNeedsDisplay];
 }
 
 
-- (void) mouseMoved:(UIMouseMotionEvent *) event
+- (void) mouseMoved:(UIMouseTrackingEvent *) event
 {
 }
 
 
-- (void) mouseExited:(UIMouseMotionEvent *) event
+- (void) mouseExited:(UIMouseTrackingEvent *) event
 {
    [self setBackgroundColor:[self deselectColor]];
    [self setNeedsDisplay];
@@ -54,7 +54,7 @@ void   setupTrackingRectangles( UIView *view, UIWindow *window, BOOL reverse)
    CGRect           rect1;
    CGRect           rect2;
    UITrackingArea   *area;
-   CALayer          *layer;
+   CGGraphicsLayer  *layer;
 
    // we use a tracking area in for whole view
    // and one for the center
@@ -73,12 +73,12 @@ void   setupTrackingRectangles( UIView *view, UIWindow *window, BOOL reverse)
    area = [UITrackingArea trackingAreaWithRect:rect1
                                        options:0
                                          owner:view
-                                      userInfo:nil]
+                                      userInfo:nil];
    [area setCursor:[UIApp cursorWithStandardShape:UICursorDrag]];
    [view addTrackingArea:area];
 
 
-   layer = [CALayer layerWithFrame:rect1];
+   layer = [CGGraphicsLayer layerWithFrame:rect1];
    [layer setBorderWidth:1.0];
    [layer setBorderColor:CGColorMakeGray()];
    [view addLayer:layer];
@@ -90,7 +90,7 @@ void   setupTrackingRectangles( UIView *view, UIWindow *window, BOOL reverse)
    [area setCursor:[UIApp cursorWithStandardShape:UICursorTextInput]];
    [view addTrackingArea:area];
 
-   layer = [CALayer layerWithFrame:rect2];
+   layer = [CGGraphicsLayer layerWithFrame:rect2];
    [layer setBorderWidth:1.0];
    [layer setBorderColor:CGColorMakeGray()];
    [view addLayer:layer];
@@ -105,7 +105,6 @@ void   setupScene( UIWindow *window)
    CGRect         frame;
    CGRect         bounds;
    UIEdgeInsets   insets;
-   CALayer        *layer;
 
    contentView = [window contentView];
 
@@ -184,5 +183,5 @@ int   main()
 
    [app addWindow:window];
 
-   return( [app run]);
+   return( [app runApp]);
 }

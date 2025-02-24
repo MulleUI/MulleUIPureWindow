@@ -34,6 +34,25 @@
 static id    balls[ numBalls];
 
 
+// MEMO: balls[n] are thread unsafe and global, we need to use a callback to
+//       get them safely in and out of the drawing thread
+static void   relinquishBalls( UIWindow *window, NSThread *thread)
+{
+   NSUInteger   i;
+
+   for( i = 0; i < numBalls; i++)
+      [balls[ i] mulleRelinquishAccess];
+}
+
+static void   gainBalls( UIWindow *window, NSThread *thread)
+{
+   NSUInteger   i;
+
+   for( i = 0; i < numBalls; i++)
+      [balls[ i] mulleGainAccess];
+}
+
+
 @interface Ball : NSObject
 {
    NSUInteger           _numSegment;
@@ -266,7 +285,7 @@ static id    balls[ numBalls];
 @end
 
 
-static BOOL  drawStuff( CALayer *layer, void *_context)
+static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *_context)
 {
    CGContext    *context = _context;
    CGRect       canvas;
@@ -339,16 +358,23 @@ int   main( int argc, char *argv[])
       // If color is white, nothing is shown
       [window setBackgroundColor:CGColorMakeBlack()];
       [window setFrameRateHz:120.0];
-
       setupSceneInView( [window contentView]);
+
+      relinquishBalls( window, [NSThread currentThread]);
+      [window setWillStartDrawingInThreadCallback:gainBalls];
+
+      // we don't want the balls back, so we don't implement
+      // _didStopDrawingInThreadCallback, if we did we would then have to
+      // release them
+
+      perf = [MulleUIPerf object];
+      [window setFrameDelegate:perf];
 
       [app addWindow:window];
    }
 
-   perf = [MulleUIPerf object];
-   [window setFrameDelegate:perf];
 
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

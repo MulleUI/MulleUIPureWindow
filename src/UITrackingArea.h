@@ -64,19 +64,43 @@ typedef NS_OPTIONS( NSUInteger, UITrackingAreaOptions)
 //   UITrackingCursorUpdate               = 0x4, // not supported
 //   UITrackingEnabledDuringMouseDrag      = 0x4,  // not supported
    UITrackingAreaReceivesObscuredEvents  = 0x100,
-   UITrackingActiveWhenFirstResponder    = 0x200
+   UITrackingActiveWhenFirstResponder    = 0x200,
+   UITrackingMouseHover                  = 0x400
 };
 
 
+@protocol UITrackingAreaOwner
+
+- (void) mouseMoved:(UIMouseTrackingEvent *) event;
+- (void) mouseEntered:(UIMouseTrackingEvent *) event;
+- (void) mouseExited:(UIMouseTrackingEvent *) event;
+
+@optional
+
+- (void) mouseHoverStarted:(UIMouseTrackingEvent *) event;
+- (void) mouseHoverEnded:(UIMouseTrackingEvent *) event;
+
+@end
+
+
+
 // mulle addition
+// Does not support NSCopying, because you copying view or owner is too
+// tricky to get usefully right when transferring to another view and copying
+// within the same view seems pointless. In events, you get the tag of the
+// are, so use this to locate the actual area in a UIView for example. Of
+// course its your part to provide a sensible tag.
+//
 @interface UITrackingArea : NSObject <UIAutoresizing>
 
-@property( assign) id           owner;
-@property( assign) UICursor     *cursor;
-@property( assign) CGRect       rect;
-@property( retain) id           userInfo;
-@property( assign) NSUInteger   options;
-@property( assign) UIView       *view;
+@property( assign) id                      owner;
+@property( assign) UICursor                *cursor;
+@property( assign) CGRect                  rect;
+@property( retain) id                      userInfo;
+@property( assign) UITrackingAreaOptions   trackingAreaOptions;  // options already in use
+@property( assign) UIView                  *view;
+@property( assign) NSInteger               tag;
+@property( retain) NSTimer                 *hoverTimer;
 
 // autoresizing helpers
 UIAutoresizingProperties;
@@ -87,7 +111,7 @@ UIAutoresizingProperties;
 + (instancetype) trackingAreaWithRect:(CGRect) rect;
 
 + (instancetype) trackingAreaWithRect:(CGRect) rect
-                              options:(NSUInteger) options
+                              options:(UITrackingAreaOptions) options
                                 owner:(id) owner 
                              userInfo:(id) userInfo;
 
@@ -96,17 +120,20 @@ UIAutoresizingProperties;
 // https://developer.apple.com/documentation/appkit/nstrackingarea/1524488-initwithrect?language=objc
 // Set other values with properties.
 - (instancetype) initWithRect:(CGRect) rect 
-                      options:(NSUInteger) options
+                      options:(UITrackingAreaOptions) options
                         owner:(id) owner 
                      userInfo:(id) userInfo;
-
-
 
 // returns YES always if UITrackingVisibleRectOnly is not set, otherwise
 // determines "inside" "outside"
 
 - (BOOL) isTrackingActiveAtLocation:(CGPoint) location
                            inWindow:(UIWindow *) window;
+
+- (void) stopHoverTimerWithWindow:(UIWindow *) window;
+- (void) startHoverTimerWithWindow:(UIWindow *) window;
+- (void) resetHoverTimerWithWindow:(UIWindow *) window;
+
 @end 
 
 

@@ -5,18 +5,19 @@ static CATextLayer   *layer;
 static NSUInteger    count;
 
 
-static UIWindowEvent   *callback( UIWindow *window, UIWindowEvent *event)
+static void   eventCallback( GLFWOSWindow *window, UIWindowEvent *event)
 {
-   char    buf[ 64];
+   char  buf[ 256];
 
    if( [event windowEventType] == UIWindowEventTypeRefresh)
    {
       ++count;
-      sprintf( buf, "%tu", count);
+      mulle_sprintf( buf, "%tu", count);
       [layer setTextUTF8String:buf];
    }
-   return( event);
+   [[window windowEventsReceiver] handleWindowEvent:event];
 }
+
 
 
 //
@@ -37,11 +38,11 @@ int   main( int argc, char *argv[])
    {
       window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 320.0, 320.0)
                          titleUTF8String:"Demo"
-                               styleMask:UIWindowStyleMaskDefault & ~UIWindowStyleRetained];
+                               styleMask:UIWindowStyleMaskDefault & ~UIWindowStylePlanes];
       assert( window);
 
       [window setBackgroundColor:CGColorMakeWhite()];
-      [window setWindowEventCallback:callback];
+      [window setWindowEventsCallback:eventCallback];
 
       layer = [CATextLayer layerWithFrame:CGRectMake( 0, 0, 256, 128)];
       [layer setBackgroundColor:CGColorMakeBlue()];
@@ -49,17 +50,16 @@ int   main( int argc, char *argv[])
       [layer setTextBackgroundColor:CGColorMakeBlue()];
       [layer setTextColor:CGColorMakeWhite()];
       [layer setAlignmentMode:CAAlignmentCenter];
-      [layer mulleSetVerticalAlignmentMode:MulleTextVerticalAlignmentVisualMiddle];
+      [layer mulleSetVerticalAlignmentMode:MulleTextVerticalAlignmentMiddle];
 
       view = [UIView viewWithLayer:layer];
       [view setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
 
-      contentPlane = [window contentView];
-      [contentPlane addSubview:view];
+      [window setView:view];
 
       [app addWindow:window];
    }
-   return( [app run]);
+   return( [app runApp]);
 }
 
 

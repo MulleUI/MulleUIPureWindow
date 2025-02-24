@@ -12,6 +12,11 @@
 
 @interface UIView( UIWindow)
 
+//
+// Needed when the CALayer needs to be immediately tied to the window
+// (notcurses). The view though is *NOT* added as a subview to the window,
+// because usually you want to place it as a subview into a different view.
+//
 //- (UIWindow *) window;
 
 // returns nil, if view is not in a window or the window isn't configured with
@@ -19,15 +24,11 @@
 - (UIWindowPlane *) windowPlane;
 - (CGFloat) pixelsPerInchOfCurrentScreen;
 
-- (void) setNeedsDisplay;
+- (void) setNeedsDisplay      MULLE_OBJC_THREADSAFE_METHOD;
 
 // this flag is forwarded to the enclosing UIWindow
 // will assert if none is present
 - (void) setNeedsLayout;
 - (BOOL) needsLayout;
-
-- (void) mouseEntered:(UIMouseTrackingEvent *) event;
-- (void) mouseMoved:(UIMouseTrackingEvent *) event;
-- (void) mouseExited:(UIMouseTrackingEvent *) event;
 
 @end

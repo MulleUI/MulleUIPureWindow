@@ -2,6 +2,12 @@
 // Copyright (c) 2020 Nat!, Mulle kybernetiK
 //
 // prefer a local UIView over one in import.h
+#ifdef __has_include
+# if __has_include( "UIView.h")
+#  import "UIView.h"
+# endif
+#endif
+
 #import "import.h"
 
 
@@ -26,5 +32,12 @@ struct UIRenderQueueContext
 - (void) createRenderQueue:(struct mulle_pointerarray *) renderQueue
                    context:(struct UIRenderQueueContext *) ctx;
 
+//
+// this may be a good place for your view to override and copy some more
+// values into its layer, all animations have run though already
+//
+- (void)    addLayer:(id <UILayer>) layer
+       toRenderQueue:(struct mulle_pointerarray *) renderQueue
+             context:(struct UIRenderQueueContext *) v;
 @end
 
