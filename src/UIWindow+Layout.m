@@ -181,7 +181,7 @@ UIWindowDisplayBits
 {
    //_viewsNeedTrackingAreaUpdate = NO;
 
-   displayBits |= [self willRenderWithAbsoluteTime:info->now];
+   displayBits |= [self willLayoutWithAbsoluteTime:info->now];
    displayBits |= [self preLayoutAnimations:info];
 
    if( (displayBits & (UIWindowDisplayNeedsLayout|UIWindowDisplayDidAnimate)))

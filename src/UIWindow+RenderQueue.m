@@ -12,7 +12,7 @@
 
 @implementation UIWindow ( RenderQueue)
 
-- (UIWindowDisplayBits) willRenderWithAbsoluteTime:(mulle_absolutetime_t) renderStart
+- (UIWindowDisplayBits) willLayoutWithAbsoluteTime:(mulle_absolutetime_t) renderStart
 {
    UIView               *view;
    UIWindowDisplayBits  displayBits;
@@ -21,10 +21,10 @@
    UIWindowRenderLog( "%.6f", renderStart);
 
    displayBits = 0;
-   mulle_pointerarray_for( &_renderDelegates, view)
+   mulle_pointerarray_for( &_layoutDelegates, view)
    {
-      bits         = [view willRenderWithAbsoluteTime:renderStart];
-      UIWindowDisplayBitsLog( "-[%@ willRenderWithAbsoluteTime:] returned (0x%tx)", view, bits);
+      bits         = [view willLayoutWithAbsoluteTime:renderStart];
+      UIWindowDisplayBitsLog( "-[%@ willLayoutWithAbsoluteTime:] returned (0x%tx)", view, bits);
       displayBits |= bits;
    }
 

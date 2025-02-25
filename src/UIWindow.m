@@ -392,7 +392,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    // _contentPlane can be used
 
    _mulle_pointerarray_init( &_drawingQueue, 128, MulleObjCInstanceGetAllocator( self));
-   _mulle_pointerarray_init( &_renderDelegates, 8, MulleObjCInstanceGetAllocator( self));
+   _mulle_pointerarray_init( &_layoutDelegates, 8, MulleObjCInstanceGetAllocator( self));
    _mulle_pointerarray_init( &_controllers, 4, MulleObjCInstanceGetAllocator( self));
 
    // initially dirty with renderer 1, renderer go!
@@ -755,7 +755,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    mulle_pointerarray_done( &_trackingViews);
    mulle_idarray_release_all( &_enteredAreas);
    mulle_pointerarray_done( &_enteredAreas);
-   mulle_pointerarray_done( &_renderDelegates);
+   mulle_pointerarray_done( &_layoutDelegates);
    mulle_pointerarray_done( &_drawingQueue);
 
 
@@ -1447,20 +1447,20 @@ static void   setPropertyChangesBit( UIWindow *self, NSUInteger bit)
 }
 
 
-- (void) addToRenderDelegates:(id <UIWindowRenderDelegate>) delegate
+- (void) addToLayoutDelegates:(id <UIWindowLayoutDelegate>) delegate
 {
-   assert( _mulle_pointerarray_find( &_renderDelegates, delegate) == mulle_not_found_e);
-   assert( [(id) delegate respondsToSelector:@selector( willRenderWithAbsoluteTime:)]);
+   assert( _mulle_pointerarray_find( &_layoutDelegates, delegate) == mulle_not_found_e);
+   assert( [(id) delegate respondsToSelector:@selector( willLayoutWithAbsoluteTime:)]);
 
-   _mulle_pointerarray_add( &_renderDelegates, delegate);
+   _mulle_pointerarray_add( &_layoutDelegates, delegate);
 }
 
 
-- (void) removeFromRenderDelegates:(id <UIWindowRenderDelegate>) delegate
+- (void) removeFromLayoutDelegates:(id <UIWindowLayoutDelegate>) delegate
 {
    extern void   mulle_pointerarray_remove( struct mulle_pointerarray *, void *);
 
-   mulle_pointerarray_remove( &_renderDelegates, delegate);
+   mulle_pointerarray_remove( &_layoutDelegates, delegate);
 }
 
 
