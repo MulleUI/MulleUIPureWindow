@@ -1,5 +1,16 @@
 #import "import.h"
 
+// TODO: remove UIView from UIWindow. Let UIWindow base on UIApplication and
+//       UIView then be based on UIWindow.
+//
+//       So a UIViewlessWindow in its pristine state, would just accept event
+//       and do nothing with them (pretty much). Rendering would be by callback.
+//       Trackingareas would just be flat on the window surface.
+//
+//       This would be easier for testing and for very simple code, that
+//       doesn't need layouting at all.
+
+
 
 // A "frame" is the timespan taken to fill the contents of the "framebuffer"
 // that will then be displayed by swapBuffers. It doesn't contain the time
@@ -252,7 +263,7 @@ struct MulleClickDragDifferentiator
    
    struct mulle_pointerarray       _trackingViews;    // views with tracking areas
    struct mulle_pointerarray       _enteredAreas;     // areas with mouseEntered: sent
-   struct mulle_pointerarray       _renderDelegates;  // objects with get willRenderWithAbsoluteTime: sent
+   struct mulle_pointerarray       _layoutDelegates;  // objects with get willLayoutWithAbsoluteTime: sent
    struct mulle_pointerarray       _controllers;      // viewcontroller retain point
    struct mulle_map                _invocationQueueMap;  
    struct MulleUIResourceStorage   _resourceStorage;
@@ -657,8 +668,8 @@ struct MulleClickDragDifferentiator
 - (BOOL) shouldClose                         MULLE_OBJC_THREADSAFE_METHOD;
 
 // won't get retained!
-- (void) addToRenderDelegates:(id <UIWindowRenderDelegate>) delegate;
-- (void) removeFromRenderDelegates:(id <UIWindowRenderDelegate>) delegate;
+- (void) addToLayoutDelegates:(id <UIWindowLayoutDelegate>) delegate;
+- (void) removeFromLayoutDelegates:(id <UIWindowLayoutDelegate>) delegate;
 
 - (void) addToViewControllers:(UIViewController *) controller;
 - (void) removeFromViewControllers:(UIViewController *) controller;

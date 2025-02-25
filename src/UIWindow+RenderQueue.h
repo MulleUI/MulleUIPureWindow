@@ -15,7 +15,7 @@
 
 @interface UIWindow( RenderQueue)
 
-- (UIWindowDisplayBits) willRenderWithAbsoluteTime:(mulle_absolutetime_t) renderStart;
+- (UIWindowDisplayBits) willLayoutWithAbsoluteTime:(mulle_absolutetime_t) renderStart;
 
 - (void) createDrawingQueueForFrame:(struct CGFrameInfo *) info;
 

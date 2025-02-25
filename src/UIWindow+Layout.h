@@ -52,7 +52,7 @@
 // this function will call methods in this order (if needed)
 //
 // +-----------------------------+
-// | willRenderWithAbsoluteTime: |
+// | willLayoutWithAbsoluteTime: |
 // +-----------------------------+
 //        |
 //        v
