@@ -11,35 +11,25 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
-src/CGFrameInfo+UTF8String.m
-src/UIFont.m
-src/UIPasteboard.m
-src/UITrackingArea.m
-src/UIView+CAAnimation.m
-src/UIView+RenderQueue.m
-src/UIView+UIFirstResponderSearch.m
-src/UIView+UIFirstResponder.m
-src/UIView+UITrackingArea.m
-src/UIView+UIWindow.m
-src/UIWindow+CGGeometry.m
-src/UIWindow+FrameInfo.m
-src/UIWindow+InvocationQueue.m
-src/UIWindow+Layout.m
-src/UIWindow+NSTimer.m
-src/UIWindow+OneFrame.m
-src/UIWindow+RenderQueue.m
-src/UIWindow+Thread.m
-src/UIWindow+UIEvent.m
-src/UIWindow+UIPasteboard.m
-src/UIWindow+UIResponder.m
-src/UIWindow+UITrackingArea.m
-src/UIWindow+UIWindow.m
-src/UIWindow.m
+src/UIPureWindow+CGGeometry.m
+src/UIPureWindow+FrameInfo.m
+src/UIPureWindow+Frame.m
+src/UIPureWindow+InvocationQueue.m
+src/UIPureWindow+NSTimer.m
+src/UIPureWindow+OneFrame.m
+src/UIPureWindow+Render.m
+src/UIPureWindow+ThreadRefresh.m
+src/UIPureWindow+Thread.m
+src/UIPureWindow+UIEvent.m
+src/UIPureWindow+UIGraphicsContext.m
+src/UIPureWindow+UIResponder.m
+src/UIPureWindow+UIWindow.m
+src/UIPureWindow.m
 )
 
 #
 # contents selected with patternfile ??-source--stage2-sources
 #
 set( STAGE2_SOURCES
-src/MulleObjCLoader+MulleUIWindow.m
+src/MulleObjCLoader+MulleUIPureWindow.m
 )

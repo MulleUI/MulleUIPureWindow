@@ -8,7 +8,7 @@ export PROJECT_TYPE="none"
 #
 #
 #
-export PROJECT_NAME="MulleUIWindow"
+export PROJECT_NAME="MulleUIPureWindow"
 
 
 #

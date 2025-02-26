@@ -1,5 +1,5 @@
-#ifndef mulle_ui_window_include_private_h__
-#define mulle_ui_window_include_private_h__
+#ifndef mulle_ui_pure_window_include_private_h__
+#define mulle_ui_pure_window_include_private_h__
 
 
 /* DO:    #include this files in sources
@@ -15,7 +15,7 @@
    sourcetree, then you don't need it.
  */
 
-#include "_MulleUIWindow-include-private.h"
+#include "_MulleUIPureWindow-include-private.h"
 
 /* You can add some more include statements here */
 

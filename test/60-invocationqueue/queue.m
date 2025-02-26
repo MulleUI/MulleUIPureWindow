@@ -1,13 +1,13 @@
-#import <MulleUIWindow/MulleUIWindow.h>
+#import <MulleUIPureWindow/MulleUIPureWindow.h>
 
 
 int   main( void)
 {
-   UIWindow               *window;
+   UIPureWindow           *window;
    MulleInvocationQueue   *queue;
    NSInvocation           *invocation;
 
-   window = [UIWindow object];
+   window = [UIPureWindow object];
    [window _initInvocationQueues];
 
    queue = [window invocationQueueForNameUTF8String:"whatevs"];
