@@ -2,6 +2,8 @@
 
 #import "import-private.h"
 
+#include "ui-application-glue.inc"
+
 
 //
 // a simple demo that runs without a UIView 
@@ -204,7 +206,7 @@ static void   drawStuff( CGContext *context, CGRect canvas)
 }
 
 
-static int   display( UIWindow *window,
+static int   display( UIPureWindow *window,
                       id <UIGraphicsContext> context,
                       struct CGFrameInfo *frameInfo,
                       UIWindowDisplayBits displayBits)
@@ -216,14 +218,14 @@ static int   display( UIWindow *window,
 
 int   main( int argc, char *argv[])
 {
-   UIWindow        *window;
+   UIPureWindow    *window;
    UIApplication   *app;
 
    app = [UIApplication sharedInstance];
 
-   window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 400.0, 400.0)
-                      titleUTF8String:"Demo"
-                            styleMask:(UIWindowStyleMaskDefault|UIWindowStyleNoView) & ~UIWindowStyleRetained];
+   window = [UIPureWindow windowWithFrame:CGRectMake( 0.0, 0.0, 400.0, 400.0)
+                          titleUTF8String:"Demo"
+                                styleMask:(UIWindowStyleMaskDefault|UIWindowStyleNoView) & ~UIWindowStyleRetained];
    assert( window);
 
    [window setFrameCallback:display];

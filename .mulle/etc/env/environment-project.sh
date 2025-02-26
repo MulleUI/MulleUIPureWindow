@@ -1,7 +1,7 @@
 #
 #
 #
-export PROJECT_NAME="MulleUIWindow"
+export PROJECT_NAME="MulleUIPureWindow"
 
 
 #

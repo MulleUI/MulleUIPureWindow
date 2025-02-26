@@ -9,11 +9,11 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 580)">
 <title>sourcetree</title>
 <polygon fill="white" stroke="transparent" points="-4,4 -4,-580 621,-580 621,4 -4,4"/>
-<!-- MulleUIWindow -->
+<!-- MulleUIPureWindow -->
 <g id="node1" class="node">
-<title>MulleUIWindow</title>
+<title>MulleUIPureWindow</title>
 <polygon fill="yellow" stroke="black" points="131,-225 0,-225 0,-189 131,-189 131,-225"/>
-<text text-anchor="middle" x="65.5" y="-203.3" font-family="Times,serif" font-size="14.00">MulleUIWindow</text>
+<text text-anchor="middle" x="65.5" y="-203.3" font-family="Times,serif" font-size="14.00">MulleUIPureWindow</text>
 </g>
 <!-- MulleCA -->
 <g id="node2" class="node">
@@ -21,9 +21,9 @@
 <polygon fill="lightgrey" stroke="black" points="308.5,-414 231.5,-414 231.5,-378 308.5,-378 308.5,-414"/>
 <text text-anchor="middle" x="270" y="-392.3" font-family="Times,serif" font-size="14.00">MulleCA</text>
 </g>
-<!-- MulleUIWindow&#45;&gt;MulleCA -->
+<!-- MulleUIPureWindow&#45;&gt;MulleCA -->
 <g id="edge17" class="edge">
-<title>MulleUIWindow&#45;&gt;MulleCA</title>
+<title>MulleUIPureWindow&#45;&gt;MulleCA</title>
 <path fill="none" stroke="black" d="M72.63,-225.22C84.93,-258.97 115.92,-331.2 167,-369 182.65,-380.59 202.9,-387.21 221.22,-390.98"/>
 <polygon fill="black" stroke="black" points="220.69,-394.45 231.16,-392.81 221.95,-387.56 220.69,-394.45"/>
 </g>
@@ -33,9 +33,9 @@
 <polygon fill="lightgrey" stroke="black" points="311.5,-90 228.5,-90 228.5,-54 311.5,-54 311.5,-90"/>
 <text text-anchor="middle" x="270" y="-68.3" font-family="Times,serif" font-size="14.00">mulle&#45;fifo</text>
 </g>
-<!-- MulleUIWindow&#45;&gt;mulle&#45;fifo -->
+<!-- MulleUIPureWindow&#45;&gt;mulle&#45;fifo -->
 <g id="edge18" class="edge">
-<title>MulleUIWindow&#45;&gt;mulle&#45;fifo</title>
+<title>MulleUIPureWindow&#45;&gt;mulle&#45;fifo</title>
 <path fill="none" stroke="black" d="M78.48,-188.74C95.33,-164.53 128.34,-122.18 167,-99 182.5,-89.71 201.2,-83.57 218.33,-79.53"/>
 <polygon fill="black" stroke="black" points="219.17,-82.93 228.2,-77.39 217.68,-76.09 219.17,-82.93"/>
 </g>
@@ -45,9 +45,9 @@
 <polygon fill="lightgrey" stroke="black" points="343,-198 197,-198 197,-162 343,-162 343,-198"/>
 <text text-anchor="middle" x="270" y="-176.3" font-family="Times,serif" font-size="14.00">mulle&#45;framebuffer</text>
 </g>
-<!-- MulleUIWindow&#45;&gt;mulle&#45;framebuffer -->
+<!-- MulleUIPureWindow&#45;&gt;mulle&#45;framebuffer -->
 <g id="edge19" class="edge">
-<title>MulleUIWindow&#45;&gt;mulle&#45;framebuffer</title>
+<title>MulleUIPureWindow&#45;&gt;mulle&#45;framebuffer</title>
 <path fill="none" stroke="black" d="M131.13,-198.38C148.89,-196.01 168.38,-193.42 186.98,-190.94"/>
 <polygon fill="black" stroke="black" points="187.46,-194.4 196.91,-189.61 186.53,-187.47 187.46,-194.4"/>
 </g>
@@ -57,9 +57,9 @@
 <polygon fill="lightgrey" stroke="black" points="373,-360 167,-360 167,-324 373,-324 373,-360"/>
 <text text-anchor="middle" x="270" y="-338.3" font-family="Times,serif" font-size="14.00">MulleObjCLockFoundation</text>
 </g>
-<!-- MulleUIWindow&#45;&gt;MulleObjCLockFoundation -->
+<!-- MulleUIPureWindow&#45;&gt;MulleObjCLockFoundation -->
 <g id="edge20" class="edge">
-<title>MulleUIWindow&#45;&gt;MulleObjCLockFoundation</title>
+<title>MulleUIPureWindow&#45;&gt;MulleObjCLockFoundation</title>
 <path fill="none" stroke="black" d="M93.81,-225.21C129.92,-249.28 193.61,-291.74 233.44,-318.29"/>
 <polygon fill="black" stroke="black" points="231.54,-321.23 241.8,-323.87 235.42,-315.41 231.54,-321.23"/>
 </g>
@@ -69,9 +69,9 @@
 <polygon fill="lightgrey" stroke="black" points="332.5,-144 207.5,-144 207.5,-108 332.5,-108 332.5,-144"/>
 <text text-anchor="middle" x="270" y="-122.3" font-family="Times,serif" font-size="14.00">mulle&#45;quadtree</text>
 </g>
-<!-- MulleUIWindow&#45;&gt;mulle&#45;quadtree -->
+<!-- MulleUIPureWindow&#45;&gt;mulle&#45;quadtree -->
 <g id="edge21" class="edge">
-<title>MulleUIWindow&#45;&gt;mulle&#45;quadtree</title>
+<title>MulleUIPureWindow&#45;&gt;mulle&#45;quadtree</title>
 <path fill="none" stroke="black" d="M95.96,-188.79C115.54,-177.3 142.13,-162.82 167,-153 176.68,-149.18 187.1,-145.72 197.44,-142.66"/>
 <polygon fill="black" stroke="black" points="198.64,-145.95 207.3,-139.84 196.72,-139.22 198.64,-145.95"/>
 </g>
@@ -81,9 +81,9 @@
 <polygon fill="lightgrey" stroke="black" points="324.5,-252 215.5,-252 215.5,-216 324.5,-216 324.5,-252"/>
 <text text-anchor="middle" x="270" y="-230.3" font-family="Times,serif" font-size="14.00">MulleUIView</text>
 </g>
-<!-- MulleUIWindow&#45;&gt;MulleUIView -->
+<!-- MulleUIPureWindow&#45;&gt;MulleUIView -->
 <g id="edge22" class="edge">
-<title>MulleUIWindow&#45;&gt;MulleUIView</title>
+<title>MulleUIPureWindow&#45;&gt;MulleUIView</title>
 <path fill="none" stroke="black" d="M131.13,-215.62C154.93,-218.79 181.85,-222.38 205.55,-225.54"/>
 <polygon fill="black" stroke="black" points="205.11,-229.01 215.49,-226.86 206.04,-222.07 205.11,-229.01"/>
 </g>

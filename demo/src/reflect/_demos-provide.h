@@ -14,11 +14,6 @@
 
 
 #include "demos-version.h"
-#include "gl.h"
-#include "khrplatform.h"
-#include "linmath.h"
-#include "vk_platform.h"
-#include "vulkan.h"
 
 
 #endif

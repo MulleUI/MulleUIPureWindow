@@ -4,6 +4,8 @@
 
 #include <math.h>
 
+#include "ui-application-glue.inc"
+
 
 #if 0
 - (void) _beginAccumulateRender
@@ -57,15 +59,13 @@
  */
 #define DIAMETER 30
 
-static void   draw( CALayer *layer, CGContext *context)
+static void   drawStuff( CGContext *context, CGRect canvas)
 {
    CGFloat   size;
    CGPoint   mouse;
    CGPoint   center;
-   CGRect    canvas;
    CGFloat   max;
 
-   canvas = [layer canvas];
    mouse  = [context mouseLocation];
 
    [context fillRect:canvas
@@ -87,18 +87,28 @@ static void   draw( CALayer *layer, CGContext *context)
 }
 
 
+static int   display( UIPureWindow *window,
+                      id <UIGraphicsContext> context,
+                      struct CGFrameInfo *frameInfo,
+                      UIWindowDisplayBits displayBits)
+{
+   drawStuff( (CGContext *) context, CGFrameInfoGetContentRect( frameInfo));
+   return( 0);
+}
+
+
 int   main( int argc, char *argv[])
 {
-   UIWindow        *window;
+   UIPureWindow    *window;
    UIApplication   *app;
 
    app = [UIApplication sharedInstance];
    {
-      window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 710.0, 400.0)];
+      window = [UIPureWindow windowWithFrame:CGRectMake( 0.0, 0.0, 710.0, 400.0)];
 
       // background color will be seen when resizing
-      [window setBackgroundColor:CGColorMakeGreen()];
-      [window setDrawCallback:(CGGraphicsLayerDrawCallback_t *) draw];
+      [window setBackgroundHexColor:CGHexColorGreen];
+      [window setFrameCallback:display];
       [window setFrameRateHz:60.0];
       [app addWindow:window];
    }

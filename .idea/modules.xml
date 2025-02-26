@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/MulleUIWindow.iml" filepath="$PROJECT_DIR$/.idea/MulleUIWindow.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/MulleUIPureWindow.iml" filepath="$PROJECT_DIR$/.idea/MulleUIPureWindow.iml" />
     </modules>
   </component>
 </project>

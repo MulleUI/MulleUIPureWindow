@@ -1,6 +1,6 @@
-# 🛸 MulleUIWindow
+# 🛸 MulleUIPureWindow
 
-#### 🛸 MulleUIWindow provides UIWindow and extends UIView functionality
+#### 🛸 MulleUIPureWindow provides UIWindow and extends UIView functionality
 
 ![](mulle-tiny-logo-255x256.png)
 
@@ -9,7 +9,7 @@ See live on stream how it progresses: [https://www.twitch.tv/mulle_kybernetik_tv
 
 ![](demos/candycrash.png)
 
-There is no actual "drawing" code in MulleUIWindow. Use "MulleGraphics" for
+There is no actual "drawing" code in MulleUIPureWindow. Use "MulleGraphics" for
 drawing. See "MulleUIControl" for widgets.
 
 
@@ -27,6 +27,6 @@ called to provide the rectangles.
 ![Overview](overview.dot.svg)
 
 
-MulleUIWindow is based on [MulleObjCLockFoundation](//github.com/MulleFoundation/MulleObjCFoundation). 
+MulleUIPureWindow is based on [MulleObjCLockFoundation](//github.com/MulleFoundation/MulleObjCFoundation). 
 Foundation datatype methods (e.g. `setDebugName:(NSString *)` are added by 
 [MulleUIFoundation](//github.com/MulleUI/MulleUIFoundation).
