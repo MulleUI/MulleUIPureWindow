@@ -36,8 +36,9 @@ src/include-private.h
 #
 set( PROJECT_ONLY_HEADERS
 src/draw-flag.inc
-src/main-window-no-view.inc
-src/main-window-view.inc
+src/main-backend.inc
+src/main-shared-context.inc
+src/ui-application-glue.inc
 )
 
 #
@@ -63,11 +64,6 @@ src/include.h
 #
 set( PUBLIC_HEADERS
 src/demos-version.h
-src/gl.h
-src/khrplatform.h
-src/linmath.h
 src/reflect/_demos-include-public.h
-src/vk_platform.h
-src/vulkan.h
 )
 

@@ -2,10 +2,16 @@
 
 #import "import-private.h"
 
+//
+// MEMO: this demo shows how to customize the OSWindow class on the fly
+//
+
 // if this test fails, comment this out and see if something changes
 //#define USE_UIWINDOW_CG_CONTEXT
 
 #include "draw-flag.inc"
+
+#include "ui-application-glue.inc"
 
 
 @interface MyWindow : GLFWOSWindow
@@ -52,46 +58,21 @@ static int   display( GLFWOSWindow *window_in)
    return( 0);
 }
 
-
-//
-// This needs to be implemented by the context owner. This is not a bug.
-// setActive: is not supposed to be seen outside of the osWindow setting this
-// context active. (Locking is done in GLFWOSWindow with the implicit context!)
-//
-@implementation CGContext( MyWindow)
-
-- (void) setActive:(BOOL) flag
-{
-   _activeThread = flag ? [NSThread currentThread] : nil;
-}
-
-@end
-
-
-@implementation UIWindow( MyWindow)
-
-- (CGContext *) context
-{
-   return( (CGContext *) _context);
-}
-
-@end 
-
-
 int   main( int argc, char *argv[])
 {
    UIApplication  *app;
    MyWindow       *osWindow;
-   UIWindow       *uiWindow;
+   UIPureWindow   *uiWindow;
    CGContext      *context;
 
    app = [UIApplication sharedInstance];
       // this is part of MulleUIOS
-   [UIWindow setOSWindowClass:[MyWindow class]];
 
-   uiWindow = [UIWindow windowWithFrame:CGRectMake( 0, 0, 200, 200)
-                        titleUTF8String:"Demo"
-                              styleMask:UIWindowStyleMaskDefault & ~UIWindowStyleRetained];
+   [UIPureWindow setOSWindowClass:[MyWindow class]];
+
+   uiWindow = [UIPureWindow windowWithFrame:CGRectMake( 0, 0, 200, 200)
+                            titleUTF8String:"Demo"
+                                  styleMask:UIWindowStyleMaskDefault & ~UIWindowStyleRetained];
    assert( uiWindow);
 
    @autoreleasepool

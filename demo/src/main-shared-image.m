@@ -1,119 +1,55 @@
-#define _GNU_SOURCE
+#import "import.h"
 
-#import "import-private.h"
+#include "ui-application-glue.inc"
+
+static BOOL  drawStuff( CGContext *context, CGRect canvas);
+
+#include "main-shared-context.inc"
 
 
-#ifndef STYLEMASK
-# define STYLEMASK   UIWindowStyleMaskDefault
-#endif
-#ifndef FRAMERATE
-# define FRAMERATE   UIWindowFrameRateUnsynced
-#endif
-
-//
-// This demo uses a frameCallback to draw stuff into an UIWindow without
-// UIViews. It's a little more convenient, than doing it with GLFWOSWindow
-// but not much. 
-//
-static CGColor  first_colors[ 3] =
+static BOOL  drawStuff( CGContext *context, CGRect canvas)
 {
-   CGColorDataRed,
-   CGColorDataBlack,
-   CGColorDataYellow
-};
+   struct CGDrawableOptions   options;
+   static CGImage             *cgImage[ 2];
+   static CGContext           *contexts[ 2];
 
+   drawPrettyBackground( context, CGRectInset( canvas, 20, 20));
 
-static CGColor  second_colors[ 3] =
-{
-   CGColorDataWhite,
-   CGColorDataRed,
-   CGColorDataBlue
-};
+   options = CGDrawableOptionsMakeScaleToFit();
 
+   if( ! cgImage[ 0])
+   {
+      cgImage[ 0] = [[image cgImageWithContext:context
+                                 textureFlags:0] retain];
+      contexts[ 0] = context;
+   }
+   else
+      if( ! cgImage[ 1])
+ 
 
+     {
+         assert( contexts[ 0] != context);
 
-static CGColor  third_colors[ 3] =
-{
-   CGColorDataBlue,
-   CGColorDataGold,
-   CGColorDataRed
-};
+         cgImage[ 1]  = [[cgImage[ 0] shareWithContext:context
+                                          textureFlags:0] retain];
+         contexts[ 1] = context;
+      }
 
+   if( contexts[ 0] == context)
+   {
+      [cgImage[ 0] drawRect:CGRectMake( 32, 32, 128, 160)
+                    options:&options
+                    context:context];
+   }
+   else
+   {
+      [cgImage[ 1] drawRect:CGRectMake( 32, 32, 128, 160)
+                    options:&options
+                    context:context];
+   }
 
-static void   drawStuff( CGContext *context, CGRect canvas)
-{
-   struct NVGcontext   *vg;
-   NSUInteger          color_index;
-   NSUInteger          numberOfFrames;
-
-   numberOfFrames = [context numberOfFrames];
-
-   MulleUICLog( "%tu canvas: %s, context: %#@", numberOfFrames,
-                                                CGRectUTF8String( canvas),
-                                                context);
-
-   vg                  = CGContextGetNVGContext( context);
-   canvas.size.height /= 3.0;
-   color_index         = numberOfFrames % 3;
-
-   // red stripe
-   nvgBeginPath( vg);
-   nvgRect( vg, canvas.origin.x,
-                canvas.origin.y,
-                canvas.size.width,
-                canvas.size.height);
-   nvgFillColor( vg, first_colors[ color_index]);
-   nvgFill( vg);
-
-   // white stripe
-   nvgBeginPath( vg);
-   nvgRect( vg, canvas.origin.x,
-                canvas.origin.y + canvas.size.height * 1,
-                canvas.size.width,
-                canvas.size.height);
-   nvgFillColor( vg, second_colors[ color_index]);
-   nvgFill( vg);
-
-   // blue stripe
-   nvgBeginPath( vg);
-   nvgRect( vg, canvas.origin.x,
-                canvas.origin.y + canvas.size.height * 2,
-                canvas.size.width,
-                canvas.size.height);
-   nvgFillColor( vg, third_colors[ color_index]);
-   nvgFill( vg);
+   return( YES);
 }
-
-
-static int   display( UIWindow *window,
-                      id <UIGraphicsContext> context,
-                      struct CGFrameInfo *frameInfo,
-                      UIWindowDisplayBits displayBits)
-{
-   drawStuff( (CGContext *) context, CGFrameInfoGetContentRect( frameInfo));
-   return( 0);
-}
-
-
-int   main( int argc, char *argv[])
-{
-   UIWindow        *window;
-   UIApplication   *app;
-
-
-   app = [UIApplication sharedInstance];
-
-   window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 400.0, 400.0)
-                      titleUTF8String:"Demo"
-                            styleMask:STYLEMASK|UIWindowStyleNoView];
-   assert( window);
-
-   [window setFrameCallback:display];
-   [window setFrameRate:FRAMERATE];
-   [window setFrameDelegate:[MulleUIPerf object]];
-   return( UIApplicationRunWindow( window));
-}
-
 
 
 //

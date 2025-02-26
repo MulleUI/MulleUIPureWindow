@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "ui-application-glue.inc"
+
 
 static void   drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, NSUInteger frameNumber)
 {
@@ -87,22 +89,31 @@ static void   drawColorwheel(NVGcontext* vg, float x, float y, float w, float h,
 }
 
 
-static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *_context)
+static BOOL   drawStuff( CGContext *context, CGRect canvas)
 {
-   CGContext  *context = _context;
-   CGFloat    diameter;
-   CGRect     canvas;
-   CGRect     rect;
-   CGPoint    a;
-   CGPoint    b;
+   CGFloat      diameter;
+   CGRect       rect;
+   CGPoint      a;
+   CGPoint      b;
+   NVGcontext   *vg;
 
-   canvas      = [layer canvas];
+   // black box
+   vg = CGContextGetNVGContext( context);
+
+   nvgBeginPath( vg);
+   nvgRect( vg, canvas.origin.x,
+                canvas.origin.y,
+                canvas.size.width,
+                canvas.size.height);
+   nvgFillColor( vg, CGColorMakeBlack());
+   nvgFill( vg);   
+
    rect        = UIEdgeInsetsInsetRect( canvas, UIEdgeInsetsMake( 50, 50, 50, 50));
    diameter    = CGFloatMinimum( CGRectGetWidth( rect), CGRectGetHeight( rect));
    rect.origin = CGSizeGetCenterPointInRect( CGSizeMake( diameter, diameter), rect);
    rect.size   = CGSizeMake( diameter, diameter);
 
-   drawColorwheel( CGContextGetNVGContext( context),
+   drawColorwheel( vg,
                    rect.origin.x,
                    rect.origin.y,
                    diameter,
@@ -123,26 +134,27 @@ static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *_context)
 }
 
 
-static void   setupSceneInView( UIView *contentPlane)
+
+static int   display( UIPureWindow *window,
+                      id <UIGraphicsContext> context,
+                      struct CGFrameInfo *frameInfo,
+                      UIWindowDisplayBits displayBits)
 {
-   UIView   *view;
-   CGRect   frame;
+   CGRect   canvas;
 
-   frame = [contentPlane contentRect];
-   frame = UIEdgeInsetsInsetRect( frame, UIEdgeInsetsMake( 40, 40, 40, 40));
+   canvas = CGFrameInfoGetContentRect( frameInfo);
+   canvas = CGRectInset( canvas, 40, 40);
 
-   view  = [[[UIView alloc] initWithFrame:frame] autorelease];
-   [view setBackgroundColor:CGColorMakeWithRGBA( 0.0, 0.0, 0.0, 1.0)];
-   [(CGGraphicsLayer *) [view layer] setDrawCallback:drawStuff];
-   [contentPlane addSubview:view];
+   drawStuff( (CGContext *) context, canvas);
+   return( 0);
 }
+
 
 
 int   main( int argc, char *argv[])
 {
-   UIWindow        *window;
+   UIPureWindow    *window;
    UIApplication   *app;
-   MulleUIPerf     *perf;
    CGFloat         rate;
    NSUInteger      swapInterval;
 
@@ -153,17 +165,22 @@ int   main( int argc, char *argv[])
 
    app = [UIApplication sharedInstance];
    {
-      window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
+      window = [UIPureWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
       assert( window);
 
-      [window setBackgroundColor:CGColorMakeWithRGBA( 1.0, 1.0, 1.0, 1.0)];
-
+      [window setBackgroundHexColor:CGHexColorWhite];
+      [window setFrameCallback:display];
       [window setFrameRate:UIWindowFrameRateSynced];
       [window setSwapInterval:swapInterval];
-      setupSceneInView( [window contentView]);
 
-      perf = [MulleUIPerf object];
-      [window setFrameDelegate:perf];
+#ifdef HAVE_MULLE_UI
+      {
+         MulleUIPerf   *perf;
+
+         perf = [MulleUIPerf object];
+         [window setFrameDelegate:perf];
+      }
+#endif
 
       [app addWindow:window];
    }

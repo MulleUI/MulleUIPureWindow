@@ -1,79 +1,56 @@
+
 //
-// This demo uses a frameCallback to draw stuff into an UIWindow without
-// UIViews. It's a little more convenient, than doing it with GLFWOSWindow
-// but not much. 
+// This demo shows how you can share a texture between two windows and
+// therefore also two contexts.
 //
-static CGColor  first_colors[ 3] =
+#define BLAU   CGColorMakeWithRGBA( 0.1, 0.1, 0.4, 1.0)
+#define GRUEN  CGColorMakeWithRGBA( 0.1, 0.4, 0.1, 1.0)
+#define WEISS  CGColorMakeWithRGBA( 1.0, 1.0, 1.0, 1.0)
+#define GRAU   CGColorMakeWithRGBA( 0.85, 0.85, 0.85, 0.75)
+
+
+static UIBitmapImage   *image;
+static CGImage         *cgImage;
+
+
+static void  drawPrettyBackground( CGContext *context, CGRect canvas)
 {
-   CGColorDataRed,
-   CGColorDataBlack,
-   CGColorDataYellow
-};
-
-
-static CGColor  second_colors[ 3] =
-{
-   CGColorDataWhite,
-   CGColorDataRed,
-   CGColorDataBlue
-};
-
-
-
-static CGColor  third_colors[ 3] =
-{
-   CGColorDataBlue,
-   CGColorDataGold,
-   CGColorDataRed
-};
-
-
-static void   drawStuff( CGContext *context, CGRect canvas)
-{
+   CGFloat             radius;
+   CGFloat             strokeWidth;
+   CGFont              *font;
+   CGRect              rect;
    struct NVGcontext   *vg;
-   NSUInteger          color_index;
-   NSUInteger          numberOfFrames;
 
-   numberOfFrames = [context numberOfFrames];
+   strokeWidth = 20.0;
+   radius      = (CGFloatMinimum( CGRectGetWidth( canvas),
+                                  CGRectGetHeight( canvas)) - strokeWidth) / 2;
 
-   MulleUICLog( "%tu canvas: %s, context: %#@", numberOfFrames,
-                                                CGRectUTF8String( canvas),
-                                                context);
-
-   vg                  = CGContextGetNVGContext( context);
-   canvas.size.height /= 3.0;
-   color_index         = numberOfFrames % 3;
-
-   // red stripe
+   // draw circle
+   vg = CGContextGetNVGContext( context);
    nvgBeginPath( vg);
-   nvgRect( vg, canvas.origin.x,
-                canvas.origin.y,
-                canvas.size.width,
-                canvas.size.height);
-   nvgFillColor( vg, first_colors[ color_index]);
-   nvgFill( vg);
+   {
+      nvgCircle( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), radius);
+      nvgStrokeColor( vg, GRAU);
+      nvgStrokeWidth( vg, strokeWidth);
+   }
+   nvgStroke( vg);
 
-   // white stripe
-   nvgBeginPath( vg);
-   nvgRect( vg, canvas.origin.x,
-                canvas.origin.y + canvas.size.height * 1,
-                canvas.size.width,
-                canvas.size.height);
-   nvgFillColor( vg, second_colors[ color_index]);
-   nvgFill( vg);
+   // draw text
+   // load in font first, this will be efficient on subsequent frames
+   font = [context fontWithNameUTF8String:"sans"];
+   [context useFont:font];
 
-   // blue stripe
-   nvgBeginPath( vg);
-   nvgRect( vg, canvas.origin.x,
-                canvas.origin.y + canvas.size.height * 2,
-                canvas.size.width,
-                canvas.size.height);
-   nvgFillColor( vg, third_colors[ color_index]);
-   nvgFill( vg);
+   nvgFontSize( vg, strokeWidth * 8.0);
+   nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+   nvgTextColor( vg, WEISS);
+   nvgTextBackgroundColor( vg, BLAU);
+   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), "1848", NULL);
 }
 
 
-static int   display( UIWindow *window,
+
+
+static int   display( UIPureWindow *window,
                       id <UIGraphicsContext> context,
                       struct CGFrameInfo *frameInfo,
                       UIWindowDisplayBits displayBits)
@@ -85,21 +62,67 @@ static int   display( UIWindow *window,
 
 int   main( int argc, char *argv[])
 {
-   UIWindow        *window;
+   GLFWOSWindow    *glfwWindow[ 2];
+   GLFWOSWindow    *sharingWindow;
    UIApplication   *app;
-
+   UIPureWindow     *window[ 2];
+   NSUInteger      i;
+   BOOL            closed[ 2];
+   CGRect          frame;
 
    app = [UIApplication sharedInstance];
+   {
+      image = (UIBitmapImage *) [UIImage imageWithContentsOfFileCString:"magpie-clipart-free-8.png"];
+      assert( image);
 
-   window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 400.0, 400.0)
-                      titleUTF8String:"Demo"
-                            styleMask:STYLEMASK|UIWindowStyleNoView];
-   assert( window);
+      // for testing sharing, we use singlebuffer (to obscure a current double
+      // buffer error)
+      for( i = 0; i < 2; i++)
+      {
+         frame          = CGRectMake( 0.0 + 500 * i, 100.0, 400.0, 300.0);
 
-   [window setFrameCallback:display];
-   [window setFrameRate:FRAMERATE];
-   [window setFrameDelegate:[MulleUIPerf object]];
-   return( UIApplicationRunWindow( window));
+         //
+         // if you set sharingWindow to nil always, the cockatoo won't show
+         // up in the right window
+         //
+         sharingWindow  = i ? glfwWindow[ 0] : nil;
+         glfwWindow[ i] = [[[GLFWOSWindow alloc] initWithFrame:frame
+                                                titleUTF8String:! i ? "Demo" : "Demo2"
+                                                      styleMask:GLFWOSWindowStyleMaskDefault //|UIWindowStyleSingleBuffer
+                                                  graphicsHints:0
+                                                  sharingWindow:sharingWindow] autorelease];
+
+         window[ i] = [[[UIPureWindow alloc] initWithOSWindow:glfwWindow[ i]
+                                            offscreenOSWindow:nil] autorelease];
+         assert( window[ i]);
+
+         [window[ i] setBackgroundHexColor:i ? CGHexColorBlue : CGHexColorGreen];
+         [window[ i] setFrameCallback:display];
+
+         [app addWindow:window[ i]];
+      }
+
+      // app should handle this...
+      closed[ 0] = NO;
+      closed[ 1] = NO;
+      while( ! closed[ 0] && ! closed[ 1])
+      {
+         if( ! closed[ 0])
+         {
+            closed[ 0] = ! [window[ 0] processOneFrame];
+            if( closed[ 0])
+               fprintf( stderr, "window[ 0] closed\n");
+         }
+
+         if( ! closed[ 1])
+         {
+            closed[ 1] = ! [window[ 1] processOneFrame];
+            if( closed[ 1])
+               fprintf( stderr, "window[ 1] closed\n");
+         }
+      }
+   }
+   return( [app terminate]);
 }
 
 

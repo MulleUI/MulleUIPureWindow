@@ -1,5 +1,7 @@
 #import "import.h"
 
+#include "ui-application-glue.inc"
+
 
 static void  usage( void)
 {
@@ -28,11 +30,10 @@ static void  usage( void)
 #define LARGE_FONT      32
 
 
-static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *context)
+static BOOL   drawStuff( CGContext *context, CGRect canvas)
 {
    auto char               buf[ 64];
    CGFont                  *font;
-   CGRect                  canvas;
    char                    *s;
    double                  frameRate;
    GLFWOSWindow            *osWindow;
@@ -40,18 +41,16 @@ static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *context)
    struct CGFrameInfo      *info;
    struct UIOSWindowInfo   windowInfo;
    struct NVGcontext       *vg;
-   UIWindow                *window;
+   UIPureWindow            *window;
 
    osWindow = [context OSWindow];
-   window   = (UIWindow *) [osWindow parentWindow];
+   window   = (UIPureWindow *) [osWindow parentWindow];
    assert( window);
-
-   canvas  = [layer canvas];
 
    vg = CGContextGetNVGContext( context);
 
    nvgTextColor( vg, CGColorMakeWhite());
-   nvgTextBackgroundColor( vg, CGColorMakeBlue());
+   nvgTextBackgroundColor( vg, CGColorMakeChartreuse());
    nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 
    font = [context fontWithNameUTF8String:"sans"];
@@ -115,48 +114,28 @@ static BOOL   drawStuff( CGGraphicsLayer *layer, CGContext *context)
 }
 
 
-
-//static UIEvent   *handleEvent( UIView *view, UIEvent *event)
-//{
-//   UIWindow   *window;
-//
-//   window = (UIWindow *) [view window];
-//   mulle_fprintf( stderr, "*** %@ : force refresh @ %.6f\n", window, mulle_absolutetime_now());
-//   [window setNeedsDisplay];
-//   return( nil);
-//}
-
-
-static void   setupSceneInWindow( UIWindow *window)
+static int   display( UIPureWindow *window,
+                      id <UIGraphicsContext> context,
+                      struct CGFrameInfo *frameInfo,
+                      UIWindowDisplayBits displayBits)
 {
-   UIView   *view;
-   CGRect   frame;
-   UIView   *contentView;
-
-   contentView = [window contentView];
-   frame       = [contentView contentRect];
-
-   view  = [UIView viewWithFrame:frame];
-   [view setBackgroundColor:CGColorMakeBlue()];
-   [(CGGraphicsLayer *) [view layer] setDrawCallback:(CGGraphicsLayerDrawCallback_t *) drawStuff];
-   [view setUserInteractionEnabled:YES];
-   [contentView addSubview:view];
+   drawStuff( (CGContext *) context, CGFrameInfoGetContentRect( frameInfo));
+   return( 0);
 }
 
 
 int   main( int argc, char *argv[])
 {
-   UIWindow        *window;
-   UIApplication   *app;
-   MulleUIPerf     *perf;
-   CGFloat         rate;
-   BOOL            limiter;
-   int             i;
-   NSUInteger      swapInterval;
-   BOOL            isRetained;
-   BOOL            isMainThread;
    BOOL            isDoubleBuffered;
+   BOOL            isMainThread;
+   BOOL            isRetained;
+   BOOL            limiter;
+   CGFloat         rate;
+   int             i;
    NSUInteger      styleMask;
+   NSUInteger      swapInterval;
+   UIApplication   *app;
+   UIPureWindow    *window;
 
    rate             = UIWindowFrameRateSynced;
    limiter          = NO;
@@ -221,13 +200,17 @@ int   main( int argc, char *argv[])
             styleMask |= UIWindowStyleRetainedOnMainThread;
 
       if( ! isDoubleBuffered)
+      {
          if( isRetained == NO && isMainThread == YES)
+         {
             styleMask |= UIWindowStyleSingleBuffer;
+         }
          else
          {
             mulle_fprintf( stderr, "single buffer only supported for volatile mode\n");
             return( 1);
          }
+      }
 
       styleMask |= UIWindowStyleResizable;
       //
@@ -241,21 +224,26 @@ int   main( int argc, char *argv[])
       mulle_fprintf( stderr, "retained                : %bld\n", isRetained);
       mulle_fprintf( stderr, "double buffer           : %bld\n", isDoubleBuffered);
 
-      window = [UIWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800, 600)
-                         titleUTF8String:"Demo"
-                               styleMask:styleMask];
+      window = [UIPureWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800, 600)
+                             titleUTF8String:"Demo"
+                                   styleMask:styleMask];
 
-      setupSceneInWindow( window);
-      [window setBackgroundColor:CGColorMakeChartreuse()]; // should not show, just for debug
+      [window setBackgroundHexColor:0xFF0000FF];
       [window setFrameRate:rate];
       [window setFrameRateLimiter:limiter];
+      [window setFrameCallback:display];
       [window setSwapInterval:swapInterval];
       // grab mouse motion events here
 //      [window setEventCallback:handleEvent];
 
-      perf = [MulleUIPerf object];
-      [window setFrameDelegate:perf];
+#ifdef HAVE_MULLE_UI
+      {
+         MulleUIPerf   *perf;
 
+         perf = [MulleUIPerf object];
+         [window setFrameDelegate:perf];
+      }
+#endif
       [app addWindow:window];
    }
 
