@@ -19,8 +19,8 @@ src/reflect
 # contents selected with patternfile ??-header--private-generated-headers
 #
 set( PRIVATE_GENERATED_HEADERS
-src/reflect/_MulleUIWindow-import-private.h
-src/reflect/_MulleUIWindow-include-private.h
+src/reflect/_MulleUIPureWindow-import-private.h
+src/reflect/_MulleUIPureWindow-include-private.h
 )
 
 #
@@ -35,17 +35,17 @@ src/include-private.h
 # contents selected with patternfile ??-header--private-headers
 #
 set( PRIVATE_HEADERS
-src/UIWindow+DebugPrivate.h
+src/UIPureWindow+DebugPrivate.h
 )
 
 #
 # contents selected with patternfile ??-header--public-generated-headers
 #
 set( PUBLIC_GENERATED_HEADERS
-src/reflect/_MulleUIWindow-export.h
-src/reflect/_MulleUIWindow-import.h
-src/reflect/_MulleUIWindow-include.h
-src/reflect/_MulleUIWindow-provide.h
+src/reflect/_MulleUIPureWindow-export.h
+src/reflect/_MulleUIPureWindow-import.h
+src/reflect/_MulleUIPureWindow-include.h
+src/reflect/_MulleUIPureWindow-provide.h
 )
 
 #
@@ -60,30 +60,20 @@ src/include.h
 # contents selected with patternfile ??-header--public-headers
 #
 set( PUBLIC_HEADERS
-src/CGFrameInfo+UTF8String.h
-src/MulleObjCLoader+MulleUIWindow.h
-src/MulleUIWindow.h
-src/UIFont.h
-src/UIPasteboard.h
-src/UITrackingArea.h
-src/UIView+CAAnimation.h
-src/UIView+RenderQueue.h
-src/UIView+UIFirstResponderSearch.h
-src/UIView+UIFirstResponder.h
-src/UIView+UITrackingArea.h
-src/UIView+UIWindow.h
-src/UIWindow+FrameInfo.h
-src/UIWindow+InvocationQueue.h
-src/UIWindow+Layout.h
-src/UIWindow+NSTimer.h
-src/UIWindow+OneFrame.h
-src/UIWindow+RenderQueue.h
-src/UIWindow+Thread.h
-src/UIWindow+UIEvent.h
-src/UIWindow+UIPasteboard.h
-src/UIWindow+UIResponder.h
-src/UIWindow+UITrackingArea.h
-src/UIWindow+UIWindow.h
-src/UIWindow.h
+src/MulleObjCLoader+MulleUIPureWindow.h
+src/MulleUIPureWindow.h
+src/UIPureWindow+FrameInfo.h
+src/UIPureWindow+Frame.h
+src/UIPureWindow+InvocationQueue.h
+src/UIPureWindow+NSTimer.h
+src/UIPureWindow+OneFrame.h
+src/UIPureWindow+Render.h
+src/UIPureWindow+ThreadRefresh.h
+src/UIPureWindow+Thread.h
+src/UIPureWindow+UIEvent.h
+src/UIPureWindow+UIGraphicsContext.h
+src/UIPureWindow+UIResponder.h
+src/UIPureWindow+UIWindow.h
+src/UIPureWindow.h
 )
 

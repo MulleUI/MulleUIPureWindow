@@ -20,7 +20,7 @@
    sourcetree, then you don't need it.
  */
 
-#import "_MulleUIWindow-import.h"
+#import "_MulleUIPureWindow-import.h"
 #ifndef MULLE_UI_CORE_EXTERN_GLOBAL
 # define MULLE_UI_CORE_EXTERN_GLOBAL MULLE_C_EXTERN_GLOBAL
 #endif
