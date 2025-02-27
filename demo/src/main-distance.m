@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 
-#import "import.h"
+#import "import-private.h"
+#import "MulleUIPureWindow.h"
 
 #include <math.h>
 

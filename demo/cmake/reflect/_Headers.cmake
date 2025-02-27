@@ -11,24 +11,38 @@ endif()
 # contents are derived from the file locations
 
 set( INCLUDE_DIRS
-src
 src/reflect
+src/generic
+src
+../src/reflect
+../src
 )
 
 #
 # contents selected with patternfile ??-header--private-generated-headers
 #
 set( PRIVATE_GENERATED_HEADERS
-src/reflect/_demos-import-private.h
-src/reflect/_demos-include-private.h
+../src/reflect/_MulleUIPureWindow-import-private.h
+../src/reflect/_MulleUIPureWindow-include-private.h
+src/reflect/_demo-import-private.h
+src/reflect/_demo-include-private.h
 )
 
 #
 # contents selected with patternfile ??-header--private-generic-headers
 #
 set( PRIVATE_GENERIC_HEADERS
-src/import-private.h
-src/include-private.h
+src/generic/import-private.h
+src/generic/include-private.h
+../src/import-private.h
+../src/include-private.h
+)
+
+#
+# contents selected with patternfile ??-header--private-headers
+#
+set( PRIVATE_HEADERS
+../src/UIPureWindow+DebugPrivate.h
 )
 
 #
@@ -45,25 +59,45 @@ src/ui-application-glue.inc
 # contents selected with patternfile ??-header--public-generated-headers
 #
 set( PUBLIC_GENERATED_HEADERS
-src/reflect/_demos-export.h
-src/reflect/_demos-import.h
-src/reflect/_demos-include.h
-src/reflect/_demos-provide.h
+../src/reflect/_MulleUIPureWindow-export.h
+../src/reflect/_MulleUIPureWindow-import.h
+../src/reflect/_MulleUIPureWindow-include.h
+../src/reflect/_MulleUIPureWindow-provide.h
+src/reflect/_demo-export.h
+src/reflect/_demo-import.h
+src/reflect/_demo-include.h
+src/reflect/_demo-provide.h
 )
 
 #
 # contents selected with patternfile ??-header--public-generic-headers
 #
 set( PUBLIC_GENERIC_HEADERS
-src/import.h
-src/include.h
+src/generic/import.h
+src/generic/include.h
+../src/import.h
+../src/include.h
 )
 
 #
 # contents selected with patternfile ??-header--public-headers
 #
 set( PUBLIC_HEADERS
-src/demos-version.h
-src/reflect/_demos-include-public.h
+../src/MulleObjCLoader+MulleUIPureWindow.h
+../src/MulleUIPureWindow.h
+../src/UIPureWindow+FrameInfo.h
+../src/UIPureWindow+Frame.h
+../src/UIPureWindow+InvocationQueue.h
+../src/UIPureWindow+NSTimer.h
+../src/UIPureWindow+OneFrame.h
+../src/UIPureWindow+Render.h
+../src/UIPureWindow+ThreadRefresh.h
+../src/UIPureWindow+Thread.h
+../src/UIPureWindow+UIEvent.h
+../src/UIPureWindow+UIGraphicsContext.h
+../src/UIPureWindow+UIResponder.h
+../src/UIPureWindow+UIWindow.h
+../src/UIPureWindow.h
+src/demo-version.h
 )
 

@@ -1,4 +1,5 @@
-#import "import.h"
+#import "import-private.h"
+#import "MulleUIPureWindow.h"
 
 #include "ui-application-glue.inc"
 
@@ -228,7 +229,7 @@ int   main( int argc, char *argv[])
                              titleUTF8String:"Demo"
                                    styleMask:styleMask];
 
-      [window setBackgroundHexColor:0xFF0000FF];
+      [window setBackgroundHexColor:0x7F00EEFF];
       [window setFrameRate:rate];
       [window setFrameRateLimiter:limiter];
       [window setFrameCallback:display];

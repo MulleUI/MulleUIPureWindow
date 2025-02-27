@@ -1,98 +1,38 @@
-# MulleUICore demos
+# demo
 
-MulleUICore introduces UIWindow, UIView and UIEvent.
+#### 🛸 demo does something
 
-
-#### autoresizingmask
-
-The auto resizing mask in action. Small UIViews are placed into each corner
-and stay there, when the window gets resized. They don't scale though
-
-![](autoresizingmask.png)
-
-[source](src/autoresizingmask.m)
+It can be useful, sometimes...
 
 
-#### candycrash
+## mulle-sde
 
-Pretty demo just being pretty.
+This is a [mulle-sde](//github.com/mulle-sde) project. mulle-sde combines
+package management with cross-platform builds via **cmake**:
 
-![](candycrash.png)
-
-[source](src/main-candycrash.m)
-
-
-#### demo + demo-resizable
-
-Just some super-basic drawing code. It's like the first demo to code
-for MulleUICore:
-
-![](demo.png)
-
-[source](src/main-demo.m)
-[source](src/main-demo-resizable.m)
-
-#### fps + swapinterval
-
-The fps demo allows the framerate to be set via an argument.
-
-```
-Usage: fps <refresh rate>
-
-Refresh rate can be a floating point refresh rate in HZ or one of the
-following words:
-   synced   : synced to (primary) monitor refresh rate
-   unsynced : runs as fast as possible
-   async    : waits for events (like mouse movements)
-```
-
-![](fps-demo.png)
-
-[source](src/main-fps.m)
-
-Swapinterval looks like fps, but here you can give the swapinterval on the
-commandline (0-3).
-
-[source](src/main-swapinterval.m)
+| Action  | Command                               | Description                         |
+|---------|---------------------------------------|-------------------------------------|
+| Build   | `mulle-sde craft [--release/--debug]` | Build into a local `kitchen` folder |
+| Install | `mulle-sde install --prefix /usr/local https://github.com/<|GITHUB_USER|>/demo.git` | Like `make install`         |
 
 
-
-#### star
-
-Another pretty demo just being pretty.
-
-![](star.gif)
-
-[source](src/main-starg.m)
+### Manual Installation
 
 
-#### glfw-sharing
+Install the requirements:
 
-Share a GPU texture between three windows.
+| Requirements                                      | Description             |
+|---------------------------------------------------|-------------------------|
+| [some-requirement](//github.com/some/requirement) | Some requirement        |
 
-![](glfw-sharing.png)
-
-[source](src/main-glfw-sharing.m)
-
-
-#### glfw-texture
-
-Small GLUT demo transformed into a GLFWOSWindow with minimal effort.
-A small texture is mapped onto a spinning rectangle.
-
-![](glfw-texture.png)
-
-[source](src/main-glfw-texture.m)
+Install into `/usr/local`:
 
 
-
-## Build
-
-This is a [mulle-sde](https://mulle-sde.github.io/) project.
-
-It comes with its own virtual environment and list of dependencies.
-To fetch and build everything say:
-
-```
-mulle-sde craft --release
+``` sh
+cmake -B build \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DCMAKE_PREFIX_PATH=/usr/local \
+      -DCMAKE_BUILD_TYPE=Release &&
+cmake --build build --config Release &&
+cmake --install build --config Release
 ```

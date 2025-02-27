@@ -1,14 +1,18 @@
-# Header files in `reflect`
+# reflect
+
+The contents of this folder are not editable. Changes will be lost.
+
+## Header files in `reflect`
 
 
-### `demos-import.h`
+### `demo-import.h`
 
 Objective-C dependency headers that this project uses are imported via
 this file. Dependencies are managed with `mulle-sde dependency`
 These dependencies are also available to consumers of this library.
 
 
-### `demos-include.h`
+### `demo-include.h`
 
 C dependency and library headers that this project uses are imported via
 this file. Dependencies are managed with `mulle-sde dependency`.
@@ -16,13 +20,13 @@ Libraries with `mulle-sde library`.
 These dependencies are also available to consumers of this library.
 
 
-### `demos-import-private.h`
+### `demo-import-private.h`
 
 Objective-C dependency headers that this project uses privately are imported
 via this file.
 
 
-### `demos-include-private.h`
+### `demo-include-private.h`
 
 C dependency and library headers that this project uses privately are imported
 via this file.

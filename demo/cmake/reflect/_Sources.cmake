@@ -11,15 +11,38 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
+../src/UIPureWindow+CGGeometry.m
+../src/UIPureWindow+FrameInfo.m
+../src/UIPureWindow+Frame.m
+../src/UIPureWindow+InvocationQueue.m
+../src/UIPureWindow+NSTimer.m
+../src/UIPureWindow+OneFrame.m
+../src/UIPureWindow+Render.m
+../src/UIPureWindow+ThreadRefresh.m
+../src/UIPureWindow+Thread.m
+../src/UIPureWindow+UIEvent.m
+../src/UIPureWindow+UIGraphicsContext.m
+../src/UIPureWindow+UIResponder.m
+../src/UIPureWindow+UIWindow.m
+../src/UIPureWindow.m
 src/main-accumulate.m
 src/main-backend-retained.m
 src/main-backend-singlethread-retained.m
 src/main-backend-volatile.m
 src/main-distance.m
+src/main-fps.m
 src/main-frames.m
 src/main-gamepad-monitor.m
+src/main-mouse-signals.m
 src/main-oswindow-draw-simple.m
 src/main-shared-framebuffer.m
 src/main-shared-image.m
 src/main-swapinterval.m
+)
+
+#
+# contents selected with patternfile ??-source--stage2-sources
+#
+set( STAGE2_SOURCES
+../src/MulleObjCLoader+MulleUIPureWindow.m
 )
