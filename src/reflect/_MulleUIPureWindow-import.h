@@ -27,21 +27,6 @@
 #import <MulleUIApplication/MulleUIApplication.h>   // MulleUIApplication
 
 // To remove the following dependency (headers and library) completely:
-//   `mulle-sde dependency remove MulleCA`
-// (Use 129AA2E7-CBAC-4C25-9860-B7E28AAAE3ED instead of MulleCA, if there are duplicate entries)
-//
-// You can tweak the following #import with these commands:
-//    remove #import      : `mulle-sde dependency mark MulleCA no-header`
-//    rename              : `mulle-sde dependency|library set MulleCA include whatever.h`
-//    reorder             : `mulle-sde dependency move MulleCA <up|down>`
-//    toggle #import      : `mulle-sde dependency mark MulleCA [no-]import`
-//    toggle public       : `mulle-sde dependency mark MulleCA [no-]public`
-//    toggle optional     : `mulle-sde dependency mark MulleCA [no-]require`
-//    remove for platform : `mulle-sde dependency mark MulleCA no-platform-<uname>`
-//        (use `mulle-sourcetree-to-c --unames` to list known values)
-#import <MulleCA/MulleCA.h>   // MulleCA
-
-// To remove the following dependency (headers and library) completely:
 //   `mulle-sde dependency remove MulleInvocationQueue`
 // (Use C260734E-5ADF-4DF6-B1B5-0AEFC5D2A9D4 instead of MulleInvocationQueue, if there are duplicate entries)
 //

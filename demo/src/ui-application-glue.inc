@@ -1,3 +1,6 @@
+//
+// necessary glue code, as long as you don't have MulleUIOS
+//
 @implementation UIPureWindow( UIApplicationGlue)
 
 static struct

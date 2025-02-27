@@ -219,10 +219,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 - (void) _init
 {
    _asyncAnimationRate   = 1.0 / 60.0;
-   _loadDefaultFont      = YES;
    _oldSwapInterval      = NSIntegerMax;
    _refreshContentMode   = CGContentModeTopLeft;
-   _trackingAreasEnabled = YES;
 }
 
 
@@ -323,7 +321,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    // setup initial values while still single threaded
    [self getFrameInfo:&info];
-   _currentWindowInfo  = info.window;
+   // _currentWindowInfo  = info.window;
    _previousWindowInfo = info.window;
 
    self = [self _initWithFrame:[osWindow os_windowFrame]];

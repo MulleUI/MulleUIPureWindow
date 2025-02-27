@@ -1,7 +1,6 @@
 //
 // This demo uses a frameCallback to draw stuff into an UIWindow without
-// UIViews. It's a little more convenient, than doing it with GLFWOSWindow
-// but not much. 
+// UIViews.
 //
 static CGColor  first_colors[ 3] =
 {

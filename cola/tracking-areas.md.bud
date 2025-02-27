@@ -1,9 +1,0 @@
-## Tracking Areas
-
-Tracking areas are attached to their UIView. They are called upon by the
-UIWindow on demand. 
-
-So add your UIView to the trackingViews to a window, and then wait for getting 
-called to provide the rectangles.
- 
-

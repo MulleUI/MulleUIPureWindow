@@ -1,75 +1,24 @@
-# Introduction to MulleUIWindow Framework
+## MulleUIPureWindow: The Crystalline Canvas of Your Digital Domain
 
-The MulleUIWindow framework offers a robust and flexible approach to building user interfaces. It provides a hierarchical structure that elegantly separates concerns between drawing, event handling, and overall management. Let's dive into the key components and their relationships.
+Welcome, intrepid code explorers, to the magnificent realm of MulleUIPureWindow - the jewel in the crown of the MulleUICore collection! This library stands as a testament to elegant window management, providing developers with the most pristine and unadulterated window abstraction layer one could possibly imagine.
 
-## UIWindow: The Grand Orchestrator
+### A Windowed Wonderland
 
-At the pinnacle of our UI hierarchy stands UIWindow. Think of it as the conductor of an orchestra, coordinating all the visual elements of your application. UIWindow is responsible for:
+MulleUIPureWindow dances gracefully at the intersection of simplicity and power, offering a "pure" approach to window management that remains blissfully unencumbered by the chaotic whims of platform-specific peculiarities. Like a master glassblower crafting the perfect pane, this library shapes your application's viewport with precision and artistry.
 
-- Managing the overall screen real estate
-- Coordinating the display of content
-- Serving as the root container for your application's user interface
+Within its meticulously crafted codebase, you'll discover a treasure trove of window manipulation capabilities - from the humble act of creation to the grand gesture of resizing, all executed with the refined elegance of a digital ballet.
 
-## UIView: The Interactive Canvas
+### Pure as Mountain Spring Water
+The "Pure" in MulleUIPureWindow isn't mere marketing fluff - it's a philosophical commitment! This library steadfastly adheres to functional purity principles where possible, minimizing side effects and maximizing predictability. Your windows won't mysteriously change state when you're not looking; they'll behave with the mathematical certainty of well-defined functions.
 
-UIView objects are the true workhorses of your user interface. They're like talented musicians in our orchestra, each playing a crucial role. UIViews are responsible for:
+### Features That Flutter the Heart
 
-- Handling user interactions
-- Responding to events
-- Managing the layout of their subviews
-- Interpreting user input
-- Updating the visual representation based on user actions
+* Crystalline Abstraction Layer - Separating your application logic from the gritty details of window management
+* Pixel-Perfect Positioning - Because a window misplaced is an opportunity missed
+* Responsive Resizing Routines - Adapting to user needs faster than a chameleon on a disco floor
+* Event Handling Extraordinaire - Capturing user interactions with the enthusiastic precision of a butterfly collector
+* Cross-Platform Compatibility - Because your windows should feel at home on any operating system they visit
 
-UIViews form the backbone of your application's interactive elements, ensuring a responsive and engaging user experience.
+MulleUIPureWindow isn't just a library; it's an experience - a journey through the looking glass into a world where windows aren't just rectangular spaces on a screen, but portals to possibility. Whether you're crafting a humble utility or an expansive digital ecosystem, this library stands ready to frame your vision with unparalleled clarity and style.
 
-## CALayer (or id <UILayer>): The Visual Virtuoso
-
-The CALayer (or id <UILayer>) protocol is our framework's artistic specialist. It's solely dedicated to drawing and visual representation, much like a master painter focused entirely on creating stunning visuals. Key aspects include:
-
-- Exclusive focus on drawing and rendering
-- No handling of user interactions or event interpretation
-- Efficient rendering and animation capabilities
-
-This separation of concerns allows for a more streamlined and performant visual layer.
-
-## Key Architectural Points
-
-1. **Clear Separation of Responsibilities**:
-   - UIView: Interaction and layout
-   - CALayer: Drawing and animation
-
-2. **Controller as the Maestro**:
-   Controllers act as managers for one or multiple views, much like a conductor guiding different sections of an orchestra. They coordinate behavior and data flow, ensuring all parts work in harmony.
-
-3. **Innovative Process Design**:
-   The animation and drawing of layers are cleverly designed to potentially run in a separate process. This architectural choice:
-   - Limits or eliminates callbacks to view code
-   - Enhances overall performance
-   - Enables smoother animations
-   - Provides a clear boundary between visual rendering and logical operations
-
-## The Symphony of UI Components
-
-By orchestrating these elements - UIWindow, UIView, and CALayer - the MulleUIWindow framework creates a symphony of UI components. This structure offers developers a powerful and flexible toolkit for crafting complex, efficient, and visually appealing user interfaces.
-
-The framework's design philosophy emphasizes clarity, performance, and separation of concerns, allowing developers to create harmonious and responsive applications with ease.
-
-- UIWindow (at the top)
-  |
-  +-- Controller 1
-  |   |
-  |   +-- UIView 1
-  |   |   |
-  |   |   +-- CALayer 1
-  |   |
-  |   +-- UIView 2
-  |       |
-  |       +-- CALayer 2
-  |       +-- CALayer 3
-  |       +-- CALayer 4
-  |
-  +-- Controller 2
-      |
-      +-- UIView 3
-          |
-          +-- CALayer 5
+So go forth, brave developer! Let MulleUIPureWindow be the canvas upon which you paint your digital masterpiece!brave developer! Let MulleUIPureWindow be the canvas upon which you paint your digital masterpiece!
