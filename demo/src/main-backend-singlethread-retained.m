@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 
 #import "import-private.h"
+#import "MulleUIPureWindow.h"
 
 #define STYLEMASK   (UIWindowStyleMaskDefault|UIWindowStyleRetainedOnMainThread)
 #define FRAMERATE   0.5

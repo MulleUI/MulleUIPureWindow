@@ -86,8 +86,8 @@
 - (void) clearFrame:(struct CGFrameInfo *) info
     graphicsContext:(id <UIGraphicsContext>) context
 {
-   BOOL   doClearFramebufferColor;
-
+   BOOL         doClearFramebufferColor;
+   CGHexColor   backgroundHexColor;
    if( _willClearCallback && ! (*_willClearCallback)( self, context, info))
       return;
 
@@ -106,7 +106,10 @@
    // we have to clear some of the framebuffer for nanovg anyway
    // like the stencil bits
    if( doClearFramebufferColor)
-      [context clearFramebufferWithHexColor:[self backgroundHexColor]];
+   {
+      backgroundHexColor = [self backgroundHexColor];
+      [context clearFramebufferWithHexColor:backgroundHexColor];
+   }
    else
       [context clearFramebufferNoColor];
 

@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 
 #import "import-private.h"
+#import "MulleUIPureWindow.h"
 
 //
 // MEMO: this demo shows how to customize the OSWindow class on the fly

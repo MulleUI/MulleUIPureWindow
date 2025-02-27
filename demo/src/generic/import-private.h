@@ -3,23 +3,22 @@
  * DONT:  #import this files in headers
  *        #include this file anywhere
  *
- * template: project-oneshot/all/PROJECT_SOURCE_DIR/import-private.h
- * vendor/extension: mulle-objc/objc
- *
  * This is a central include file to not expose includes to consumers of
  * this library. It must not be imported by .h files, but by .m and
  * .aam files only.
 */
 
 /*
- * Get C includes first, id any
- *
- * #ifdef __has_include
- * # if __has_include( "include-private.h")
- * #   include "include-private.h"
- * # endif
- * #endif
+ * Get C includes first, if any. As include-private.h is a generic name,
+ * testing could pick up the wrong one, so we test for inferior header
+ * that we assume to be there if "include-private.h" were to exist.
  */
+#ifdef __has_include
+# if __has_include( "_demo-include-private.h")
+#   include "include-private.h"
+# endif
+#endif
+
 
 #import "import.h"
 
@@ -27,6 +26,7 @@
    Here the prefix is harmless and serves disambiguation. If you have no
    sourcetree, then you don't need it.
  */
-#import "_demos-import-private.h"
+#import "_demo-import-private.h"
 
 /* You can add some more import statements here */
+#import "../src/generic/import-private.h"

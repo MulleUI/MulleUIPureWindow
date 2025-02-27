@@ -1,4 +1,5 @@
-#import "import.h"
+#import "import-private.h"
+#import "MulleUIPureWindow.h"
 
 #include "ui-application-glue.inc"
 
