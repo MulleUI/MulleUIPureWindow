@@ -1,27 +1,14 @@
 #import "import.h"
 
-// TODO: remove UIView from UIWindow. Let UIWindow base on UIApplication and
-//       UIView then be based on UIWindow.
-//
-//       So a UIViewlessWindow in its pristine state, would just accept event
-//       and do nothing with them (pretty much). Rendering would be by callback.
-//       Trackingareas would just be flat on the window surface.
-//
-//       This would be easier for testing and for very simple code, that
-//       doesn't need layouting at all.
-
+// MEMO: technically MulleUIPureWindow could be part of MulleUIApplication.
+//       It's a separate project, because of size and the smaller testing
+//       scope.
 
 
 // A "frame" is the timespan taken to fill the contents of the "framebuffer"
 // that will then be displayed by swapBuffers. It doesn't contain the time
 // needed to handle events.
-//
-// In UIWindow a "frame" usually does, "layout", "animation", "rendering" in
-// this sequence.
-//
 #define MULLE_UI_PURE_WINDOW_THREAD_ONLY    MULLE_OBJC_THREADSAFE_METHOD
-
-struct CGFrameInfo;
 
 @class GLFWOSWindow;  // move to private some time
 @class UIPasteboard;
@@ -302,8 +289,6 @@ struct MulleClickDragDifferentiator
 
    NSUInteger                      _cursorGenerationCount;
 
-//   struct UIWindowRenderInfo       _renderInfo;
-
    // these values are only accessible to the window thread
 @protected
    struct UIWindowFrameStatistics  _windowThreadStatistics;
@@ -322,15 +307,6 @@ struct MulleClickDragDifferentiator
 
    // only used to create UIEventTypeWindowFramebufferGeometry events
    struct CGWindowInfo             _previousWindowInfo;
-   struct CGWindowInfo             _currentWindowInfo;
-
-   // used by LED display... so ugly
-   NSUInteger                      _debugDisplayBits;
-   NSUInteger                      _debugReturnBits;
-
-   // used for showing menus
-   char                            _oldUserInteractionEnabled;
-   char                            _oldMenuPlaneHidden;
 }
 
 //
@@ -351,8 +327,7 @@ struct MulleClickDragDifferentiator
 @property( assign, readonly) id <UIGraphicsContext>  renderGraphicsContext;
 
 @property( retain) id                              userInfo;
-// TODO: pasteboard is a global resource and is on Application ?
-@property( retain) UIPasteboard                    *pasteboard;
+
 
 // get a cursor from UIApplication cursorWithStandardShape:
 // NULL is the default arrow. this is the current cursor
@@ -360,8 +335,6 @@ struct MulleClickDragDifferentiator
 
 // cursor to use, when no cursor is set 
 @property( assign) UICursor                        *defaultCursor;
-
-@property( assign, getter=areTrackingAreasEnabled) BOOL   trackingAreasEnabled;
 
 // changed by UIWindow to enable/disable mouse events
 @property( assign) NSUInteger                      discardEventsMask    MULLE_OBJC_THREADSAFE_PROPERTY;
@@ -558,7 +531,6 @@ struct MulleClickDragDifferentiator
 
 // for performance monitoring
 - (struct mulle_structqueue *) extractProfileQueue;
-
 
 @end
 

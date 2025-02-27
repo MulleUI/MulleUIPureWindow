@@ -1,0 +1,41 @@
+{
+   project =
+   {
+      description="👁️‍🗨️ MulleUIPureWindow - Windows without Views";
+      domain="github";
+      language="c";
+      dialect="objc";
+      name="MulleUIPureWindow";
+      user="MulleUI";
+      repo="MulleUIPureWindow";
+      homepage="https://github.com/MulleUI/MulleUICore";
+      license="UNLICENSED";
+   };
+   dependencies =
+   (
+      {
+         description="𝄢 MulleUIApplication provides abstract classes like UIApplication and UIEvent";
+         domain="github";
+         name="MulleUIApplication";
+         repo="MulleUIApplication";
+         url="https://github.com/MulleUI/MulleUIApplication";
+         user="MulleUI";
+      },
+      {
+         description="🚶🚶🚶 MulleInvocationQueue runs methods in a separate thread";
+         domain="github";
+         name="MulleInvocationQueue";
+         repo="MulleInvocationQueue";
+         url="https://github.com/MulleFoundation/MulleInvocationQueue";
+         user="MulleFoundation";
+      },
+      {
+         description="📒 Lists mulle-objc runtime information contained in executables.";
+         domain="github";
+         name="mulle-objc-list";
+         repo="mulle-objc-list";
+         url="https://github.com/mulle-objc/mulle-objc-list";
+         user="mulle-objc";
+      }
+   );
+}

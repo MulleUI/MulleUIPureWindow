@@ -1,16 +1,19 @@
-
-# 🛸 MulleUIWindow
-
-#### 🛸 MulleUIWindow provides UIWindow and extends UIView functionality
-
 ![](mulle-tiny-logo-255x256.png)
 
-See live on stream how it progresses: [https://www.twitch.tv/mulle_kybernetik_tv/](). Every Wednesday at 14:00-18:00 CEST.
+The MulleUIPureWindow is a window with a framebuffer and a drawing context. The drawing context is
+abstract, though it is usually a `CGContext` from [MulleGraphics](//github.com/MulleUI/MulleGraphics),
+which provides `nanovg` and `OpenGL`.
 
+MulleUIPureWindow provides the "retained" window mode, that is based on an invisible window
+being used to construct the framebuffer in a separate thread, which is then displayed in the
+visible window on the main thread.
 
-![](demos/candycrash.png)
+MulleUIPureWindow handles events. It knows about UIResponder and will forward events along
+the responder chain.
 
-There is no actual "drawing" code in MulleUIWindow. Use "MulleGraphics" for
-drawing. See "MulleUIControl" for widgets.
+MulleUIPureWindow is also notable, for what it does not do. It does not have a UIView hierarchy. In fact
+it does not know about UIViews at all. It has no layout system and it has no animation system. It
+has no support for UITrackingAreas.
 
-
+There is no actual "drawing" code in MulleUIPureWindow. Use "MulleGraphics" for
+drawing.
