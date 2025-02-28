@@ -1,0 +1,30 @@
+UIPureWindow creation: OK
+OSWindow creation: OK
+Context creation: OK
+Initial frame count: 0
+Will render frame callback called
+Frame callback called (#1)
+Did render frame callback called
+Swap buffers callback called (immediately: NO)
+Frame callback was invoked
+Frame count after render: 1
+Frame rendering: OK
+Will render frame callback called
+Frame callback called (#2)
+Did render frame callback called
+Swap buffers callback called (immediately: NO)
+Process one frame result: continue
+Will render frame callback called
+Frame callback called (#3)
+Did render frame callback called
+Swap buffers callback called (immediately: NO)
+Will render frame callback called
+Frame callback called (#4)
+Did render frame callback called
+Swap buffers callback called (immediately: NO)
+Will render frame callback called
+Frame callback called (#5)
+Did render frame callback called
+Swap buffers callback called (immediately: NO)
+After multiple renders, frame count: 5
+Frame callback count: 5

@@ -4,6 +4,7 @@
 
 #import "UIPureWindow+DebugPrivate.h"
 #import "UIPureWindow+FrameInfo.h"
+#import "UIPureWindow+Render.h"
 #import "UIPureWindow+Thread.h"
 #import "UIPureWindow+NSTimer.h"
 #import "UIPureWindow+InvocationQueue.h"
@@ -80,6 +81,8 @@ static void   MulleObjCAtomicPointerSetBit( mulle_atomic_pointer_t *pointer, uin
 {
    uintptr_t   old;
    uintptr_t   value;
+
+   assert( mulle_c_popcount( bit) == 1);
 
    do
    {
@@ -218,9 +221,19 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (void) _init
 {
-   _asyncAnimationRate   = 1.0 / 60.0;
-   _oldSwapInterval      = NSIntegerMax;
-   _refreshContentMode   = CGContentModeTopLeft;
+   _asyncAnimationRate      = 1.0 / 60.0;
+   _oldSwapInterval         = NSIntegerMax;
+   _refreshContentMode      = CGContentModeTopLeft;
+
+   _willRenderFrameCallback = UIWindowDefaultWillRenderFrameCallback;
+   _rawFrameCallback        = UIWindowDefaultRawFrameCallback;
+   _didRenderFrameCallback  = UIWindowDefaultDidRenderFrameCallback;
+
+#ifdef UIWINDOW_DEBUGGING_FLAGS
+   _debuggingFlags = UIWINDOW_DEBUGGING_FLAGS;
+#else
+   _debuggingFlags = Self._debuggingFlags;
+#endif
 }
 
 
@@ -230,22 +243,15 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    self = [super init];
    if( ! self)
-   {
-      [self release];
       return( self);
-   }
+
+   [self _init];
 
    // this is done by startThread
    // _windowPropertyLock = [NSLock new];
    _frame              = frame;
    // not framebuffer size, the bounds need to stay in "user" render coordinates
    _bounds.size        = frame.size;
-
-#ifdef UIWINDOW_DEBUGGING_FLAGS
-   _debuggingFlags = UIWINDOW_DEBUGGING_FLAGS;
-#else
-   _debuggingFlags = Self._debuggingFlags;
-#endif
 
    if( _debuggingFlags)
       MulleUILog( "_initWithFrame");
@@ -259,21 +265,11 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    // initially dirty with renderer 1, renderer go!
    _mulle_atomic_pointer_nonatomic_write( &_needsRefresh, (void *) 1);
 
-
    // don't use ~0 it traces ugly
    // we could probably use UIWindowDisplayBitsInititalState here
-   displayBits = UIWindowDisplayNeedsLayout
-                 | UIWindowDisplayNeedsAnimation
-                 | UIWindowDisplayNeedsRedraw;
+   displayBits = UIWindowDisplayNeedsRedraw;
    _mulle_atomic_pointer_nonatomic_write( &_needsDisplay, (void *) displayBits);
 
-
-   // this calls _init on all categories, protocolclasses and classes from
-   // UIWindow up
-   MulleObjCObjectSpamAncestorToInheritor( self,
-                                           @selector( _init),
-                                           self,
-                                           [[UIPureWindow class] superclass]);
 
    UIInputStateInit( &_inputState, CGPointMake( -1, -1), 0, 0);
 
@@ -285,6 +281,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    ui_window_pointer_fifo_init( &_timerQueue);
 
    [self _initInvocationQueues];
+   [self _initResourceStorage:&_resourceStorage];
 
    return( self);
 }
@@ -575,6 +572,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    // now done locally in _dealloc
    //_mulle__pointerset_done( &_layoutedViews, MulleObjCInstanceGetAllocator( self));
 
+   [self _doneResourceStorage:&_resourceStorage];
    [self _doneInvocationQueues];
 
    ui_window_pointer_fifo_done( &_timerQueue);
@@ -597,6 +595,10 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    // more todo
    [super mulleGainAccess];
 
+   if( _firstResponder != _responder)
+      [_firstResponder mulleGainAccess];
+   [_responder mulleGainAccess];
+
    [_offscreenOSWindow mulleGainAccess];
    [_offscreenContext mulleGainAccess];
    [_frameDelegate mulleGainAccess];
@@ -611,6 +613,10 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    [_offscreenOSWindow mulleRelinquishAccess];
    [_offscreenContext mulleRelinquishAccess];
 
+   [_responder mulleRelinquishAccess];
+   if( _firstResponder != _responder)
+      [_firstResponder mulleRelinquishAccess];
+
    [super mulleRelinquishAccess];
 }
 
@@ -618,6 +624,13 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 - (BOOL) __isUIPureWindow
 {
    return( YES);
+}
+
+
+
+- (struct MulleUIResourceStorage *) _resourceStorage  MULLE_OBJC_THREADSAFE_METHOD
+{
+   return( &_resourceStorage);
 }
 
 

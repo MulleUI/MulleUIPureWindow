@@ -2,8 +2,6 @@
 
 #### 👁️‍🗨️ MulleUIPureWindow - Windows without Views
 
-![](mulle-tiny-logo-255x256.png)
-
 The MulleUIPureWindow is a window with a framebuffer and a drawing context. The drawing context is
 abstract, though it is usually a `CGContext` from [MulleGraphics](//github.com/MulleUI/MulleGraphics),
 which provides `nanovg` and `OpenGL`.
@@ -21,6 +19,8 @@ has no support for UITrackingAreas.
 
 There is no actual "drawing" code in MulleUIPureWindow. Use "MulleGraphics" for
 drawing.
+
+<img src="mulle-tiny-logo-255x256.png" width="64" height="64">
 
 
 
