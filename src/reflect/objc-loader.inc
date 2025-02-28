@@ -10,6 +10,7 @@
       { @selector( UIPureWindow), @selector( ThreadRefresh) },      // 8d169152;UIPureWindow;fb98c80a;ThreadRefresh
       { @selector( UIPureWindow), @selector( UIEvent) },      // 8d169152;UIPureWindow;f88bf69f;UIEvent
       { @selector( UIPureWindow), @selector( UIGraphicsContext) },      // 8d169152;UIPureWindow;423b309b;UIGraphicsContext
+      { @selector( UIPureWindow), @selector( UIPasteboard) },      // 8d169152;UIPureWindow;d871deef;UIPasteboard
       { @selector( UIPureWindow), @selector( UIResponder) },      // 8d169152;UIPureWindow;48335ff7;UIResponder
       { @selector( UIPureWindow), @selector( UIWindow) },      // 8d169152;UIPureWindow;895a123f;UIWindow
       { @selector( UIPureWindow), MULLE_OBJC_NO_CATEGORYID },      // 8d169152;UIPureWindow;;

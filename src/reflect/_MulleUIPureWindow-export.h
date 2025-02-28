@@ -24,6 +24,7 @@
 #import "UIPureWindow+Thread.h"
 #import "UIPureWindow+UIEvent.h"
 #import "UIPureWindow+UIGraphicsContext.h"
+#import "UIPureWindow+UIPasteboard.h"
 #import "UIPureWindow+UIResponder.h"
 #import "UIPureWindow+UIWindow.h"
 #import "UIPureWindow.h"

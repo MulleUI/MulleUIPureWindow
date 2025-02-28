@@ -74,20 +74,12 @@
 @implementation UIPureWindow( Render)
 
 
-- (void) _init
-{
-   _willRenderFrameCallback = UIWindowDefaultWillRenderFrameCallback;
-   _rawFrameCallback        = UIWindowDefaultRawFrameCallback;
-   _didRenderFrameCallback  = UIWindowDefaultDidRenderFrameCallback;
-}
-
-
-
 - (void) clearFrame:(struct CGFrameInfo *) info
     graphicsContext:(id <UIGraphicsContext>) context
 {
    BOOL         doClearFramebufferColor;
    CGHexColor   backgroundHexColor;
+
    if( _willClearCallback && ! (*_willClearCallback)( self, context, info))
       return;
 
@@ -119,8 +111,6 @@
 }
 
 
-
-
 UIWindowDisplayBits
    UIWindowDefaultWillRenderFrameCallback( UIPureWindow *self,
                                            id <UIGraphicsContext> context,
@@ -130,7 +120,6 @@ UIWindowDisplayBits
    UIWindowDisplayBitsLog( "%s returns (0x%tx)", __FUNCTION__, displayBits);
    return( displayBits);
 }
-
 
 
 //

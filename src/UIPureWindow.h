@@ -216,7 +216,7 @@ struct MulleClickDragDifferentiator
 //       This should make it easier to maintain in terms of justs setting
 //       up and maintaining the OS windows. 
 //
-@interface UIPureWindow : MulleObject
+@interface UIPureWindow : MulleObject < MulleUIResourceMap>
 {
    // these ivars are single thread only
    id <UIGraphicsContext>          _context;
@@ -252,6 +252,7 @@ struct MulleClickDragDifferentiator
    // ALWAYS the main thread. 
    //
    struct mulle_map                _invocationQueueMap;
+   struct MulleUIResourceStorage   _resourceStorage;
    struct ui_window_pointer_fifo   _eventQueue;
    struct ui_window_pointer_fifo   _timerQueue;
    int                             _sendFakeMouseMotionEvent;
@@ -279,7 +280,7 @@ struct MulleClickDragDifferentiator
 
 
 // atomic variables accessed by both threads
-@private
+@protected
    // window was resized, so we need an immediate render
    mulle_atomic_pointer_t          _needsDisplay;
    // we have a fresh framebuffer drawn, pls2swap
@@ -295,7 +296,7 @@ struct MulleClickDragDifferentiator
 
 
 // these values are only accessible to the main thread
-@private
+@protected
    mulle_absolutetime_t            _lastDidProcessEventsTimestamp;
 
    struct UIWindowFrameStatistics  _mainThreadStatistics;
@@ -381,8 +382,7 @@ struct MulleClickDragDifferentiator
 // For multiple windows on the same thread (i.e. mainThread) this must not be
 // set, otherwise you see only drawings in one window
 @property( assign) BOOL                            keepOSGraphicsContextActive;
-// default yes
-@property( assign, getter=isLoadingDefaultFont) BOOL   loadDefaultFont;
+
 
 // Rendercallbacks. If the renderer is in its own thread, then all these
 //                  callbacks will appear on the render thread. This thread
@@ -461,8 +461,13 @@ struct MulleClickDragDifferentiator
 
 @property( readonly, assign) UIApplication    *application;
 
-
 @property( assign) id <UIResponder>           initialFirstResponder;
+
+// these are all "assign" only, but they WILL get called with
+// gainAccess and relinquishAccess
+@property( assign) id <UIResponder>           firstResponder;
+@property( assign) id <UIResponder>           responder;
+
 
 + (instancetype) windowWithFrame:(CGRect) frame;
 
@@ -509,6 +514,9 @@ struct MulleClickDragDifferentiator
 // sets more than just one bit, can also zero
 - (void) setNeedsDisplayBits:(UIWindowDisplayBits) value  MULLE_OBJC_THREADSAFE_METHOD;
 
+// sets only one bit
+- (void) setNeedsDisplayBit:(UIWindowDisplayBits) value;
+
 // legacy compatibility
 - (void) setNeedsDisplay                     MULLE_OBJC_THREADSAFE_METHOD;  // sets all bits
 - (UIWindowDisplayBits) needsDisplay         MULLE_OBJC_THREADSAFE_METHOD;
@@ -545,6 +553,9 @@ struct MulleClickDragDifferentiator
 // see UIOSWindow protocol in MulleUIBase for more
 //
 - (void *) os_window          MULLE_OBJC_THREADSAFE_METHOD;
+
+- (char *) pasteboardCString;
+- (void) setPasteboardCString:(char *) s;
 
 @end
 

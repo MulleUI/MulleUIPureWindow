@@ -72,6 +72,7 @@ src/UIPureWindow+ThreadRefresh.h
 src/UIPureWindow+Thread.h
 src/UIPureWindow+UIEvent.h
 src/UIPureWindow+UIGraphicsContext.h
+src/UIPureWindow+UIPasteboard.h
 src/UIPureWindow+UIResponder.h
 src/UIPureWindow+UIWindow.h
 src/UIPureWindow.h

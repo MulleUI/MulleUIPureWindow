@@ -22,6 +22,7 @@ src/UIPureWindow+ThreadRefresh.m
 src/UIPureWindow+Thread.m
 src/UIPureWindow+UIEvent.m
 src/UIPureWindow+UIGraphicsContext.m
+src/UIPureWindow+UIPasteboard.m
 src/UIPureWindow+UIResponder.m
 src/UIPureWindow+UIWindow.m
 src/UIPureWindow.m
