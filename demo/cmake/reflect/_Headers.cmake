@@ -13,7 +13,6 @@ endif()
 set( INCLUDE_DIRS
 src/reflect
 src/generic
-src
 ../src/reflect
 ../src
 )
@@ -34,8 +33,6 @@ src/reflect/_demo-include-private.h
 set( PRIVATE_GENERIC_HEADERS
 src/generic/import-private.h
 src/generic/include-private.h
-../src/import-private.h
-../src/include-private.h
 )
 
 #
@@ -75,8 +72,6 @@ src/reflect/_demo-provide.h
 set( PUBLIC_GENERIC_HEADERS
 src/generic/import.h
 src/generic/include.h
-../src/import.h
-../src/include.h
 )
 
 #
@@ -95,9 +90,9 @@ set( PUBLIC_HEADERS
 ../src/UIPureWindow+Thread.h
 ../src/UIPureWindow+UIEvent.h
 ../src/UIPureWindow+UIGraphicsContext.h
+../src/UIPureWindow+UIPasteboard.h
 ../src/UIPureWindow+UIResponder.h
 ../src/UIPureWindow+UIWindow.h
 ../src/UIPureWindow.h
-src/demo-version.h
 )
 

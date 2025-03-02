@@ -1,3 +1,8 @@
+      { @selector( MulleObjCLoader), @selector( MulleFoundationBase) },      // 47a9beb6;MulleObjCLoader;efab19ea;MulleFoundationBase
+      { @selector( MulleObjCLoader), @selector( MulleInvocationQueue) },      // 47a9beb6;MulleObjCLoader;9a5137b3;MulleInvocationQueue
+      { @selector( MulleObjCLoader), @selector( MulleThread) },      // 47a9beb6;MulleObjCLoader;c7c34b28;MulleThread
+      { @selector( MulleObjCLoader), @selector( MulleUIApplication) },      // 47a9beb6;MulleObjCLoader;55c305e6;MulleUIApplication
+      { @selector( MulleObjCLoader), @selector( MulleUIBase) },      // 47a9beb6;MulleObjCLoader;3ebba954;MulleUIBase
       { @selector( NSObject), @selector( UIPureWindow) },      // b3a66256;NSObject;8d169152;UIPureWindow
       { @selector( UIPureWindow), @selector( CGGeometry) },      // 8d169152;UIPureWindow;3ab12270;CGGeometry
       { @selector( UIPureWindow), @selector( Frame) },      // 8d169152;UIPureWindow;e7ac1465;Frame

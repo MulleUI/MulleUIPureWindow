@@ -43,7 +43,7 @@
       if( _rendersOffScreen)
          [self bindFramebuffer:CGContextFramebufferMakeWithLayer( _renderLayer)];
       else
-         [self bindFramebuffer:CGContextFramebufferMakeDefault( NO)];
+         [self bindFramebuffer:CGContextFramebufferMakeDefault()];
       CGContextCheckBackendError( self, "bind buffer");
 
       [self setCompositionMode:UIGraphicsCopy];

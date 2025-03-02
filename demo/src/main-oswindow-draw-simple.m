@@ -39,9 +39,9 @@
 @end
 
 
-static int   display( GLFWOSWindow *window_in)
+static UIWindowDisplayBits   display( GLFWOSWindow *window_in)
 {
-   MyWindow      *osWindow = (MyWindow *) window_in;
+   MyWindow      *osWindow = MULLE_OBJC_CLASS_CAST( MyWindow, window_in);
    CGRect        canvas;
    CGContext     *context;
    CGFrameInfo   frameInfo;
@@ -58,6 +58,7 @@ static int   display( GLFWOSWindow *window_in)
    [context endRender];
    return( 0);
 }
+
 
 int   main( int argc, char *argv[])
 {
@@ -88,15 +89,13 @@ int   main( int argc, char *argv[])
       [uiWindow deactivateGraphicsContext:context];
 #else 
       [osWindow os_activateGraphicsContext];
-      context = [[[CGContext alloc] initWithBackend:[osWindow backend]
-                                            shareID:[osWindow shareID]
-                                            options:UIGraphicsDefaultOptions] autorelease];
-      // have to do this manually, because the context is created manually
+      context = [[[CGContext alloc] initWithOSGraphicsContext:osWindow
+                                                      shareID:[osWindow shareID]
+                                                      options:UIGraphicsDefaultOptions] autorelease];      // have to do this manually, because the context is created manually
       [osWindow os_deactivateGraphicsContext];
 #endif
       assert( context);
 
-      [context setActive:YES];
       // remember context for "display" callback
       [osWindow setContext:context];
       [osWindow setFrameCallback:display];

@@ -209,12 +209,12 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    // time spent for display last time
    stats->elapsedHistory[ stats->elapsedHistoryIndex] = diff;
    stats->elapsedHistoryIndex++;
-   stats->elapsedHistoryIndex &= (UIWINDOW_S_ELAPSED_HISTORY - 1);
+   stats->elapsedHistoryIndex  &= (UIWINDOW_S_ELAPSED_HISTORY - 1);
 
-   stats->avgElapsedHistory = 0.0;
+   stats->avgElapsedHistory     = 0.0;
    for( i = 0; i < UIWINDOW_S_ELAPSED_HISTORY; i++)
       stats->avgElapsedHistory += stats->elapsedHistory[ i];
-   stats->avgElapsedHistory /= UIWINDOW_S_ELAPSED_HISTORY;
+   stats->avgElapsedHistory    /= UIWINDOW_S_ELAPSED_HISTORY;
 }
 
 
@@ -475,14 +475,12 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
       {
          // if still locked somehow (keep flag) fine
          [_offscreenOSWindow os_tryActivateGraphicsContext];
-         [_offscreenContext setActive:YES];
       }
 
       [_lastOffscreenFramebuffer mullePerformFinalize];
 
       [_offscreenContext mullePerformFinalize];
       [_offscreenOSWindow os_deactivateGraphicsContext];
-      [_offscreenContext setActive:NO];
    }
    [_offscreenContext autorelease];
    _offscreenContext = nil;
@@ -496,11 +494,9 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
       {
          // don't deadlock if still locked
          [_OSWindow os_tryActivateGraphicsContext];
-         [_context setActive:YES];
       }
       [_context mullePerformFinalize];
       [_OSWindow os_deactivateGraphicsContext];
-      [_context setActive:NO];
    }
    [_context autorelease];
    _context = nil;   
@@ -557,13 +553,6 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (void) dealloc
 {
-   // this calls _dealloc on all categories, protocolclasses and classes from
-   // UIWindow (or current subclass) down
-   MulleObjCObjectSpamInheritorToAncestor( self,
-                                           @selector( _dealloc),
-                                           self,
-                                           [[UIPureWindow class] superclass]);
-
    MulleObjCObjectSetDuplicatedUTF8String( self, &_titleUTF8String, NULL);
 
    [_reusableTrackingEvent release];
@@ -625,7 +614,6 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 {
    return( YES);
 }
-
 
 
 - (struct MulleUIResourceStorage *) _resourceStorage  MULLE_OBJC_THREADSAFE_METHOD
