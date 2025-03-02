@@ -33,12 +33,10 @@
 #   define DEMO_GLOBAL   extern
 #  endif
 # endif
-#include "../src/generic/include.h"
 #endif
 
 /* You can add some more include statements here */
 
-#include "demo-version.h"
-
 #include "../src/generic/include.h"
+
 #endif

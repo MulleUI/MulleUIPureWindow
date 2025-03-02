@@ -166,9 +166,11 @@ struct UIWindowFrameStatistics
    mulle_relativetime_t   avgElapsedHistory;
 };
 
+
 void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *stats,
                                              mulle_absolutetime_t start,
                                              mulle_absolutetime_t end);
+
 
 static inline void   UIWindowDisplayFrameStatisticsInit( struct UIWindowFrameStatistics *stats)
 {
@@ -200,7 +202,6 @@ typedef NS_OPTIONS( NSUInteger, UIWindowPropertyChange)
 struct MulleClickDragDifferentiator
 {
    mulle_relativetime_t   _mouseMotionSuppressionDelay;  // config value
-
    mulle_absolutetime_t   _suppressStartTimestamp;
 };
 
@@ -321,7 +322,7 @@ struct MulleClickDragDifferentiator
 
 
 
-@property( retain, readonly) id <UIOSWindow>       OSWindow;
+@property( retain, readonly) id <UIOSWindow>       OSWindow            MULLE_OBJC_THREADSAFE_PROPERTY;
 
 // only available during rendering use for layout code if you need
 // to do font measurements, will abort if nil
@@ -398,28 +399,25 @@ struct MulleClickDragDifferentiator
 //
 // Will be usually either  or 
 //
-@property UIWindowDisplayBits
-   (*rawFrameCallback)( UIPureWindow *window,
-                        id <UIGraphicsContext> context,
-                        struct CGFrameInfo *frameInfo,
-                        UIWindowDisplayBits displayBits);
+@property UIWindowDisplayBits   (*rawFrameCallback)( UIPureWindow *window,
+                                                     id <UIGraphicsContext> context,
+                                                     struct CGFrameInfo *frameInfo,
+                                                     UIWindowDisplayBits displayBits);
 
 // will be called immediately before rawFrameCallback, you should return
 // displayBits intact, unless you know better. The framebuffer will not be
 // bound yet, but the graphics context is activated. Don't draw anything
 // here yet.
-@property UIWindowDisplayBits
-   (*willRenderFrameCallback)( UIPureWindow *window,
-                               id <UIGraphicsContext> context,
-                               struct CGFrameInfo *frameInfo,
-                               UIWindowDisplayBits displayBits);
+@property UIWindowDisplayBits   (*willRenderFrameCallback)( UIPureWindow *window,
+                                                            id <UIGraphicsContext> context,
+                                                            struct CGFrameInfo *frameInfo,
+                                                            UIWindowDisplayBits displayBits);
 
 // will be called immediately after rawFrameCallback, before swapBuffers
-@property UIWindowDisplayBits
-   (*didRenderFrameCallback)( UIPureWindow *window,
-                              id <UIGraphicsContext> context,
-                              struct CGFrameInfo *frameInfo,
-                              UIWindowDisplayBits displayBits);
+@property UIWindowDisplayBits   (*didRenderFrameCallback)( UIPureWindow *window,
+                                                           id <UIGraphicsContext> context,
+                                                           struct CGFrameInfo *frameInfo,
+                                                           UIWindowDisplayBits displayBits);
 
 //
 // This is useful to add custom drawing stuff on the bottom.
@@ -436,10 +434,10 @@ struct MulleClickDragDifferentiator
 // won't. Return '1' if you are animating and need to break out of async for 
 // a while.
 //
-@property int   (*frameCallback)( UIPureWindow *window,
-                                  id <UIGraphicsContext> context,
-                                  struct CGFrameInfo *frameInfo,
-                                  UIWindowDisplayBits displayBits);
+@property UIWindowDisplayBits (*frameCallback)( UIPureWindow *window,
+                                                id <UIGraphicsContext> context,
+                                                struct CGFrameInfo *frameInfo,
+                                                UIWindowDisplayBits displayBits);
 
 //
 // This can be useful to setup stuff for the next frame. You can't draw here

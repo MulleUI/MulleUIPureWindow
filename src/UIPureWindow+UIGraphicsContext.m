@@ -39,7 +39,6 @@
 
    if( _keepOSGraphicsContextActive && _context)
    {
-      [_context setActive:YES];
       MulleWindowProfileEnd();
       return( _context);
    }
@@ -66,9 +65,10 @@
       options |= (_styleMask & UIWindowStyleClearType)          ? UIGraphicsUseClearType : 0;
       options |= (_styleMask & UIWindowStyleStencilStrokes)     ? UIGraphicsUseStencilStrokes : 0;
 
-      _context = [[cls alloc] initWithBackend:[_OSWindow backend]
-                                      shareID:[_OSWindow shareID]
-                                      options:options];
+      _context = [[cls alloc] initWithOSGraphicsContext:_OSWindow
+                                                shareID:[_OSWindow shareID]
+                                                options:options];      // have to do this manually, because the context is created manually
+
       if( ! _context)
       {
          MulleUILog( "Could not acquire a graphics context for backend: 0x%tx shareID: 0x%tx options: 0x%tx",
@@ -77,12 +77,10 @@
                            options);
          abort();
       }
-      [_context setOSWindow:_OSWindow];
       [_context mulleSetNameUTF8String:"Window"];
 
       UIWindowSwapLog( "context %#@ created for OSWindow %#@", _context, _OSWindow);
    }
-   [_context setActive:YES];
 
    // TODO: mulleGainAccess ?
    MulleWindowProfileEnd();
@@ -111,7 +109,6 @@
 
    if( _keepOSGraphicsContextActive && _offscreenContext)
    {
-      [_offscreenContext setActive:YES];
       MulleWindowProfileEnd();
       return( _offscreenContext);
    }
@@ -140,9 +137,9 @@
       options |= (_offscreenStyleMask & UIWindowStyleClearType)          ? UIGraphicsUseClearType : 0;
       options |= (_offscreenStyleMask & UIWindowStyleStencilStrokes)     ? UIGraphicsUseStencilStrokes : 0;
 
-      _offscreenContext = [[cls alloc] initWithBackend:[_offscreenOSWindow backend]
-                                               shareID:[_offscreenOSWindow shareID]
-                                               options:options];
+      _offscreenContext = [[cls alloc] initWithOSGraphicsContext:_offscreenOSWindow
+                                                         shareID:[_offscreenOSWindow shareID]
+                                                         options:options];
       if( ! _offscreenContext)
       {
          MulleUILog( "Could not acquire an offscren context for backend: 0x%tx shareID: 0x%tx options: 0x%tx",
@@ -152,13 +149,11 @@
          abort();
       }
       [_offscreenContext setRendersOffScreen:YES];
-      [_offscreenContext setOSWindow:_offscreenOSWindow];
       [_offscreenContext mulleSetNameUTF8String:"Offscreen"];
 
       UIWindowSwapLog( "context %#@ created for offscreen OSWindow %#@",
                      _offscreenContext, _offscreenOSWindow);
    }
-   [_offscreenContext setActive:YES];                        // just a flag
 
    UIWindowSwapLog( "offscreen context");
 
@@ -172,8 +167,6 @@
 - (void) deactivateGraphicsContext:(id <UIGraphicsContext>) context
 {
    assert( context);
-
-   [context setActive:NO];
 
    MulleWindowProfileBegin();
 
@@ -253,7 +246,7 @@
    //
    if( _context)
    {
-      activeThread  = [_context activeThread];
+      activeThread = [_context activeThread];
       if( activeThread)
       {
          if( currentThread != activeThread)
@@ -268,7 +261,7 @@
 
    if( _offscreenContext)
    {
-      activeThread  = [_offscreenContext activeThread];
+      activeThread = [_offscreenContext activeThread];
       if( activeThread)
       {
          if( currentThread != activeThread)

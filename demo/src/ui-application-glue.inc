@@ -57,19 +57,6 @@ static struct
 
 @implementation CGContext( UIWindow)
 
-- (void) setActive:(BOOL) flag
-{
-#ifdef ACTIVE_DEBUG
-   if( (_activeThread != nil) != flag)
-      MulleUILog( "<%@ %p> transitions from %s to %s",
-                  self, self,
-                  (_activeThread != nil) ? "YES": "NO",
-                  flag ? "YES": "NO");
-#endif
-   _activeThread = flag ? [NSThread currentThread] : nil;
-}
-
-
 - (id) imageWithFramebuffer:(id) framebuffer
 {
    CGFramebuffer   *layer = (CGFramebuffer *) framebuffer;

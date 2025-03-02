@@ -356,141 +356,6 @@ endif()
 
 
 #
-# Generated from sourcetree: 865440B9-4913-4107-89D0-26F7425197D1;MulleUIGraphicsImage;no-singlephase;
-# Disable with : `mulle-sourcetree mark MulleUIGraphicsImage no-link`
-# Disable for this platform: `mulle-sourcetree mark MulleUIGraphicsImage no-cmake-platform-${MULLE_UNAME}`
-# Disable for a sdk: `mulle-sourcetree mark MulleUIGraphicsImage no-cmake-sdk-<name>`
-#
-if( COLLECT_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
-   list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES "MulleUIGraphicsImage")
-else()
-   if( NOT MULLE_UI_GRAPHICS_IMAGE_LIBRARY)
-      find_library( MULLE_UI_GRAPHICS_IMAGE_LIBRARY NAMES
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIGraphicsImage${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIGraphicsImage${CMAKE_STATIC_LIBRARY_SUFFIX}
-         MulleUIGraphicsImage
-         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
-      )
-      if( NOT MULLE_UI_GRAPHICS_IMAGE_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
-         find_library( MULLE_UI_GRAPHICS_IMAGE_LIBRARY NAMES
-            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIGraphicsImage${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIGraphicsImage${CMAKE_STATIC_LIBRARY_SUFFIX}
-            MulleUIGraphicsImage
-         )
-      endif()
-      message( STATUS "MULLE_UI_GRAPHICS_IMAGE_LIBRARY is ${MULLE_UI_GRAPHICS_IMAGE_LIBRARY}")
-      #
-      # The order looks ascending, but due to the way this file is read
-      # it ends up being descending, which is what we need.
-      #
-      if( MULLE_UI_GRAPHICS_IMAGE_LIBRARY)
-         #
-         # Add MULLE_UI_GRAPHICS_IMAGE_LIBRARY to ALL_LOAD_DEPENDENCY_LIBRARIES list.
-         # Disable with: `mulle-sourcetree mark MulleUIGraphicsImage no-cmake-add`
-         #
-         list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_UI_GRAPHICS_IMAGE_LIBRARY})
-         #
-         # Inherit information from dependency.
-         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
-         # Disable with: `mulle-sourcetree mark MulleUIGraphicsImage no-cmake-inherit`
-         #
-         # temporarily expand CMAKE_MODULE_PATH
-         get_filename_component( _TMP_MULLE_UI_GRAPHICS_IMAGE_ROOT "${MULLE_UI_GRAPHICS_IMAGE_LIBRARY}" DIRECTORY)
-         get_filename_component( _TMP_MULLE_UI_GRAPHICS_IMAGE_ROOT "${_TMP_MULLE_UI_GRAPHICS_IMAGE_ROOT}" DIRECTORY)
-         #
-         #
-         # Search for "Definitions.cmake" and "DependenciesAndLibraries.cmake" to include.
-         # Disable with: `mulle-sourcetree mark MulleUIGraphicsImage no-cmake-dependency`
-         #
-         foreach( _TMP_MULLE_UI_GRAPHICS_IMAGE_NAME "MulleUIGraphicsImage")
-            set( _TMP_MULLE_UI_GRAPHICS_IMAGE_DIR "${_TMP_MULLE_UI_GRAPHICS_IMAGE_ROOT}/include/${_TMP_MULLE_UI_GRAPHICS_IMAGE_NAME}/cmake")
-            # use explicit path to avoid "surprises"
-            if( IS_DIRECTORY "${_TMP_MULLE_UI_GRAPHICS_IMAGE_DIR}")
-               list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_UI_GRAPHICS_IMAGE_DIR}")
-               #
-               include( "${_TMP_MULLE_UI_GRAPHICS_IMAGE_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
-               #
-               list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_UI_GRAPHICS_IMAGE_DIR}")
-               #
-               unset( MULLE_UI_GRAPHICS_IMAGE_DEFINITIONS)
-               include( "${_TMP_MULLE_UI_GRAPHICS_IMAGE_DIR}/Definitions.cmake" OPTIONAL)
-               list( APPEND INHERITED_DEFINITIONS ${MULLE_UI_GRAPHICS_IMAGE_DEFINITIONS})
-               break()
-            else()
-               message( STATUS "${_TMP_MULLE_UI_GRAPHICS_IMAGE_DIR} not found")
-            endif()
-         endforeach()
-         #
-         # Search for "MulleObjCLoader+<name>.h" in include directory.
-         # Disable with: `mulle-sourcetree mark MulleUIGraphicsImage no-cmake-loader`
-         #
-         if( NOT NO_INHERIT_OBJC_LOADERS)
-            foreach( _TMP_MULLE_UI_GRAPHICS_IMAGE_NAME "MulleUIGraphicsImage")
-               set( _TMP_MULLE_UI_GRAPHICS_IMAGE_FILE "${_TMP_MULLE_UI_GRAPHICS_IMAGE_ROOT}/include/${_TMP_MULLE_UI_GRAPHICS_IMAGE_NAME}/MulleObjCLoader+${_TMP_MULLE_UI_GRAPHICS_IMAGE_NAME}.h")
-               if( EXISTS "${_TMP_MULLE_UI_GRAPHICS_IMAGE_FILE}")
-                  list( APPEND INHERITED_OBJC_LOADERS ${_TMP_MULLE_UI_GRAPHICS_IMAGE_FILE})
-                  break()
-               endif()
-            endforeach()
-         endif()
-      else()
-         # Disable with: `mulle-sourcetree mark MulleUIGraphicsImage no-require-link`
-         message( SEND_ERROR "MULLE_UI_GRAPHICS_IMAGE_LIBRARY was not found")
-      endif()
-   endif()
-endif()
-
-
-#
-# Generated from sourcetree: 7B3445A7-549E-4A54-B762-9AE489E374A8;MulleObjC-startup;no-cmake-dependency,no-cmake-loader,no-cmake-searchpath,no-dynamic-link,no-header,no-intermediate-link;
-# Disable with : `mulle-sourcetree mark MulleObjC-startup no-link`
-# Disable for this platform: `mulle-sourcetree mark MulleObjC-startup no-cmake-platform-${MULLE_UNAME}`
-# Disable for a sdk: `mulle-sourcetree mark MulleObjC-startup no-cmake-sdk-<name>`
-#
-if( COLLECT_STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
-   list( APPEND STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES "MulleObjC-startup")
-else()
-   if( NOT MULLE_OBJC__STARTUP_LIBRARY)
-      find_library( MULLE_OBJC__STARTUP_LIBRARY NAMES
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}
-         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
-      )
-      if( NOT MULLE_OBJC__STARTUP_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
-         find_library( MULLE_OBJC__STARTUP_LIBRARY NAMES
-            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}
-         )
-      endif()
-      message( STATUS "MULLE_OBJC__STARTUP_LIBRARY is ${MULLE_OBJC__STARTUP_LIBRARY}")
-      #
-      # The order looks ascending, but due to the way this file is read
-      # it ends up being descending, which is what we need.
-      #
-      if( MULLE_OBJC__STARTUP_LIBRARY)
-         #
-         # Add MULLE_OBJC__STARTUP_LIBRARY to STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES list.
-         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-add`
-         #
-         list( APPEND STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_OBJC__STARTUP_LIBRARY})
-         #
-         # Inherit information from dependency.
-         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
-         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-inherit`
-         #
-         # temporarily expand CMAKE_MODULE_PATH
-         get_filename_component( _TMP_MULLE_OBJC__STARTUP_ROOT "${MULLE_OBJC__STARTUP_LIBRARY}" DIRECTORY)
-         get_filename_component( _TMP_MULLE_OBJC__STARTUP_ROOT "${_TMP_MULLE_OBJC__STARTUP_ROOT}" DIRECTORY)
-         #
-      else()
-         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-require-link`
-         message( SEND_ERROR "MULLE_OBJC__STARTUP_LIBRARY was not found")
-      endif()
-   endif()
-endif()
-
-
-#
 # Generated from sourcetree: EF394374-C4EF-42F2-8F4E-35C73FBA1B83;MulleUIApplication;no-singlephase;
 # Disable with : `mulle-sourcetree mark MulleUIApplication no-link`
 # Disable for this platform: `mulle-sourcetree mark MulleUIApplication no-cmake-platform-${MULLE_UNAME}`
@@ -571,6 +436,141 @@ else()
       else()
          # Disable with: `mulle-sourcetree mark MulleUIApplication no-require-link`
          message( SEND_ERROR "MULLE_UI_APPLICATION_LIBRARY was not found")
+      endif()
+   endif()
+endif()
+
+
+#
+# Generated from sourcetree: CDE34A9F-A291-413C-90D4-972D69D24B82;MulleGraphicsImage;no-singlephase;
+# Disable with : `mulle-sourcetree mark MulleGraphicsImage no-link`
+# Disable for this platform: `mulle-sourcetree mark MulleGraphicsImage no-cmake-platform-${MULLE_UNAME}`
+# Disable for a sdk: `mulle-sourcetree mark MulleGraphicsImage no-cmake-sdk-<name>`
+#
+if( COLLECT_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
+   list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES "MulleGraphicsImage")
+else()
+   if( NOT MULLE_GRAPHICS_IMAGE_LIBRARY)
+      find_library( MULLE_GRAPHICS_IMAGE_LIBRARY NAMES
+         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleGraphicsImage${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleGraphicsImage${CMAKE_STATIC_LIBRARY_SUFFIX}
+         MulleGraphicsImage
+         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
+      )
+      if( NOT MULLE_GRAPHICS_IMAGE_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
+         find_library( MULLE_GRAPHICS_IMAGE_LIBRARY NAMES
+            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleGraphicsImage${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleGraphicsImage${CMAKE_STATIC_LIBRARY_SUFFIX}
+            MulleGraphicsImage
+         )
+      endif()
+      message( STATUS "MULLE_GRAPHICS_IMAGE_LIBRARY is ${MULLE_GRAPHICS_IMAGE_LIBRARY}")
+      #
+      # The order looks ascending, but due to the way this file is read
+      # it ends up being descending, which is what we need.
+      #
+      if( MULLE_GRAPHICS_IMAGE_LIBRARY)
+         #
+         # Add MULLE_GRAPHICS_IMAGE_LIBRARY to ALL_LOAD_DEPENDENCY_LIBRARIES list.
+         # Disable with: `mulle-sourcetree mark MulleGraphicsImage no-cmake-add`
+         #
+         list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_GRAPHICS_IMAGE_LIBRARY})
+         #
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
+         # Disable with: `mulle-sourcetree mark MulleGraphicsImage no-cmake-inherit`
+         #
+         # temporarily expand CMAKE_MODULE_PATH
+         get_filename_component( _TMP_MULLE_GRAPHICS_IMAGE_ROOT "${MULLE_GRAPHICS_IMAGE_LIBRARY}" DIRECTORY)
+         get_filename_component( _TMP_MULLE_GRAPHICS_IMAGE_ROOT "${_TMP_MULLE_GRAPHICS_IMAGE_ROOT}" DIRECTORY)
+         #
+         #
+         # Search for "Definitions.cmake" and "DependenciesAndLibraries.cmake" to include.
+         # Disable with: `mulle-sourcetree mark MulleGraphicsImage no-cmake-dependency`
+         #
+         foreach( _TMP_MULLE_GRAPHICS_IMAGE_NAME "MulleGraphicsImage")
+            set( _TMP_MULLE_GRAPHICS_IMAGE_DIR "${_TMP_MULLE_GRAPHICS_IMAGE_ROOT}/include/${_TMP_MULLE_GRAPHICS_IMAGE_NAME}/cmake")
+            # use explicit path to avoid "surprises"
+            if( IS_DIRECTORY "${_TMP_MULLE_GRAPHICS_IMAGE_DIR}")
+               list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_GRAPHICS_IMAGE_DIR}")
+               #
+               include( "${_TMP_MULLE_GRAPHICS_IMAGE_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
+               #
+               list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_GRAPHICS_IMAGE_DIR}")
+               #
+               unset( MULLE_GRAPHICS_IMAGE_DEFINITIONS)
+               include( "${_TMP_MULLE_GRAPHICS_IMAGE_DIR}/Definitions.cmake" OPTIONAL)
+               list( APPEND INHERITED_DEFINITIONS ${MULLE_GRAPHICS_IMAGE_DEFINITIONS})
+               break()
+            else()
+               message( STATUS "${_TMP_MULLE_GRAPHICS_IMAGE_DIR} not found")
+            endif()
+         endforeach()
+         #
+         # Search for "MulleObjCLoader+<name>.h" in include directory.
+         # Disable with: `mulle-sourcetree mark MulleGraphicsImage no-cmake-loader`
+         #
+         if( NOT NO_INHERIT_OBJC_LOADERS)
+            foreach( _TMP_MULLE_GRAPHICS_IMAGE_NAME "MulleGraphicsImage")
+               set( _TMP_MULLE_GRAPHICS_IMAGE_FILE "${_TMP_MULLE_GRAPHICS_IMAGE_ROOT}/include/${_TMP_MULLE_GRAPHICS_IMAGE_NAME}/MulleObjCLoader+${_TMP_MULLE_GRAPHICS_IMAGE_NAME}.h")
+               if( EXISTS "${_TMP_MULLE_GRAPHICS_IMAGE_FILE}")
+                  list( APPEND INHERITED_OBJC_LOADERS ${_TMP_MULLE_GRAPHICS_IMAGE_FILE})
+                  break()
+               endif()
+            endforeach()
+         endif()
+      else()
+         # Disable with: `mulle-sourcetree mark MulleGraphicsImage no-require-link`
+         message( SEND_ERROR "MULLE_GRAPHICS_IMAGE_LIBRARY was not found")
+      endif()
+   endif()
+endif()
+
+
+#
+# Generated from sourcetree: 7B3445A7-549E-4A54-B762-9AE489E374A8;MulleObjC-startup;no-cmake-dependency,no-cmake-loader,no-cmake-searchpath,no-dynamic-link,no-header,no-intermediate-link;
+# Disable with : `mulle-sourcetree mark MulleObjC-startup no-link`
+# Disable for this platform: `mulle-sourcetree mark MulleObjC-startup no-cmake-platform-${MULLE_UNAME}`
+# Disable for a sdk: `mulle-sourcetree mark MulleObjC-startup no-cmake-sdk-<name>`
+#
+if( COLLECT_STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
+   list( APPEND STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES "MulleObjC-startup")
+else()
+   if( NOT MULLE_OBJC__STARTUP_LIBRARY)
+      find_library( MULLE_OBJC__STARTUP_LIBRARY NAMES
+         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}
+         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
+      )
+      if( NOT MULLE_OBJC__STARTUP_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
+         find_library( MULLE_OBJC__STARTUP_LIBRARY NAMES
+            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}
+         )
+      endif()
+      message( STATUS "MULLE_OBJC__STARTUP_LIBRARY is ${MULLE_OBJC__STARTUP_LIBRARY}")
+      #
+      # The order looks ascending, but due to the way this file is read
+      # it ends up being descending, which is what we need.
+      #
+      if( MULLE_OBJC__STARTUP_LIBRARY)
+         #
+         # Add MULLE_OBJC__STARTUP_LIBRARY to STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES list.
+         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-add`
+         #
+         list( APPEND STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_OBJC__STARTUP_LIBRARY})
+         #
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
+         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-inherit`
+         #
+         # temporarily expand CMAKE_MODULE_PATH
+         get_filename_component( _TMP_MULLE_OBJC__STARTUP_ROOT "${MULLE_OBJC__STARTUP_LIBRARY}" DIRECTORY)
+         get_filename_component( _TMP_MULLE_OBJC__STARTUP_ROOT "${_TMP_MULLE_OBJC__STARTUP_ROOT}" DIRECTORY)
+         #
+      else()
+         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-require-link`
+         message( SEND_ERROR "MULLE_OBJC__STARTUP_LIBRARY was not found")
       endif()
    endif()
 endif()
