@@ -38,17 +38,17 @@
    id <UIGraphicsContext>   context;
    struct CGBitmap          bitmap;
    struct CGFrameInfo       frameInfo;
-   CGPixelRect      rect;
+   CGPixelRect              rect;
 
    context = [self activateWindowGraphicsContext];
    @autoreleasepool
    {
       [self getFrameInfo:&frameInfo];
 
-      rect  = CGPixelRectMake( 0,
-                                    0,
-                                    frameInfo.window.framebufferSize.width,
-                                    frameInfo.window.framebufferSize.height);
+      rect   = CGPixelRectMake( 0,
+                                0,
+                                frameInfo.window.framebufferSize.width,
+                                frameInfo.window.framebufferSize.height);
       bitmap = [context readFramebufferBitmap:rect
                         framebufferBitmapType:CGFramebufferRGBABytes
                                     allocator:NULL];
@@ -123,7 +123,6 @@
    // need to know that we can activate the context here, otherwise
    // we'd lock and that's bad. Changing the swapInterval on the fly
    // is probably a feature noone will ever use
-
    [_OSWindow os_setSwapInterval:swapInterval];  // need 0 for smooth pointer/control sync
 }
 

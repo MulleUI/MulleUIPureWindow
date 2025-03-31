@@ -551,7 +551,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    // this is better than not doing it, but no guarantee that an event isn't
    // processed in the background
 #ifdef DEBUG
-   MulleUILogThisMethod();
+   MulleUILog("");
 #endif
 
    // this must have died before hand...
