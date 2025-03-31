@@ -37,6 +37,6 @@
 
 /* You can add some more include statements here */
 
-#include "../src/generic/include.h"
+#include "../../../src/generic/include.h"
 
 #endif

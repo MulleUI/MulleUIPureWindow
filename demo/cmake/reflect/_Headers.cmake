@@ -13,6 +13,7 @@ endif()
 set( INCLUDE_DIRS
 src/reflect
 src/generic
+src
 ../src/reflect
 ../src
 )
@@ -94,5 +95,6 @@ set( PUBLIC_HEADERS
 ../src/UIPureWindow+UIResponder.h
 ../src/UIPureWindow+UIWindow.h
 ../src/UIPureWindow.h
+src/demo-version.h
 )
 

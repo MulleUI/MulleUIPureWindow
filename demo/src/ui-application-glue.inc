@@ -58,6 +58,7 @@ static struct
 @implementation CGContext( UIWindow)
 
 - (id) imageWithFramebuffer:(id) framebuffer
+             nameUTF8String:(char *) nameUTF8String
 {
    CGFramebuffer   *layer = (CGFramebuffer *) framebuffer;
    CGImage         *image;
@@ -67,6 +68,7 @@ static struct
    image = [[[CGImage alloc] initWithSharedGPUTexture:[layer sharedGPUTexture]
                                            bitmapSize:[layer bitmapSize]
                                          textureFlags:[layer textureFlags]
+                                       nameUTF8String:nameUTF8String
                                               context:self] autorelease];
    return( image);
 }

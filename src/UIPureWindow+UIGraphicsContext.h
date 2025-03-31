@@ -27,14 +27,22 @@
 // call activateOffscreenGraphicsContext, likeweise the thread should never
 // call activateWindowGraphicsContext  
 //               
+
 - (id <UIGraphicsContext>) activateWindowGraphicsContext    MULLE_OBJC_THREADSAFE_METHOD;
 - (id <UIGraphicsContext>) activateOffscreenGraphicsContext MULLE_OBJC_THREADSAFE_METHOD;
 
 - (void) deactivateGraphicsContext:(id <UIGraphicsContext>) context  MULLE_OBJC_THREADSAFE_METHOD;
 
+- (void) deactivateRenderGraphicsContextKeepState:(UIGraphicsContextState) keepState MULLE_OBJC_THREADSAFE_METHOD;
+
 // TODO: not really/really threadsafe, pls to fix
 - (void) activateRenderGraphicsContext                MULLE_OBJC_THREADSAFE_METHOD;
 - (void) deactivateRenderGraphicsContext              MULLE_OBJC_THREADSAFE_METHOD;
+
+
+// used by UIPureWindow in -finalize to circumvent an assert
+- (id <UIGraphicsContext>) activateGraphicsContext:(id <UIGraphicsContext>) context
+                                          OSWindow:(id<UIOSWindow>) OSWindow    MULLE_OBJC_THREADSAFE_METHOD;
 
 @end
 

@@ -6,11 +6,11 @@ int   main( void)
 {
    [UIPureWindow windowWithFrame:CGRectMake( 0, 0, 100, 50)
                  titleUTF8String:"non-standard"
-                       styleMask:0x0];
+                       styleMask:UIWindowStyleMaskDefault];
 
    [UIPureWindow windowWithFrame:CGRectMake( 0, 0, 100, 50)
                  titleUTF8String:NULL
-                       styleMask:0x0];
+                       styleMask:UIWindowStyleMaskDefault];
 
 
    return( 0);

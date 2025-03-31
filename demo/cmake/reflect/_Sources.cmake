@@ -30,6 +30,12 @@ src/main-accumulate.m
 src/main-backend-retained.m
 src/main-backend-singlethread-retained.m
 src/main-backend-volatile.m
+src/main-context-mainretained-keep.m
+src/main-context-mainretained-nokeep.m
+src/main-context-nonretained-keep.m
+src/main-context-nonretained-nokeep.m
+src/main-context-retained-keep.m
+src/main-context-retained-nokeep.m
 src/main-distance.m
 src/main-fps.m
 src/main-frames.m

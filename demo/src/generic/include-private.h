@@ -28,5 +28,5 @@
 
 /* You can add some more include statements here */
 
-#include "../src/generic/include-private.h"
+#include "../../../src/generic/include-private.h"
 #endif

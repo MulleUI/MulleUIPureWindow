@@ -32,7 +32,7 @@ static BOOL  drawStuff( CGContext *context, CGRect canvas)
       frameInfo = CGFrameInfoFBMake( CGPixelSizeMakeWithSize( [image size]), 1.0, 1.0);
       oldFrameInfo = [context bindRender:&frameInfo];
       {
-         [context bindFramebuffer:CGContextFramebufferMakeWithLayer( framebuffer)];
+         [context bindFramebuffer:CGContextFramebufferMakeWithFramebuffer( framebuffer)];
          [context clearFramebufferWithColor:CGColorMakeWithRGBA( 0.2, 0.1, 0.3, 0.66)];
          rect.origin = CGPointZero;
          rect.size   = [image size];

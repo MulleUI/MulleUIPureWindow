@@ -99,9 +99,9 @@
    timeout = RENDER_THREAD_GRACE_PERIOD;
 
    UIWindowThreadLog( "trying to lock with 1 (%@ = %td, %s) (%.3f)",
-               _windowThreadLock, [_windowThreadLock condition],
-               [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED",
-               timeout);
+                       _windowThreadLock, [_windowThreadLock condition],
+                       [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED",
+                       timeout);
 
    if( [_windowThreadLock mulleLockWhenCondition:1
                                          timeout:timeout])
@@ -322,6 +322,7 @@
       [pool mulleReleaseAllPoolObjects];
       haveLock = [_windowThreadLock mulleLockWhenCondition:2
                                                    timeout:timeout];
+      MulleWindowProfileBegin();
       do
       {
          if( [thread isCancelled])
@@ -337,8 +338,8 @@
                UIWindowThreadLog( "going down (%#@ = %td, %s)",
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
+               MulleWindowProfileEnd();
                return;
-
             }
 
             // if we don't have the lock (curious), we can't clearly
@@ -349,6 +350,7 @@
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
             break;
          }
+
 
          //
          // same code really as UIWindow( UIWindow) #159
@@ -407,6 +409,7 @@
          mask |= [self executeEventQueue];
       }
       while( mask);
+      MulleWindowProfileEnd();
 
       // When there is nothing to do avoid busy looping.
       // nothing to do, wait for something to happen

@@ -26,170 +26,237 @@
 
 @implementation UIPureWindow ( UIGraphicsContext)
 
-- (id <UIGraphicsContext>) activateWindowGraphicsContext
+- (void) _createGraphicsContext        MULLE_OBJC_THREADSAFE_METHOD
 {
    Class        cls;
    NSUInteger   options;
 
-   MulleWindowProfileBegin();
+   UIWindowSwapLog( "creating offscreen context");
 
-   assert( [NSThread mulleIsMainThread]);
+   // must activate to get nanoVG context
+   [_OSWindow os_activateGraphicsContext];
 
-   UIWindowSwapLog( "window context (%p)", _context);
+   cls = [[self class] osGraphicsContextClass];
 
-   if( _keepOSGraphicsContextActive && _context)
+   options = 0;
+   if( _styleMask & UIWindowStyleAntiAlias)
    {
-      MulleWindowProfileEnd();
-      return( _context);
+      if( [_OSWindow isAntiAliasing] == NO ||
+          [cls supportsAntiAliasing] == NO)
+         options |= UIGraphicsEdgeAntiAliasing;
+      else
+         options |= UIGraphicsUseMSAA;
    }
 
-   // this can actually be quite slow, especially the very first time
+   options |= (_styleMask & UIWindowStyleForceEdgeAntiAlias) ? UIGraphicsEdgeAntiAliasing : 0;
+   options |= (_styleMask & UIWindowStyleClearType)          ? UIGraphicsUseClearType : 0;
+   options |= (_styleMask & UIWindowStyleStencilStrokes)     ? UIGraphicsUseStencilStrokes : 0;
 
-   [_OSWindow os_activateGraphicsContext];
+   _context = [[cls alloc] initWithOSGraphicsContext:_OSWindow
+                                      nameUTF8String:"Window"
+                                             shareID:[_OSWindow shareID]
+                                             options:options];      // have to do this manually, because the context is created manually
 
    if( ! _context)
    {
-      cls = [[self class] osGraphicsContextClass];
+      MulleUILog( "Could not acquire a graphics context for backend: 0x%tx shareID: 0x%tx options: 0x%tx",
+                        [_OSWindow backend],
+                        [_OSWindow shareID],
+                        options);
+      abort();
+   }
+   [_context setState:UIGraphicsContextAssociated|UIGraphicsContextActive];
+}
 
-      options = 0;
-      if( _styleMask & UIWindowStyleAntiAlias)
-      {
-         if( [_OSWindow isAntiAliasing] == NO ||
-             [cls supportsAntiAliasing] == NO)
-            options |= UIGraphicsEdgeAntiAliasing;
-         else
-            options |= UIGraphicsUseMSAA;
-      }
 
-      options |= (_styleMask & UIWindowStyleForceEdgeAntiAlias) ? UIGraphicsEdgeAntiAliasing : 0;
-      options |= (_styleMask & UIWindowStyleClearType)          ? UIGraphicsUseClearType : 0;
-      options |= (_styleMask & UIWindowStyleStencilStrokes)     ? UIGraphicsUseStencilStrokes : 0;
+- (void) _createOffscreenGraphicsContext     MULLE_OBJC_THREADSAFE_METHOD
+{
+   Class        cls;
+   NSUInteger   options;
 
-      _context = [[cls alloc] initWithOSGraphicsContext:_OSWindow
-                                                shareID:[_OSWindow shareID]
-                                                options:options];      // have to do this manually, because the context is created manually
+   UIWindowSwapLog( "creating offscreen context");
 
-      if( ! _context)
-      {
-         MulleUILog( "Could not acquire a graphics context for backend: 0x%tx shareID: 0x%tx options: 0x%tx",
-                           [_OSWindow backend],
-                           [_OSWindow shareID],
-                           options);
-         abort();
-      }
-      [_context mulleSetNameUTF8String:"Window"];
+   [_offscreenOSWindow os_activateGraphicsContext];
 
-      UIWindowSwapLog( "context %#@ created for OSWindow %#@", _context, _OSWindow);
+   cls     = [[self class] osGraphicsContextClass];
+   options = 0;
+
+   //
+   // If the window supports antiAliasing, we might still have a CGContext
+   // that is just running GLES2.0, so we then still have to force
+   // EdgeAntiAliasing.
+   //
+   if( _offscreenStyleMask & UIWindowStyleAntiAlias)
+   {
+      if( [_OSWindow isAntiAliasing] == NO ||
+          [cls supportsAntiAliasing] == NO)
+         options |= UIGraphicsEdgeAntiAliasing;
+      else
+         options |= UIGraphicsUseMSAA;
    }
 
-   // TODO: mulleGainAccess ?
-   MulleWindowProfileEnd();
+   options |= (_offscreenStyleMask & UIWindowStyleForceEdgeAntiAlias) ? UIGraphicsEdgeAntiAliasing : 0;
+   options |= (_offscreenStyleMask & UIWindowStyleClearType)          ? UIGraphicsUseClearType : 0;
+   options |= (_offscreenStyleMask & UIWindowStyleStencilStrokes)     ? UIGraphicsUseStencilStrokes : 0;
 
-   return( _context);
+   _offscreenContext = [[cls alloc] initWithOSGraphicsContext:_offscreenOSWindow
+                                               nameUTF8String:"Offscreen"
+                                                      shareID:[_offscreenOSWindow shareID]
+                                                      options:options];
+   if( ! _offscreenContext)
+   {
+      MulleUILog( "Could not acquire an offscreen context for backend: 0x%tx shareID: 0x%tx options: 0x%tx",
+                        [_offscreenOSWindow backend],
+                        [_offscreenOSWindow shareID],
+                        options);
+      abort();
+   }
+   [_offscreenContext setRendersOffScreen:YES];
+   [_offscreenContext setState:UIGraphicsContextAssociated|UIGraphicsContextActive];
 }
 
 
 // TODO: memo, maybe the context triggers os_activateGraphicsContext ?
-- (id <UIGraphicsContext>) activateOffscreenGraphicsContext
+- (id <UIGraphicsContext>) activateGraphicsContext:(id <UIGraphicsContext>) context
+                                          OSWindow:(id <UIOSWindow>) OSWindow
 {
-   Class        cls;
-   NSUInteger   options;
+   NSUInteger   state;
 
    MulleWindowProfileBegin();
-
-   assert( (! _windowThread && [NSThread mulleIsMainThread]) ||
-           [NSThread currentThread] == _windowThread);
 
    // take renderlock here, relinquish later when wating for events
    // or when someone closes the window
 
-   assert( _offscreenOSWindow);
+   assert( OSWindow);
 
-   UIWindowSwapLog( "offscreen window context (%pp)", _offscreenContext);
+   state = [context state];
 
-   if( _keepOSGraphicsContextActive && _offscreenContext)
+   if( ! (state & UIGraphicsContextActive))
    {
-      MulleWindowProfileEnd();
-      return( _offscreenContext);
+      [OSWindow os_activateGraphicsContext];
+      state |= UIGraphicsContextActive;
+      UIWindowSwapLog( "context %#@ now activated", context);
    }
 
-   [_offscreenOSWindow os_activateGraphicsContext];
-   if( ! _offscreenContext)
+   if( ! (state & UIGraphicsContextAssociated))
    {
-      cls     = [[self class] osGraphicsContextClass];
-      options = 0;
-
-      //
-      // If the window supports antiAliasing, we might still have a CGContext
-      // that is just running GLES2.0, so we then still have to force
-      // EdgeAntiAliasing.
-      //
-      if( _offscreenStyleMask & UIWindowStyleAntiAlias)
-      {
-         if( [_OSWindow isAntiAliasing] == NO ||
-             [cls supportsAntiAliasing] == NO)
-            options |= UIGraphicsEdgeAntiAliasing;
-         else
-            options |= UIGraphicsUseMSAA;
-      }
-
-      options |= (_offscreenStyleMask & UIWindowStyleForceEdgeAntiAlias) ? UIGraphicsEdgeAntiAliasing : 0;
-      options |= (_offscreenStyleMask & UIWindowStyleClearType)          ? UIGraphicsUseClearType : 0;
-      options |= (_offscreenStyleMask & UIWindowStyleStencilStrokes)     ? UIGraphicsUseStencilStrokes : 0;
-
-      _offscreenContext = [[cls alloc] initWithOSGraphicsContext:_offscreenOSWindow
-                                                         shareID:[_offscreenOSWindow shareID]
-                                                         options:options];
-      if( ! _offscreenContext)
-      {
-         MulleUILog( "Could not acquire an offscren context for backend: 0x%tx shareID: 0x%tx options: 0x%tx",
-                           [_offscreenOSWindow backend],
-                           [_offscreenOSWindow shareID],
-                           options);
-         abort();
-      }
-      [_offscreenContext setRendersOffScreen:YES];
-      [_offscreenContext mulleSetNameUTF8String:"Offscreen"];
-
-      UIWindowSwapLog( "context %#@ created for offscreen OSWindow %#@",
-                     _offscreenContext, _offscreenOSWindow);
+      [context mulleGainAccess];
+      UIWindowSwapLog( "context %#@ now associated with thread %#@", context, [NSThread currentThread]);
+      state |= UIGraphicsContextAssociated;
    }
 
-   UIWindowSwapLog( "offscreen context");
+   [context setState:state];
 
    MulleWindowProfileEnd();
 
-   return( _offscreenContext);
+   return( context);
 }
 
 
-// TODO: memo, maybe the context triggers os_activateGraphicsContext ?
-- (void) deactivateGraphicsContext:(id <UIGraphicsContext>) context
+- (id <UIGraphicsContext>) activateWindowGraphicsContext
 {
-   assert( context);
+   assert( ! _mulle_objc_object_is_finalized( self));
+
+   if( ! _context)
+   {
+      [self _createGraphicsContext];
+      UIWindowSwapLog( "context %#@ created for OSWindow %#@",
+                     _context, _OSWindow);
+      assert( _context);
+      return( _context);
+   }
+
+   return( [self activateGraphicsContext:_context
+                                OSWindow:_OSWindow]);
+
+}
+
+
+- (id <UIGraphicsContext>) activateOffscreenGraphicsContext
+{
+   assert( (! _windowThread && [NSThread mulleIsMainThread]) ||
+           [NSThread currentThread] == _windowThread);
+   assert( ! _mulle_objc_object_is_finalized( self));
+
+   if( ! _offscreenContext)
+   {
+      [self _createOffscreenGraphicsContext];
+      UIWindowSwapLog( "context %#@ created for OSWindow %#@",
+                     _offscreenContext, _offscreenOSWindow);
+      assert( _offscreenContext);
+      return( _offscreenContext);
+   }
+
+   return( [self activateGraphicsContext:_offscreenContext
+                                OSWindow:_offscreenOSWindow]);
+}
+
+
+- (void) _deactivateGraphicsContext:(id <UIGraphicsContext>) context
+                           OSWindow:(id <UIOSWindow>) OSWindow
+                          keepState:(UIGraphicsContextState) keepState  MULLE_OBJC_THREADSAFE_METHOD
+{
+   UIGraphicsContextState   state;
 
    MulleWindowProfileBegin();
 
-   if( context == _offscreenContext)
-   {
-      UIWindowSwapLog( "offscreen context");
-      assert( (! _windowThread && [NSThread mulleIsMainThread]) ||
-              [NSThread currentThread] == _windowThread);
+   state = [context state];
 
-      if( ! _keepOSGraphicsContextActive)
-         [_offscreenOSWindow os_deactivateGraphicsContext];
+   // we can only deactivate if we properly activated before
+   assert( (state & UIGraphicsContextActive|UIGraphicsContextAssociated) == (UIGraphicsContextActive|UIGraphicsContextAssociated));
+
+   if( ! (keepState & UIGraphicsContextActive))
+   {
+      assert( state & UIGraphicsContextActive);
+      [OSWindow os_deactivateGraphicsContext];
+      UIWindowSwapLog( "context %#@ no longer active", context);
+      state &= ~UIGraphicsContextActive;
+   }
+
+   if( ! (keepState & UIGraphicsContextAssociated))
+   {
+      state &= ~UIGraphicsContextAssociated;
+      [context setState:state];
+
+      UIWindowSwapLog( "context %#@ no longer associated with %#@", context, [NSThread currentThread]);
+      [context mulleRelinquishAccess];
+      // can't access context no longer
    }
    else
-   {
-      UIWindowSwapLog( "window context");
-
-      assert( [NSThread mulleIsMainThread]);
-
-      if( ! _keepOSGraphicsContextActive)
-         [_OSWindow os_deactivateGraphicsContext];
-   }
+      [context setState:state];
 
    MulleWindowProfileEnd();
+}
+
+
+- (void) deactivateGraphicsContext:(id <UIGraphicsContext>) context
+                         keepState:(UIGraphicsContextState) keepState
+{
+   id <UIOSWindow>   OSWindow;
+
+   // memo: we can ask the context about this now...
+   OSWindow = (context == _context)
+              ? _OSWindow
+              : _offscreenOSWindow;
+   [self _deactivateGraphicsContext:context
+                           OSWindow:OSWindow
+                          keepState:keepState];
+}
+
+
+- (void) deactivateGraphicsContext:(id <UIGraphicsContext>) context
+{
+   UIGraphicsContextState   keepState;
+   id <UIOSWindow>          OSWindow;
+
+   // memo: we can ask the context about this now...
+   OSWindow  = (context == _context)
+               ? _OSWindow
+               : _offscreenOSWindow;
+   keepState = [self keepOSGraphicsContextActive];
+   [self _deactivateGraphicsContext:context
+                           OSWindow:OSWindow
+                          keepState:keepState];
 }
 
 
@@ -199,7 +266,7 @@
 
    // calling this method outside of rendering is an error
    context = _renderGraphicsContext;
-   if( ! [context isActive])
+   if( ! ([context state] & UIGraphicsContextActive))
       abort();
    return( context);
 }
@@ -222,16 +289,29 @@
    _renderGraphicsContext = nil;
 }
 
+
+- (void) deactivateRenderGraphicsContextKeepState:(UIGraphicsContextState) keepState
+{
+   assert( _renderGraphicsContext);
+   [self deactivateGraphicsContext:_renderGraphicsContext
+                         keepState:keepState];
+   _renderGraphicsContext = nil;
+}
+
+
+
 //
 // only call this during construction of the window, when its effectively
 // single-threaded
 //
-- (void) setKeepOSGraphicsContextActive:(BOOL) flag
+- (void) setKeepOSGraphicsContextActive:(UIGraphicsContextState) state
 {
+   assert( [NSThread mulleIsMainThread]);
+   assert( _windowThread == nil);
+
+#if 0
    NSThread   *activeThread;
    NSThread   *currentThread;
-
-   assert( _windowThread == nil);
 
    // ez exit to keep it ez
    if( flag == _keepOSGraphicsContextActive)
@@ -273,8 +353,8 @@
          _offscreenContext = nil;
       }
    }
-
-   _keepOSGraphicsContextActive = flag;
+#endif
+   _keepOSGraphicsContextActive = state;
 }
 
 @end

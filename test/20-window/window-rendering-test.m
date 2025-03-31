@@ -3,15 +3,17 @@
 
 static int frameCallbackCount = 0;
 
-static int customFrameCallback(UIPureWindow *window,
-                              id <UIGraphicsContext> context,
-                              struct CGFrameInfo *frameInfo,
-                              UIWindowDisplayBits displayBits)
+
+static UIWindowDisplayBits    customFrameCallback( UIPureWindow *window,
+                                                   id <UIGraphicsContext> context,
+                                                   struct CGFrameInfo *frameInfo,
+                                                   UIWindowDisplayBits displayBits)
 {
    frameCallbackCount++;
    printf("Frame callback called (#%d)\n", frameCallbackCount);
    return 1; // Indicate we're animating
 }
+
 
 static UIWindowDisplayBits customWillRenderCallback(UIPureWindow *window,
                                                  id <UIGraphicsContext> context,
@@ -22,6 +24,7 @@ static UIWindowDisplayBits customWillRenderCallback(UIPureWindow *window,
    return displayBits;
 }
 
+
 static UIWindowDisplayBits customDidRenderCallback(UIPureWindow *window,
                                                id <UIGraphicsContext> context,
                                                struct CGFrameInfo *info,
@@ -31,11 +34,13 @@ static UIWindowDisplayBits customDidRenderCallback(UIPureWindow *window,
    return returnBits;
 }
 
+
 static void swapBuffersCallback(UIPureWindow *window, BOOL immediately)
 {
    printf("Swap buffers callback called (immediately: %s)\n",
           immediately ? "YES" : "NO");
 }
+
 
 int main(int argc, char *argv[])
 {
@@ -63,9 +68,6 @@ int main(int argc, char *argv[])
    osWindow = (FakeOSWindow *)[window OSWindow];
    printf("OSWindow creation: %s\n", osWindow ? "OK" : "FAILED");
 
-   // Test graphics context activation - using pattern from main-frames.m
-   context = [window activateWindowGraphicsContext];
-   printf("Context creation: %s\n", context ? "OK" : "FAILED");
 
    // Set up custom render callbacks
    [window setFrameCallback:customFrameCallback];
@@ -73,9 +75,13 @@ int main(int argc, char *argv[])
    [window setDidRenderFrameCallback:customDidRenderCallback];
    [window setDidSwapBuffersCallback:swapBuffersCallback];
 
+   // Test graphics context activation - using pattern from main-frames.m
+   context = [window activateWindowGraphicsContext];
+   printf("Context creation: %s\n", context ? "OK" : "FAILED");
    // Get initial frame count
    initialFrames = [context numberOfFrames];
    printf("Initial frame count: %lu\n", (unsigned long)initialFrames);
+   [window deactivateGraphicsContext:context];
 
    // Render a frame using the OneFrame API
    [window renderAndSwapOneFrame];
@@ -102,9 +108,6 @@ int main(int argc, char *argv[])
    printf("After multiple renders, frame count: %lu\n",
       (unsigned long)[context numberOfFrames]);
    printf("Frame callback count: %d\n", frameCallbackCount);
-
-   // Deactivate the graphics context when done
-   [window deactivateGraphicsContext:context];
 
    // No explicit release since windowWithFrame: returns an autoreleased object
    return 0;
