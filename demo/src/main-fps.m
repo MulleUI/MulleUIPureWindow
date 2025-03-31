@@ -141,7 +141,7 @@ static UIWindowDisplayBits   rawDisplay( UIPureWindow *window,
    }
    [context endRender];
 
-   return( 0);
+   return( 1);
 }
 
 

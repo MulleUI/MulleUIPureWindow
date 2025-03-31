@@ -50,13 +50,13 @@ static void  drawPrettyBackground( CGContext *context, CGRect canvas)
 
 
 
-static int   display( UIPureWindow *window,
-                      id <UIGraphicsContext> context,
-                      struct CGFrameInfo *frameInfo,
-                      UIWindowDisplayBits displayBits)
+static UIWindowDisplayBits   display( UIPureWindow *window,
+                                      id <UIGraphicsContext> context,
+                                      struct CGFrameInfo *frameInfo,
+                                      UIWindowDisplayBits displayBits)
 {
    drawStuff( (CGContext *) context, CGFrameInfoGetContentRect( frameInfo));
-   return( 0);
+   return( 1);
 }
 
 

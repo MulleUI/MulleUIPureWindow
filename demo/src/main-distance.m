@@ -23,7 +23,7 @@
                                  textureFlags:0] retain];
    }
 
-   [self bindFramebuffer:CGContextFramebufferMakeWithLayer( _accumulateLayer)];
+   [self bindFramebuffer:CGContextFramebufferMakeWithFramebuffer( _accumulateLayer)];
 
    if( oldLayer)
    {
@@ -41,7 +41,7 @@
    if( _usesAccumulationBuffer)
    {
       if( _rendersOffScreen)
-         [self bindFramebuffer:CGContextFramebufferMakeWithLayer( _renderLayer)];
+         [self bindFramebuffer:CGContextFramebufferMakeWithFramebuffer( _renderLayer)];
       else
          [self bindFramebuffer:CGContextFramebufferMakeDefault()];
       CGContextCheckBackendError( self, "bind buffer");
@@ -88,13 +88,13 @@ static void   drawStuff( CGContext *context, CGRect canvas)
 }
 
 
-static int   display( UIPureWindow *window,
-                      id <UIGraphicsContext> context,
-                      struct CGFrameInfo *frameInfo,
-                      UIWindowDisplayBits displayBits)
+static UIWindowDisplayBits   display( UIPureWindow *window,
+                                      id <UIGraphicsContext> context,
+                                      struct CGFrameInfo *frameInfo,
+                                      UIWindowDisplayBits displayBits)
 {
    drawStuff( (CGContext *) context, CGFrameInfoGetContentRect( frameInfo));
-   return( 0);
+   return( 1);
 }
 
 

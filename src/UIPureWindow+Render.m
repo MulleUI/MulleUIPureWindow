@@ -90,7 +90,7 @@
    // first frame of a new or corrupted framebuffer
    //
    doClearFramebufferColor = YES;
-   if( [context isInitializedFramebuffer]) // now we can be smarter..
+   if( ! [context needsFramebufferClear]) // now we can be smarter..
       doClearFramebufferColor = info->alpha == 1.0 && ! [self isOpaque];
 
    UIWindowRenderLogVerbose( "clearing framebuffer color=%btd", doClearFramebufferColor);

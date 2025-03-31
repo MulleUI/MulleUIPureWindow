@@ -13,7 +13,7 @@
 #define _demo__provide_h__
 
 
-// no headers
+#include "demo-version.h"
 
 
 #endif

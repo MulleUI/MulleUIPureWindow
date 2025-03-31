@@ -44,8 +44,8 @@ static BOOL   drawStuff( CGContext *context, CGRect canvas)
    struct NVGcontext       *vg;
    UIPureWindow            *window;
 
-   osWindow = [context OSWindow];
-   window   = (UIPureWindow *) [osWindow parentWindow];
+   osWindow = MULLE_OBJC_CLASS_CAST( GLFWOSWindow, [context OSWindow]);
+   window   = MULLE_OBJC_CLASS_CAST( UIPureWindow, [osWindow parentWindow]);
    assert( window);
 
    vg = CGContextGetNVGContext( context);
@@ -115,13 +115,13 @@ static BOOL   drawStuff( CGContext *context, CGRect canvas)
 }
 
 
-static int   display( UIPureWindow *window,
-                      id <UIGraphicsContext> context,
-                      struct CGFrameInfo *frameInfo,
-                      UIWindowDisplayBits displayBits)
+static UIWindowDisplayBits   display( UIPureWindow *window,
+                                      id <UIGraphicsContext> context,
+                                      struct CGFrameInfo *frameInfo,
+                                      UIWindowDisplayBits displayBits)
 {
    drawStuff( (CGContext *) context, CGFrameInfoGetContentRect( frameInfo));
-   return( 0);
+   return( 1);
 }
 
 

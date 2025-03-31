@@ -102,6 +102,11 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIPureWindow *self)
    displayBits        = 0;
    needsRefresh       = [self needsRefreshClearIfSet];
 
+   if( needsRefresh)
+   {
+      UIWindowRenderLogVerbose( "needsRefresh");
+   }
+
    // this checks "refresh" events only, it can be NO, but still "display"
    // may be set. The user usually never touches the refresh flag
 
@@ -203,7 +208,7 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIPureWindow *self)
          desiredFrameRate = UIOSWindowInfoGetSlowestFrameRate( &windowInfo);
    }
 
-   UIWindowRenderLogVerbose( "wait %.6fs", desiredFrameRate);
+   UIWindowRenderLog( "now wait %.6fs", desiredFrameRate);
 
    return( desiredFrameRate);
 }

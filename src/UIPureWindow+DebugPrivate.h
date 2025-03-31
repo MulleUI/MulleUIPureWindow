@@ -26,8 +26,9 @@ enum
 
    UIWindowDebugVerbose            = 0x00001000, // UIViewDebugVerbose,      // 0x00001000
    UIWindowDebugEventVerbose       = 0x00002000, // UIViewDebugEventVerbose, // 0x00002000
-   UIWindowDebugRenderVerbose      = 0x008000,
-   UIWindowDebugThreadVerbose      = 0x010000,
+   // 0x4000
+   UIWindowDebugRenderVerbose      = 0x00008000,
+   UIWindowDebugThreadVerbose      = 0x00010000,
 
    // 0x020000
    // 0x040000

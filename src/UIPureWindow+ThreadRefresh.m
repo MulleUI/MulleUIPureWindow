@@ -51,6 +51,9 @@
    id <UIFramebuffer>       framebuffer;
    CGContentMode            refreshContentMode;
    struct CGFrameInfo       frameInfo;
+   char                     *nameUTF8String;
+
+   MulleWindowProfileBegin();
 
    assert( [NSThread mulleIsMainThread]);
    assert( _backingStore != UIWindowBackingStoreVolatile);
@@ -58,6 +61,7 @@
    @autoreleasepool
    {
       context = [self activateWindowGraphicsContext];
+      assert( context == _context);
 
       // TODO: voodoo barrier, should be useless
       // [_offscreenContext barrier];
@@ -68,6 +72,13 @@
          // recycle our old framebuffer
          assert( _lastOffscreenFramebuffer != framebuffer);
 
+         // when we recycle the old framebuffer, the framebuffer can then
+         // be picked up and overwritten again by the other thread. What could
+         // possibly go wrong ? If for some reason the "blit" below has not
+         // yet completed, there might be ugliness as the old framebuffer
+         // contents are cleared. I deem this as a) super-super unlikely
+         // b) acceptable. I mean you have to run with a framerate of 1000s and
+         // the blit has to be slower than two frames of rendering...
          UIWindowSwapLog( "Recycle old framebuffer %#@", _lastOffscreenFramebuffer);
          [_offscreenContext recycleFramebuffer:_lastOffscreenFramebuffer];
 
@@ -84,7 +95,7 @@
          if( ! framebuffer)
          {
             UIWindowSwapLog( "There is nothing to display (yet ?)");
-            return;
+            return;  // cold indicate "no need to swap" here
          }
          UIWindowSwapLog( "Reuse previously acquired offscreen framebuffer %#@", framebuffer);
       }
@@ -106,73 +117,87 @@
          // TODO: voodoo barrier, possibly useless
          // [context barrier];
          [context beginRender:&frameInfo];
-
-         refreshContentMode = [self refreshContentMode];
-         isScaling          = CGContentModeIsScaling( refreshContentMode);
-         if( ! isScaling)
          {
-            color = [self backgroundHexColor];
-            [context clearFramebufferWithHexColor:color];
-         }
+            refreshContentMode = [self refreshContentMode];
+            isScaling          = CGContentModeIsScaling( refreshContentMode);
+            if( ! isScaling)
+            {
+               color = [self backgroundHexColor];
+               [context clearFramebufferWithHexColor:color];
+            }
 
-         rect.origin = CGPointZero;
-         rect.size   = frameInfo.window.frame.size;
-         image       = [context imageWithFramebuffer:framebuffer];
-         assert( image);
-         imageSize   = [image size];
-         imageFrame  = CGSizePlaceInRect( imageSize, rect, refreshContentMode);
+            rect.origin = CGPointZero;
+            rect.size   = frameInfo.window.frame.size;
+#ifdef DEBUG
+            {
+               static NSUInteger   counter;  // just for debugging
+
+               nameUTF8String = MulleObjC_asprintf( "RefreshImage #%td", counter++);
+            }
+#else
+            nameUTF8String = NULL;
+#endif
+            image      = [context imageWithFramebuffer:framebuffer
+                                        nameUTF8String:nameUTF8String];
+            imageSize  = [image size];
+            imageFrame = CGSizePlaceInRect( imageSize, rect, refreshContentMode);
+            assert( image);
+            assert( [image performSelector:@selector( context)] == context);
 
 #ifdef MISSING_BARRIER_DEBUG
-         {
-            id   bitmapImage;
-
-            bitmapImage = [image bitmapImage];
-            if( [bitmapImage isFullyTransparent])
             {
-               fprintf( stderr, "missing barrier ?\n");
-               abort();
+               id   bitmapImage;
+
+               bitmapImage = [image bitmapImage];
+               if( [bitmapImage isFullyTransparent])
+               {
+                  fprintf( stderr, "missing barrier ?\n");
+                  abort();
+               }
             }
-         }
 #endif
-         UIWindowSwapLog( "Refresh with image %#@", image);
+            UIWindowSwapLog( "Refresh with image %#@", image);
 
-         // this can likely transfer directly into the framebuffer, any nvg
-         // drawing issued before (and after) will appear on top of it
-         // in other words: DO NOT emit drawing code before this. Afterwards it
-         // is OK.
-         [(id <UIGraphicsDrawing>) context blitRect:imageFrame
-                                              image:image
-                                              scale:isScaling];
+            // this can likely transfer directly into the framebuffer, any nvg
+            // drawing issued before (and after) will appear on top of it
+            // in other words: DO NOT emit drawing code before this. Afterwards it
+            // is OK.
+            [(id <UIGraphicsDrawing>) context blitRect:imageFrame
+                                                 image:image
+                                                 scale:isScaling];
 
-         if( _debuggingFlags & UIWindowDebugFramebufferIdRect)
-         {
-            if( [context conformsToProtocol:@protocol( UIGraphicsDrawing)])
+            if( _debuggingFlags & UIWindowDebugFramebufferIdRect)
             {
-               rect = CGRectInset( rect, 20, 20);
-               [(id <UIGraphicsDrawing>) context strokeRect:rect
-                                                strokeWidth:4.0
-                                                   hexColor:0x20A080FF];
+               if( [context conformsToProtocol:@protocol( UIGraphicsDrawing)])
+               {
+                  rect = CGRectInset( rect, 20, 20);
+                  [(id <UIGraphicsDrawing>) context strokeRect:rect
+                                                   strokeWidth:4.0
+                                                      hexColor:0x20A080FF];
+               }
             }
-         }
 
-         if( _debuggingFlags & UIWindowDebugDumpFrameToFile)
-         {
-            MulleUIWriteImageToPNGFileSequenceAsync( image, "refresh-image");
-            // Can't do this as framebuffer owned by other thread really
-            // MulleUIWriteImageToPNGFileSequenceAsync( framebuffer, "refresh-framebuffer");
-         }
+            if( _debuggingFlags & UIWindowDebugDumpFrameToFile)
+            {
+               MulleUIWriteImageToPNGFileSequenceAsync( image, "refresh-image");
+               // Can't do this as framebuffer owned by other thread really
+               // MulleUIWriteImageToPNGFileSequenceAsync( framebuffer, "refresh-framebuffer");
+            }
 
-         UIWindowSwapLog( "Drew image %#@ of size %.1f %.1f into %.1f %.1f %.1f %.1f for refresh",
-                           image,
-                           imageSize.width, imageSize.height,
-                           imageFrame.origin.x, imageFrame.origin.y,
-                           imageFrame.size.width, imageFrame.size.height);
+            UIWindowSwapLog( "Drew image %#@ of size %.1f %.1f into %.1f %.1f %.1f %.1f for refresh",
+                              image,
+                              imageSize.width, imageSize.height,
+                              imageFrame.origin.x, imageFrame.origin.y,
+                              imageFrame.size.width, imageFrame.size.height);
+         }
          [context endRender];
          UIWindowSwapLog( "Finished render");
       }
       UIWindowSwapLog( "AutoreleasePool cleaned");
    }
    [self deactivateGraphicsContext:context];
+
+   MulleWindowProfileEnd();
 }
 
 @end

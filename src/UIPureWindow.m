@@ -4,11 +4,12 @@
 
 #import "UIPureWindow+DebugPrivate.h"
 #import "UIPureWindow+FrameInfo.h"
+#import "UIPureWindow+InvocationQueue.h"
 #import "UIPureWindow+Render.h"
 #import "UIPureWindow+Thread.h"
 #import "UIPureWindow+NSTimer.h"
-#import "UIPureWindow+InvocationQueue.h"
 #import "UIPureWindow+UIEvent.h"
+#import "UIPureWindow+UIGraphicsContext.h"
 #import "UIPureWindow+UIWindow.h"
 
 #import "import-private.h"
@@ -163,17 +164,26 @@ static struct
 
 + (instancetype) windowWithFrame:(CGRect) frame;
 {
-   return( [[[self alloc] initWithFrame:frame] autorelease]);
+   UIPureWindow *obj;
+
+   obj = [self alloc];
+   obj = [obj initWithFrame:frame];
+   obj = [obj autorelease];
+   return(obj);
 }
 
-
 + (instancetype) windowWithFrame:(CGRect) frame
-                 titleUTF8String:(char *) title
-                       styleMask:(NSUInteger) styleMask
+                titleUTF8String:(char *) title
+                      styleMask:(NSUInteger) styleMask
 {
-   return( [[[self alloc] initWithFrame:frame
-                        titleUTF8String:title
-                              styleMask:styleMask] autorelease]);
+   UIPureWindow *obj;
+
+   obj = [self alloc];
+   obj = [obj initWithFrame:frame
+              titleUTF8String:title
+                    styleMask:styleMask];
+   obj = [obj autorelease];
+   return(obj);
 }
 
 
@@ -437,12 +447,16 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
          styleMask &= ~(UIWindowStyleForceEdgeAntiAlias|UIWindowStyleStencilStrokes|UIWindowStyleClearType);
    }
 
+   _styleMask                   = styleMask;
    //
    // we can keep the OSGraphicsContext active, if the window is running in its
    // own thread, or if it can be ascertained that only one window is open
-   // ever (user resposibility then)
-   _styleMask                   = styleMask;
-   _keepOSGraphicsContextActive = (styleMask & (UIWindowStyleRetained|UIWindowStyleRetainedOnMainThread)) == UIWindowStyleRetained;
+   // ever (user resposibility then). By default we assume that the thread
+   // doesn't change
+   //
+   _keepOSGraphicsContextActive = (styleMask & (UIWindowStyleRetained|UIWindowStyleRetainedOnMainThread)) == UIWindowStyleRetained
+                                  ? UIGraphicsContextAssociated|UIGraphicsContextActive
+                                  : UIGraphicsContextAssociated;
 
    osWindow = [[[osWindowClass alloc] initWithFrame:frame
                                     titleUTF8String:title
@@ -463,7 +477,13 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 {
    return( [self initWithFrame:frame
                titleUTF8String:"Demo"
-                     styleMask:0]);
+                     styleMask:UIWindowStyleMaskDefault]);
+}
+
+
+- (instancetype) init
+{
+   return( [self initWithFrame:CGRectZero]);
 }
 
 
@@ -471,10 +491,11 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 {
    if( _offscreenContext)
    {
-      if( ! [_offscreenContext isActive])
+      if( ! ([_offscreenContext state] & UIGraphicsContextActive))
       {
          // if still locked somehow (keep flag) fine
-         [_offscreenOSWindow os_tryActivateGraphicsContext];
+         [self activateGraphicsContext:_offscreenContext
+                              OSWindow:_offscreenOSWindow];
       }
 
       [_lastOffscreenFramebuffer mullePerformFinalize];
@@ -490,10 +511,11 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    if( _context)
    {
-      if( ! [_context isActive])
+      if( ! ([_context state] & UIGraphicsContextActive))
       {
          // don't deadlock if still locked
-         [_OSWindow os_tryActivateGraphicsContext];
+         [self activateGraphicsContext:_context
+                              OSWindow:_OSWindow];
       }
       [_context mullePerformFinalize];
       [_OSWindow os_deactivateGraphicsContext];
@@ -627,6 +649,13 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 //
 - (void *) forward:(void *) param
 {
+   void   *rval;
+   int    fail = 0;
+
+   rval = _MulleDynamicObjectForward( self, _cmd, param, &fail);
+   if( ! fail)
+      return( rval);
+
    assert( _OSWindow); // if nil, window should not forward...
    return( mulle_objc_object_call_variable_inline( _OSWindow,
                                                    (mulle_objc_methodid_t) _cmd,

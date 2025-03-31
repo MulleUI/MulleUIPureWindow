@@ -1,4 +1,5 @@
 #import <MulleUIPureWindow/MulleUIPureWindow.h>
+#include "../fake-ui-application-glue.inc"
 
 
 int   main( void)
@@ -8,7 +9,6 @@ int   main( void)
    NSInvocation           *invocation;
 
    window = [UIPureWindow object];
-   [window _initInvocationQueues];
 
    queue = [window invocationQueueForNameUTF8String:"whatevs"];
    if( ! queue)

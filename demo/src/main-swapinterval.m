@@ -136,10 +136,10 @@ static BOOL   drawStuff( CGContext *context, CGRect canvas)
 
 
 
-static int   display( UIPureWindow *window,
-                      id <UIGraphicsContext> context,
-                      struct CGFrameInfo *frameInfo,
-                      UIWindowDisplayBits displayBits)
+static UIWindowDisplayBits   display( UIPureWindow *window,
+                                      id <UIGraphicsContext> context,
+                                      struct CGFrameInfo *frameInfo,
+                                      UIWindowDisplayBits displayBits)
 {
    CGRect   canvas;
 
@@ -147,7 +147,7 @@ static int   display( UIPureWindow *window,
    canvas = CGRectInset( canvas, 40, 40);
 
    drawStuff( (CGContext *) context, canvas);
-   return( 0);
+   return( 1);
 }
 
 

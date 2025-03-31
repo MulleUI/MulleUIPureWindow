@@ -111,6 +111,11 @@
     return _backendType;
 }
 
+- (NSThread *)activeThread
+{
+   return [NSThread currentThread];
+}
+
 - (id<UIOSWindow>)OSWindow
 {
     return self;
@@ -268,9 +273,11 @@
 @end
 
 @interface FakeContext : NSObject < UIGraphicsContext>
-
+{
+   char         *_nameUTF8String;
+   NSUInteger   _state;
+}
 @property (assign) NSThread *activeThread;
-@property (assign) char *mulleNameUTF8String MULLE_OBJC_THREADSAFE_PROPERTY;
 @property (assign) BOOL rendersOffScreen;
 @property (assign) NSUInteger framebufferBits;
 @property (assign) id OSWindow;
@@ -321,12 +328,13 @@
    return self;
 }
 
-- (instancetype)initWithBackend:(UIGraphicsBackend)backend
-                       shareID:(NSUInteger)shareID
-                       options:(UIGraphicsOptions)options
+- (instancetype) initWithOSGraphicsContext:(id <UIOSGraphicsContext>) osContext
+                            nameUTF8String:(char *) nameUTF8String
+                                   shareID:(NSUInteger)shareID
+                                   options:(UIGraphicsOptions)options
 {
    if (self = [super init]) {
-       _backend = backend;
+       _backend = [osContext backend];
        _graphicsShareID = shareID;
        _graphicsOptions = options;
        _rendersOffScreen = NO;
@@ -345,6 +353,16 @@
        memset(&_inputState, 0, sizeof(struct UIInputState));
    }
    return self;
+}
+
+- (instancetype) initWithOSGraphicsContext:(id <UIOSGraphicsContext>) os_context
+                                   shareID:(NSUInteger) shareID
+                                   options:(UIGraphicsOptions) options
+{
+   return( [self initWithOSGraphicsContext:os_context
+                            nameUTF8String:NULL
+                                   shareID:shareID
+                                   options:options]);
 }
 
 - (char *)backendUTF8String
@@ -371,6 +389,11 @@
 - (BOOL)isActive
 {
    return _isActiveFlag;
+}
+
+- (BOOL) needsFramebufferClear
+{
+   return( YES);
 }
 
 - (NSThread *)activeThread
@@ -509,7 +532,8 @@
    // Fake rect drawing
 }
 
-- (id<UIImage>)imageWithFramebuffer:(id<UIFramebuffer>)layer
+- (id<UIImage>) imageWithFramebuffer:(id<UIFramebuffer>)layer
+                      nameUTF8String:(char *) nameUTF8String
 {
    // Return nil or a dummy image
    return nil;

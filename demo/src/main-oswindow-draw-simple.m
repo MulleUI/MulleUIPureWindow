@@ -5,6 +5,7 @@
 
 //
 // MEMO: this demo shows how to customize the OSWindow class on the fly
+//       A CGContext is created manually and placed into the OSWindow.
 //
 
 // if this test fails, comment this out and see if something changes
@@ -26,9 +27,9 @@
 
 - (void) finalize
 {
+   // have to do this manually
    [self os_activateGraphicsContext];
    {
-      // have to do this manually
       [_context mullePerformFinalize];
    }
    [self os_deactivateGraphicsContext];
@@ -56,6 +57,7 @@ static UIWindowDisplayBits   display( GLFWOSWindow *window_in)
       drawRedWhiteBlueFlag( CGContextGetNVGContext( context), canvas);
    }
    [context endRender];
+
    return( 0);
 }
 
@@ -83,17 +85,12 @@ int   main( int argc, char *argv[])
 
       assert( [osWindow isKindOfClass:[MyWindow class]]);
 
-#ifdef USE_UIWINDOW_CG_CONTEXT    
-      [uiWindow setKeepOSGraphicsContextActive:NO];
-      context = (CGContext *) [uiWindow activateWindowGraphicsContext];
-      [uiWindow deactivateGraphicsContext:context];
-#else 
       [osWindow os_activateGraphicsContext];
       context = [[[CGContext alloc] initWithOSGraphicsContext:osWindow
                                                       shareID:[osWindow shareID]
                                                       options:UIGraphicsDefaultOptions] autorelease];      // have to do this manually, because the context is created manually
       [osWindow os_deactivateGraphicsContext];
-#endif
+
       assert( context);
 
       // remember context for "display" callback

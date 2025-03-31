@@ -92,7 +92,6 @@ typedef NSUInteger   UIWindowBackingStoreType;
     |UIWindowStyleClearType\
     |UIWindowOpenGLLibraryFallback)
 
-// value to use if styleMask is 0
 #define UIWindowStyleMaskDefault \
    (UIWindowStyleRetained|UIWindowStyleMaskNonRetained)
 
@@ -382,7 +381,7 @@ struct MulleClickDragDifferentiator
 // this will be NO if the window is not running in its own thread
 // For multiple windows on the same thread (i.e. mainThread) this must not be
 // set, otherwise you see only drawings in one window
-@property( assign) BOOL                            keepOSGraphicsContextActive;
+@property( assign) UIGraphicsContextState           keepOSGraphicsContextActive  MULLE_OBJC_THREADSAFE_PROPERTY;
 
 
 // Rendercallbacks. If the renderer is in its own thread, then all these
@@ -483,6 +482,7 @@ struct MulleClickDragDifferentiator
                      styleMask:(NSUInteger) styleMask;
 
 // calls initWithFrame:titleUTF8String:styleMask: with some "Demo" defaults
+// and UIWindowStyleMaskDefault
 - (instancetype) initWithFrame:(CGRect) frame;
 
 

@@ -29,4 +29,4 @@
 #import "_demo-import-private.h"
 
 /* You can add some more import statements here */
-#import "../src/generic/import-private.h"
+#import "../../../src/generic/import-private.h"
