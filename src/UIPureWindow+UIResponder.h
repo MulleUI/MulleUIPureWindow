@@ -15,4 +15,9 @@
 //
 - (BOOL) makeFirstResponder:(id<UIResponder>)responder;
 
+- (id <UIResponder>) previousFirstResponder;
+- (id <UIResponder>) nextFirstResponder;
+
+- (UIInputEvent *) acceptKeyboardEvent:(UIKeyboardEvent *) event;
+
 @end
