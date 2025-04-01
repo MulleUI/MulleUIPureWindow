@@ -172,9 +172,10 @@ static struct
    return(obj);
 }
 
+
 + (instancetype) windowWithFrame:(CGRect) frame
-                titleUTF8String:(char *) title
-                      styleMask:(NSUInteger) styleMask
+                 titleUTF8String:(char *) title
+                       styleMask:(NSUInteger) styleMask
 {
    UIPureWindow *obj;
 
