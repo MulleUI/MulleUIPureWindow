@@ -9,7 +9,6 @@
 #import "import-private.h"
 
 #import "UIPureWindow+DebugPrivate.h"
-#import "UIPureWindow+Render.h"
 #import "UIPureWindow+FrameInfo.h"
 
 
@@ -59,41 +58,6 @@
 }
 
 
-
-- (UIWindowDisplayBits) render_frameWithFrameInfo:(struct CGFrameInfo *) info
-                                      displayBits:(UIWindowDisplayBits) displayBits
-{
-   UIWindowDisplayBits  returnBits;
-
-   [self activateRenderGraphicsContext];
-
-   @autoreleasepool // THIS IS IMPORTANT TO COLLECT CGLAYERS WHILE THE PROPER CONTEXT IS ALIVE
-   {
-      UIWindowRenderLog( "%s", CGFrameInfoUTF8String( info));
-
-      // for demos
-      [_renderGraphicsContext setInputState:_inputState];
-
-      // MEMO: we have not done beginRender here, this means that the proper
-      //       framebuffer may not be bound to the context (yet)
-      
-      displayBits = (*self->_willRenderFrameCallback)( self, _renderGraphicsContext, info, displayBits);
-      UIWindowDisplayBitsLog( "_willRenderFrameCallback augmented (0x%tx)", displayBits);
-
-      // This is usually UIWindowDefaultRawFrameCallback (UIWindow+Render.m)
-      // Here displayBits are now used to render the frame. The returned
-      // value are the returnBits, which are different.
-      returnBits = (*self->_rawFrameCallback)( self, _renderGraphicsContext, info, displayBits);
-      UIWindowDisplayBitsLog( "_rawFrameCallback returned (0x%tx)", returnBits);
-
-      //
-      returnBits = (*self->_didRenderFrameCallback)( self, _renderGraphicsContext, info, returnBits);
-      UIWindowDisplayBitsLog( "_didRenderFrameCallback augmented (0x%tx)", returnBits);
-   }
-   [self deactivateRenderGraphicsContext];
-
-   return( returnBits);
-}
 
 /***
  *** SWAP

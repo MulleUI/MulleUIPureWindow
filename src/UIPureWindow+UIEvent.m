@@ -5,6 +5,7 @@
 #import "import-private.h"
 
 #import "UIPureWindow+FrameInfo.h"
+#import "UIPureWindow+Frame.h"
 #import "UIPureWindow+Thread.h"
 #import "UIPureWindow+DebugPrivate.h"
 #import "UIPureWindow+UIResponder.h"
@@ -101,7 +102,7 @@
 
    case UIWindowEventTypeResize :
       // TODO: should set bounds & frame ?
-      // [self _setSize:CGSizeMakeWithIntegerSize( [(UIWindowResizeEvent *) event size])];
+      // [self _setSize:CGSizeMakeWithPixelSize( [(UIWindowResizeEvent *) event size])];
       _isResizing = YES;
 
       [self setNeedsDisplayBits:~0];
@@ -113,7 +114,7 @@
    // But how sure is that ?
    case UIWindowEventTypeMove :
       // keep this is sync
-      [self _setPosition:CGPointMakeWithIntegerPoint( [(UIWindowMoveEvent *) event origin])];
+      [self _setPosition:CGPointMakeWithPixelPoint( [(UIWindowMoveEvent *) event origin])];
       return( nil);
       // fall thru
 

@@ -10,11 +10,11 @@ static BOOL  drawStuff( CGContext *context, CGRect canvas);
 
 static BOOL  drawStuff( CGContext *context, CGRect canvas)
 {
-   struct CGDrawableOptions   options;
-   static CGImage             *cgImage[ 2];
+   CGRect                     rect;
    static CGContext           *contexts[ 2];
    static CGFramebuffer       *framebuffer;
-   CGRect                     rect;
+   static CGImage             *cgImage[ 2];
+   struct CGDrawableOptions   options;
    struct CGFrameInfo         frameInfo;
    struct CGFrameInfo         oldFrameInfo;
 
@@ -53,7 +53,7 @@ static BOOL  drawStuff( CGContext *context, CGRect canvas)
       {
          assert( contexts[ 0] != context);
 
-         cgImage[ 1]  = [[framebuffer shareWithContext:context
+         cgImage[ 1]  = [[cgImage[ 0] shareWithContext:context
                                           textureFlags:[framebuffer textureFlags]] retain];
          contexts[ 1] = context;
       }

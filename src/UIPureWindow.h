@@ -278,6 +278,10 @@ struct MulleClickDragDifferentiator
    // 0: unchecked 1:found -1:non found
    int                             _initialFirstResponderState;
 
+@protected  // used temporarily by the drawing thread for debugging
+   // used by LED display... so ugly
+   NSUInteger                      _debugDisplayBits;
+   NSUInteger                      _debugReturnBits;
 
 // atomic variables accessed by both threads
 @protected
@@ -392,7 +396,7 @@ struct MulleClickDragDifferentiator
 // This is the "master" callback, if you override this, none of the other
 // render callbacks and delegate methods will be invoked (except 
 // -willRenderFrameCallback and -didRenderFrameCallback). So in general keep it
-// as UIWindowDefaultRawFrameCallback. DisplayBits are
+// as UIPureWindowDefaultRawFrameCallback. DisplayBits are
 // UIWindowDisplayNeedsRedraw et.al.
 // Returns YES, if any animations were run.
 //

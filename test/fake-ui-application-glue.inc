@@ -272,7 +272,7 @@
 
 @end
 
-@interface FakeContext : NSObject < UIGraphicsContext>
+@interface FakeContext : NSObject < UIGraphicsContext, UIGraphicsDrawing>
 {
    char         *_nameUTF8String;
    NSUInteger   _state;
@@ -589,14 +589,13 @@
 
 @interface FakeApplication : NSObject
 {
-   id <UIOSWindow>   _keyOSWindow;
-   NSMutableArray    *_windows;
+   id <UIOSWindow>     _keyOSWindow;
+   struct mulle_array  _windows;
 }
 
 + (FakeApplication *) sharedInstance;
 - (void) setOSKeyWindow:(id <UIOSWindow>) window;
 - (id <UIOSWindow>) osKeyWindow;
-- (NSArray *) windows;
 - (void) addWindow:(UIPureWindow *) window;
 - (void) os_waitEventsWithTimeout:(mulle_relativetime_t) timeout;
 - (id <UIScreen>) primaryScreen;
@@ -612,7 +611,7 @@
 - (id) init
 {
    if (self = [super init]) {
-      _windows = [NSMutableArray new];
+      mulle_array_init( &_windows, 0, &MulleObjCContainerRetainKeyCallback, NULL);
    }
    return self;
 }
@@ -620,7 +619,7 @@
 
 - (void) dealloc
 {
-   [_windows release];
+   mulle_array_done( &_windows);
    [super dealloc];
 }
 
@@ -634,18 +633,13 @@
    return _keyOSWindow;
 }
 
-- (NSArray *) windows
-{
-   return _windows;
-}
-
 - (void) addWindow:(UIPureWindow *) window
 {
    if (!window) return;
 
-   [_windows addObject:window];
+   mulle_array_add( &_windows, window);
    // This is the critical part - connect the window to the application
-   [window applicationDidAddWindow:self];
+   [window applicationDidAddWindow:(UIApplication *) self];
 }
 
 - (void) os_waitEventsWithTimeout:(mulle_relativetime_t) timeout

@@ -57,10 +57,11 @@ static UIWindowDisplayBits   display( UIPureWindow *pureWindow,
       .flags.contentMode = CGContentModeCenterPoint
    };
 
-   MulleUICLog( "%#@", context);
 
    window  = MULLE_OBJC_CLASS_CAST( MyWindow, pureWindow);
    context = MULLE_OBJC_CLASS_CAST( CGContext, graphicsContext);
+   MulleUICLog( "%#@", context);
+
    image   = [window image];
    assert( image);
 

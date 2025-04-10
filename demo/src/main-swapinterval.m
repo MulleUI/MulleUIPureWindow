@@ -135,7 +135,6 @@ static BOOL   drawStuff( CGContext *context, CGRect canvas)
 }
 
 
-
 static UIWindowDisplayBits   display( UIPureWindow *window,
                                       id <UIGraphicsContext> context,
                                       struct CGFrameInfo *frameInfo,
@@ -149,7 +148,6 @@ static UIWindowDisplayBits   display( UIPureWindow *window,
    drawStuff( (CGContext *) context, canvas);
    return( 1);
 }
-
 
 
 int   main( int argc, char *argv[])

@@ -11,6 +11,8 @@
 #import "UIPureWindow+FrameInfo.h"
 #import "UIPureWindow+InvocationQueue.h"
 #import "UIPureWindow+NSTimer.h"
+#import "UIPureWindow+Render.h"
+#import "UIPureWindow+ThreadRefresh.h"
 #import "UIPureWindow+UIEvent.h"
 
 // #define THREAD_DEBUG
@@ -110,11 +112,14 @@
                   _windowThreadLock, [_windowThreadLock condition],
                   [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
 
+      // at this time we return a loaned framebuffer back to the offscreen
+      // context keeping our nose clean
+
+      [self setLastOffscreenFramebuffer:nil];
       // or place a shutdown event into the event pipe ? We are the only one
       // who cancel the thread. This means a thread could possibly have gone
       // down somehow or is in an endless loop if it doesn't catch this
       [_windowThread cancel];
-
       [_windowThreadLock unlockWithCondition:2];
 
       UIWindowThreadLog( "waiting for unlock to 1 (%@ = %td)",
@@ -239,8 +244,6 @@
    frameInfo.now = now;
    returnBits    = [self renderWithFrameInfo:&frameInfo
                                  displayBits:displayBits];
-   UIWindowThreadLogVerbose( "done rendering: displayBits=0x%tx (return)",
-                              returnBits);
    UIWindowDisplayFrameStatisticsUpdate( &_windowThreadStatistics,
                                          now,
                                          mulle_absolutetime_now());
@@ -260,7 +263,7 @@
 
    MulleWindowProfileEnd();
 
-   return( (returnBits & UIWindowDisplayDidAnimate) ? UIWindowDisplayNeedsAnimation : 0);
+   return( returnBits);
 }
 
 

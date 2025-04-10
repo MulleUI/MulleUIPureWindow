@@ -59,9 +59,9 @@
 //
 //   # In the default configuration these are:
 //   #
-//   #  * UIWindowDefaultWillRenderFrameCallback() - does nothing
-//   #  * UIWindowDefaultRawFrameCallback()        - the real smarts are here
-//   #  * UIWindowDefaultDidRenderFrameCallback()  - does nothing
+//   #  * UIPureWindowDefaultWillRenderFrameCallback() - does nothing
+//   #  * UIPureWindowDefaultRawFrameCallback()        - the real smarts are here
+//   #  * UIPureWindowDefaultDidRenderFrameCallback()  - does nothing
 //   #
 //   # See UIWindow+Render.h for more info.
 //
@@ -72,9 +72,6 @@
 // +----------------------------------+
 //
 //
-- (UIWindowDisplayBits) render_frameWithFrameInfo:(struct CGFrameInfo *) info
-                                      displayBits:(UIWindowDisplayBits) displayBits;
-
 
 @end
 

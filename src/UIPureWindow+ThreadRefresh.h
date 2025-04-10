@@ -15,6 +15,7 @@
 @interface UIPureWindow( ThreadRefresh)
 
 - (void) refresh     MULLE_OBJC_THREADSAFE_METHOD;
+- (void) setLastOffscreenFramebuffer:(id <UIFramebuffer>) framebuffer   MULLE_OBJC_THREADSAFE_METHOD;
 
 @end
 

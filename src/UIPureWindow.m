@@ -236,9 +236,9 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    _oldSwapInterval         = NSIntegerMax;
    _refreshContentMode      = CGContentModeTopLeft;
 
-   _willRenderFrameCallback = UIWindowDefaultWillRenderFrameCallback;
-   _rawFrameCallback        = UIWindowDefaultRawFrameCallback;
-   _didRenderFrameCallback  = UIWindowDefaultDidRenderFrameCallback;
+   _willRenderFrameCallback = UIPureWindowDefaultWillRenderFrameCallback;
+   _rawFrameCallback        = UIPureWindowDefaultRawFrameCallback;
+   _didRenderFrameCallback  = UIPureWindowDefaultDidRenderFrameCallback;
 
 #ifdef UIWINDOW_DEBUGGING_FLAGS
    _debuggingFlags = UIWINDOW_DEBUGGING_FLAGS;
@@ -380,7 +380,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    // to be visible ever. It is kinda wasteful to have this anything else than
    // UIWindowStyleRenderNonRetainedOnly though or ?
    if( styleMask & UIWindowStyleOffscreen)
-      styleMask |= UIWindowStyleInvisible;
+      styleMask |= UIWindowStyleHidden;
 
    offscreenWindow = nil;
 
@@ -415,7 +415,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
       // textureID.
       //
       _offscreenStyleMask &= ~(UIWindowStyleResizable);
-      _offscreenStyleMask |= UIWindowStyleInvisible|UIWindowStyleOffscreen|UIWindowStyleBare;
+      _offscreenStyleMask |= UIWindowStyleHidden|UIWindowStyleOffscreen|UIWindowStyleBare;
 //      _offscreenStyleMask |= UIWindowStyleSingleBuffer; // save some memory from bogus buffer
       offscreenWindow      = [[[osWindowClass alloc] initWithFrame:CGRectMake( 0, 0, 32, 32)
                                                    titleUTF8String:"OffScreen"
@@ -490,6 +490,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (void) _finalizeGraphicsContexts
 {
+   UIWindowLog( "");
+
    if( _offscreenContext)
    {
       if( ! ([_offscreenContext state] & UIGraphicsContextActive))
@@ -499,16 +501,20 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
                               OSWindow:_offscreenOSWindow];
       }
 
-      [_lastOffscreenFramebuffer mullePerformFinalize];
+      // give that buffer back
+      [_offscreenContext recycleAcquiredRenderedFramebuffer:_lastOffscreenFramebuffer];
+      [_lastOffscreenFramebuffer autorelease];
+      _lastOffscreenFramebuffer = nil;
 
       [_offscreenContext mullePerformFinalize];
       [_offscreenOSWindow os_deactivateGraphicsContext];
+      [_offscreenContext autorelease];
+      _offscreenContext = nil;
    }
-   [_offscreenContext autorelease];
-   _offscreenContext = nil;
 
-   [_lastOffscreenFramebuffer autorelease];
-   _lastOffscreenFramebuffer = nil;
+   // this should never happen, how is a _lastOffscreenFramebuffer
+   // generated if we dont't have an _offscreenContext
+   assert( ! _lastOffscreenFramebuffer);
 
    if( _context)
    {
@@ -528,6 +534,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 -(void) _finalizeOSWindows
 {
+   UIWindowLog( "");
+
    // TODO: delete window ?
    //       remove from screen ?
    [_offscreenOSWindow mullePerformFinalize];
@@ -551,9 +559,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    // remove events from window thread and clear display flag
    // this is better than not doing it, but no guarantee that an event isn't
    // processed in the background
-#ifdef DEBUG
-   MulleUILog("");
-#endif
+   UIWindowLog( "");
 
    // this must have died before hand...
    assert( ! _windowThread);
@@ -578,8 +584,9 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 {
    MulleObjCObjectSetDuplicatedUTF8String( self, &_titleUTF8String, NULL);
 
-   [_reusableTrackingEvent release];
+   UIWindowLog( "");
 
+   [_reusableTrackingEvent release];
 
    // now done locally in _dealloc
    //_mulle__pointerset_done( &_layoutedViews, MulleObjCInstanceGetAllocator( self));
@@ -668,6 +675,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 {
    assert( [NSThread mulleIsMainThread]);
 
+   UIWindowLog( "");
+
    _application = app;
    if( [app osKeyWindow] == nil)
    {
@@ -680,6 +689,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 - (void) applicationDidRemoveWindow:(UIApplication *) app
 {
    assert( [NSThread mulleIsMainThread]);
+
+   UIWindowLog( "");
 
    // ok but how does the app get a new key window ?
    // maybe the app should run a NSNotification now
@@ -697,6 +708,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (void) requestClose
 {
+   UIWindowLog( "");
+
    [_OSWindow os_requestClose];
 }
 
@@ -801,7 +814,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    _mulle_atomic_pointer_write( &_needsDisplay, (void *) value);
 
-   UIWindowDisplayBitsLog( "needsDisplay: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsDisplay));
+   UIWindowDisplayBitsLog( "needsDisplay: 0x%tx", (intptr_t) value);
 }
 
 

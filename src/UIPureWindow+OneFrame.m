@@ -5,6 +5,8 @@
 #import "import-private.h"
 
 #import "UIPureWindow+FrameInfo.h"
+#import "UIPureWindow+Frame.h"
+#import "UIPureWindow+Render.h"
 #import "UIPureWindow+Thread.h"
 #import "UIPureWindow+InvocationQueue.h"
 #import "UIPureWindow+NSTimer.h"

@@ -65,25 +65,11 @@
 
       // TODO: voodoo barrier, should be useless
       // [_offscreenContext barrier];
-      framebuffer = [_offscreenContext acquireOffscreenFramebuffer];
+      framebuffer = [_offscreenContext acquireRenderedFramebuffer];
       if( framebuffer)
       {
          UIWindowSwapLog( "Acquired freshly drawn framebuffer %#@", framebuffer);
-         // recycle our old framebuffer
-         assert( _lastOffscreenFramebuffer != framebuffer);
-
-         // when we recycle the old framebuffer, the framebuffer can then
-         // be picked up and overwritten again by the other thread. What could
-         // possibly go wrong ? If for some reason the "blit" below has not
-         // yet completed, there might be ugliness as the old framebuffer
-         // contents are cleared. I deem this as a) super-super unlikely
-         // b) acceptable. I mean you have to run with a framerate of 1000s and
-         // the blit has to be slower than two frames of rendering...
-         UIWindowSwapLog( "Recycle old framebuffer %#@", _lastOffscreenFramebuffer);
-         [_offscreenContext recycleFramebuffer:_lastOffscreenFramebuffer];
-
-         [_lastOffscreenFramebuffer autorelease];
-         _lastOffscreenFramebuffer = [framebuffer retain];
+         [self setLastOffscreenFramebuffer:framebuffer];
       }
       else
       {
@@ -198,6 +184,24 @@
    [self deactivateGraphicsContext:context];
 
    MulleWindowProfileEnd();
+}
+
+
+- (void) setLastOffscreenFramebuffer:(id <UIFramebuffer>) framebuffer
+{
+   // recycle our old framebuffer
+   assert( ! framebuffer || _lastOffscreenFramebuffer != framebuffer);
+
+   // when we recycle the old framebuffer, the framebuffer can then
+   // be picked up and overwritten again by the other thread. What could
+   // possibly go wrong ? If for some reason the "blit" below has not
+   // yet completed, there might be ugliness as the old framebuffer
+   // contents are cleared. I deem this as a) super-super unlikely
+   // b) acceptable. I mean you have to run with a framerate of 1000s and
+   // the blit has to be slower than two frames of rendering...
+   [_offscreenContext recycleAcquiredRenderedFramebuffer:_lastOffscreenFramebuffer];
+   [_lastOffscreenFramebuffer autorelease];
+   _lastOffscreenFramebuffer = [framebuffer retain];
 }
 
 @end
