@@ -24,7 +24,6 @@ static void  drawPrettyBackground( CGContext *context, CGRect canvas)
    strokeWidth = 20.0;
    radius      = (CGFloatMinimum( CGRectGetWidth( canvas),
                                   CGRectGetHeight( canvas)) - strokeWidth) / 2;
-
    // draw circle
    vg = CGContextGetNVGContext( context);
    nvgBeginPath( vg);
@@ -46,8 +45,6 @@ static void  drawPrettyBackground( CGContext *context, CGRect canvas)
    nvgTextBackgroundColor( vg, BLAU);
    nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), "1848", NULL);
 }
-
-
 
 
 static UIWindowDisplayBits   display( UIPureWindow *window,
@@ -72,7 +69,7 @@ int   main( int argc, char *argv[])
 
    app = [UIApplication sharedInstance];
    {
-      image = (UIBitmapImage *) [UIImage imageWithContentsOfFileCString:"magpie-clipart-free-8.png"];
+      image = (UIBitmapImage *) [UIImage imageWithContentsOfFileUTF8String:"magpie-clipart-free-8.png"];
       assert( image);
 
       // for testing sharing, we use singlebuffer (to obscure a current double
@@ -87,10 +84,10 @@ int   main( int argc, char *argv[])
          //
          sharingWindow  = i ? glfwWindow[ 0] : nil;
          glfwWindow[ i] = [[[GLFWOSWindow alloc] initWithFrame:frame
-                                                titleUTF8String:! i ? "Demo" : "Demo2"
-                                                      styleMask:GLFWOSWindowStyleMaskDefault //|UIWindowStyleSingleBuffer
-                                                  graphicsHints:0
-                                                  sharingWindow:sharingWindow] autorelease];
+                                               titleUTF8String:! i ? "Demo" : "Demo2"
+                                                     styleMask:GLFWOSWindowStyleMaskDefault //|UIWindowStyleSingleBuffer
+                                                 graphicsHints:0
+                                                 sharingWindow:sharingWindow] autorelease];
 
          window[ i] = [[[UIPureWindow alloc] initWithOSWindow:glfwWindow[ i]
                                             offscreenOSWindow:nil] autorelease];

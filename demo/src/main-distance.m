@@ -28,7 +28,7 @@
    if( oldLayer)
    {
       [self setCompositionMode:UIGraphicsCopy];
-      [self drawRect:CGRectMakeWithIntegerSize( _currentFrameInfo.window.framebufferSize)
+      [self drawRect:CGRectMakeWithPixelSize( _currentFrameInfo.window.framebufferSize)
                image:oldLayer
                scale:YES]; 
       [self setCompositionMode:UIGraphicsSourceOver];
@@ -41,13 +41,13 @@
    if( _usesAccumulationBuffer)
    {
       if( _rendersOffScreen)
-         [self bindFramebuffer:CGContextFramebufferMakeWithFramebuffer( _renderLayer)];
+         [self bindFramebuffer:CGContextFramebufferMakeWithFramebuffer( _renderFramebuffer)];
       else
          [self bindFramebuffer:CGContextFramebufferMakeDefault()];
       CGContextCheckBackendError( self, "bind buffer");
 
       [self setCompositionMode:UIGraphicsCopy];
-      [self drawRect:CGRectMakeWithIntegerSize( _currentFrameInfo.window.framebufferSize)
+      [self drawRect:CGRectMakeWithPixelSize( _currentFrameInfo.window.framebufferSize)
                image:_accumulateLayer
                scale:NO]; 
       [self setCompositionMode:UIGraphicsSourceOver];

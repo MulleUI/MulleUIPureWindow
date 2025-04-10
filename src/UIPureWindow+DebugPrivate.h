@@ -8,7 +8,7 @@
 enum
 {
    UIWindowDebug                   = 0x00000001, // UIViewDebug,      // 0x00000001
-   UIWindowDebugEvent              = 0x00000002, //UIViewDebugEvent, // 0x00000002
+   UIWindowDebugEvent              = 0x00000002, // UIViewDebugEvent, // 0x00000002
 
    UIWindowDebugLayout             = 0x00000004, // UIViewDebugLayout, // 0x00000004
    UIWindowDebugRender             = 0x008,
@@ -26,7 +26,7 @@ enum
 
    UIWindowDebugVerbose            = 0x00001000, // UIViewDebugVerbose,      // 0x00001000
    UIWindowDebugEventVerbose       = 0x00002000, // UIViewDebugEventVerbose, // 0x00002000
-   // 0x4000
+   UIWindowDebugDisplayBitsVerbose = 0x00004000,
    UIWindowDebugRenderVerbose      = 0x00008000,
    UIWindowDebugThreadVerbose      = 0x00010000,
 
@@ -153,6 +153,18 @@ do                                                                          \
 }                                                                           \
 while( 0)
 
+
+#define UIWindowDisplayBitsLogVerbose( format, ...)                         \
+do                                                                          \
+{                                                                           \
+   assert( [self __isUIPureWindow]);                                        \
+   if( self->_debuggingFlags & UIWindowDebugDisplayBitsVerbose)             \
+      mulleui_log_object_method( self, (char *) __PRETTY_FUNCTION__,        \
+                                       (char *) format, ## __VA_ARGS__);    \
+}                                                                           \
+while( 0)
+
+
 #define UIWindowRefreshBitsLog( format, ...)                                \
 do                                                                          \
 {                                                                           \
@@ -231,6 +243,7 @@ while( 0)
 #define UIWindowThreadLogVerbose( format, ...)              do {} while( 0)
 #define UIWindowSwapLog( format, ...)                       do {} while( 0)
 #define UIWindowDisplayBitsLog( format, ...)                do {} while( 0)
+#define UIWindowDisplayBitsLogVerbose( format, ...)         do {} while( 0)
 #define UIWindowRefreshBitsLog( format, ...)                do {} while( 0)
 #define UIWindowEventLog( event, format, ...)               do {} while( 0)
 #define UIWindowEventLogVerbose( event, format, ...)        do {} while( 0)

@@ -7,11 +7,13 @@
 
 #import "import-private.h"
 
+#import "UIPureWindow+DebugPrivate.h"
 #import "UIPureWindow+FrameInfo.h"
+#import "UIPureWindow+Frame.h"
+#import "UIPureWindow+Render.h"
+#import "UIPureWindow+Thread.h"
 #import "UIPureWindow+UIEvent.h"
 #import "UIPureWindow+UIResponder.h"
-#import "UIPureWindow+Thread.h"
-#import "UIPureWindow+DebugPrivate.h"
 //#define DISPLAY_DEBUG
 
 
@@ -173,6 +175,8 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIPureWindow *self)
    // After swapBuffers we can safely release the CGLayers that were
    // possibly generated during the render. But not earlier, except if
    // one diligently calls flushRender
+   //
+   // MEMO: could also set UIWindowDisplayNeedsAnimation, is it useful ?
    //
    displayBits  = [self needsDisplayBitsClearIfSet];
    if( _backingStore == UIWindowBackingStoreVolatile)

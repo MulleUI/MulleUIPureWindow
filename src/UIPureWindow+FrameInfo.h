@@ -22,48 +22,4 @@
                             frameStatistics:(struct UIWindowFrameStatistics *) stats
                            frameRateLimiter:(BOOL) frameLimiter;
 
-
-- (void) render_requestFakeMouseEventIfNeeded:(UIWindowDisplayBits) displayBits;
-- (void) render_setupInitialFirstResponderIfNeeded;
-- (UIWindowDisplayBits) render_adjustFrameWithFrameInfo:(struct CGFrameInfo *) info
-                                            displayBits:(UIWindowDisplayBits) displayBits;
-
-//
-// +--------------------------------------------+
-// | render_setupInitialFirstResponderIfNeeded: |
-// +--------------------------------------------+
-//                      |
-//                      v
-//      +-----------------------------+
-//      | render_adjustFrameIfNeeded: |
-//      +-----------------------------+
-//                      |
-//                      v
-//       +----------------------------+
-//       | render_frameWithFrameInfo: |
-//       |               displayBits: |
-//       +----------------------------+
-//                      |
-//                      v
-//   +---------------------------------------+
-//   | render_requestFakeMouseEventIfNeeded: |
-//   +---------------------------------------+
-//
-- (UIWindowDisplayBits) renderWithFrameInfo:(struct CGFrameInfo *) info
-                                 displayBits:(UIWindowDisplayBits) displayBits;  // assorted UIWindowNeedsDislay bits
-
-
 @end
-
-
-@interface UIPureWindow( FrameFuture)
-
-- (void) swapBuffers                MULLE_OBJC_THREADSAFE_METHOD;
-- (void) swapBuffersImmediately     MULLE_OBJC_THREADSAFE_METHOD;
-
-- (UIWindowDisplayBits) render_frameWithFrameInfo:(struct CGFrameInfo *) info
-                                      displayBits:(UIWindowDisplayBits) displayBits;
-
-@end
-
-
