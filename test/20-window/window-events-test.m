@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
    NSUInteger testMask = 0x1234;
    [window setDiscardEventsMask:testMask];
    // After setting the mask but before testing it
-   [window writeOSWindowPropertyChangesIfNeeded];
+   [window syncOSWindowPropertyChangesIfNeeded];
 
    printf("Discard events mask: %s\n",
       ([osWindow discardEventsMask] == testMask) ? "OK" : "FAILED");
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
    // this change won't appear until properly propagated
    [window setDiscardEventsMask:0x5678];
    // After setting the mask but before testing it
-   // [window writeOSWindowPropertyChangesIfNeeded];
+   // [window syncOSWindowPropertyChangesIfNeeded];
 
    printf("Discard events mask 2: %s\n",
       ([osWindow discardEventsMask] == testMask) ? "OK" : "FAILED");

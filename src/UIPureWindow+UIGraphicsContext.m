@@ -66,6 +66,7 @@
       abort();
    }
    [_context setState:UIGraphicsContextAssociated|UIGraphicsContextActive];
+   [_context setInputState:[self inputState]];
 }
 
 
@@ -113,6 +114,7 @@
    }
    [_offscreenContext setRendersOffScreen:YES];
    [_offscreenContext setState:UIGraphicsContextAssociated|UIGraphicsContextActive];
+   [_offscreenContext setInputState:[self inputState]];
 }
 
 

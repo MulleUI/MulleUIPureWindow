@@ -235,7 +235,7 @@
       // MEMO: used to to do this, but its now out of scope here
       //    [self setupQuadtree];
       [self eventHandlingWithFrameRate:frameRate];
-      [self writeOSWindowPropertyChangesIfNeeded];
+      [self syncOSWindowPropertyChangesIfNeeded];
    }
 
    return( _shouldClose ? NO : YES);

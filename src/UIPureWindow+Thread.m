@@ -100,7 +100,7 @@
 
    timeout = RENDER_THREAD_GRACE_PERIOD;
 
-   UIWindowThreadLog( "trying to lock with 1 (%@ = %td, %s) (%.3f)",
+   UIWindowThreadLog( "trying to lock with 1 (%#@ = %td, %s) (%.3f)",
                        _windowThreadLock, [_windowThreadLock condition],
                        [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED",
                        timeout);
@@ -108,7 +108,7 @@
    if( [_windowThreadLock mulleLockWhenCondition:1
                                          timeout:timeout])
    {
-      UIWindowThreadLog( "locked with 1, unlocking with 2 (%@ = %td, %s)",
+      UIWindowThreadLog( "locked with 1, unlocking with 2 (%#@ = %td, %s)",
                   _windowThreadLock, [_windowThreadLock condition],
                   [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
 
@@ -122,7 +122,7 @@
       [_windowThread cancel];
       [_windowThreadLock unlockWithCondition:2];
 
-      UIWindowThreadLog( "waiting for unlock to 1 (%@ = %td)",
+      UIWindowThreadLog( "waiting for unlock to 1 (%#@ = %td)",
                          _windowThreadLock, [_windowThreadLock condition]);
 
       if( [_windowThreadLock mulleLockWhenCondition:1
@@ -132,13 +132,13 @@
       }
       else
       {
-         MulleUILog( "main draw thread still very busy (%@ = %td)",
+         MulleUILog( "main draw thread still very busy (%#@ = %td)",
                      _windowThreadLock, [_windowThreadLock condition]);
       }
    }
    else
    {
-      MulleUILog( "Could not cancel the main draw thread in due time %@",
+      MulleUILog( "Could not cancel the main draw thread in due time %#@",
                   _windowThreadLock);
    }
 
@@ -177,7 +177,7 @@
 //
 - (void) wakeupWindowThread
 {
-   UIWindowThreadLog( "(%@ = %td, %s)",
+   UIWindowThreadLog( "(%#@ = %td, %s)",
                _windowThreadLock, [_windowThreadLock condition],
                [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
    if( [_windowThreadLock tryLockWhenCondition:1])
@@ -289,7 +289,7 @@
    thread = [NSThread currentThread];
    [thread mulleSetNameUTF8String:"UIWindowThread"];
 
-   UIWindowThreadLog( "coming up (%@ = %td, %s)",
+   UIWindowThreadLog( "coming up (%#@ = %td, %s)",
                      _windowThreadLock, [_windowThreadLock condition],
                      [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
 
@@ -318,7 +318,7 @@
 
    for(;;)
    {
-      UIWindowThreadLogVerbose( "locking and waiting for condition 2 (%@ = %td, %s) timeout=%.3f",
+      UIWindowThreadLogVerbose( "locking and waiting for condition 2 (%#@ = %td, %s) timeout=%.3f",
                   _windowThreadLock, [_windowThreadLock condition],
                   [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED",
                   timeout);
@@ -419,13 +419,13 @@
       if( haveLock)
       {
          [_windowThreadLock unlockWithCondition:1];
-         UIWindowThreadLogVerbose( "unlockWithCondition 1 (%@ = %td, %s)",
+         UIWindowThreadLogVerbose( "unlockWithCondition 1 (%#@ = %td, %s)",
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
       }
       else
       {
-         UIWindowThreadLogVerbose( "haveNoLock (%@ = %td, %s)",
+         UIWindowThreadLogVerbose( "haveNoLock (%#@ = %td, %s)",
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
       }
