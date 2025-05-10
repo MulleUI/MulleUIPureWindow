@@ -63,7 +63,7 @@
 //                       |
 //                       v
 //  .-----------------------------------------.
-//  | CGContext drawObjects:                  |
+//  | CGContext renderObjects:                  |
 //  '-----------------------------------------'
 //
 // glitch hunt:
@@ -83,7 +83,6 @@
 //
 
 @implementation UIPureWindow( Render)
-
 
 - (void) clearFrame:(struct CGFrameInfo *) info
     graphicsContext:(id <UIGraphicsContext>) context
@@ -128,7 +127,7 @@ UIWindowDisplayBits
                                                struct CGFrameInfo *info,
                                                UIWindowDisplayBits displayBits)
 {
-   UIWindowDisplayBitsLogVerbose( "%s returns (0x%tx)", __FUNCTION__, displayBits);
+   UIWindowDisplayBitsLog( "returns (%s)", UIWindowDisplayBitsUTF8String( displayBits));
    return( displayBits);
 }
 
@@ -144,7 +143,7 @@ UIWindowDisplayBits
 {
    UIWindowDisplayBits   returnBits;
 
-   UIWindowDisplayBitsLog( "%s enters (0x%tx)", __FUNCTION__, displayBits);
+   UIWindowDisplayBitsLog( "enters (%s)", UIWindowDisplayBitsUTF8String( displayBits));
 
    [self->_frameDelegate window:self
                  willBeginFrame:info
@@ -177,7 +176,7 @@ UIWindowDisplayBits
                     didEndFrame:info
                 graphicsContext:context];
 
-   UIWindowDisplayBitsLog( "%s returns (0x%tx)", __FUNCTION__, returnBits);
+   UIWindowDisplayBitsLog( "returns (%s)", UIWindowDisplayBitsUTF8String( displayBits));
    return( returnBits);
 }
 
@@ -188,11 +187,9 @@ UIWindowDisplayBits
                                               struct CGFrameInfo *info,
                                               UIWindowDisplayBits returnBits)
 {
-   UIWindowDisplayBitsLogVerbose( "%s returns (0x%tx)", __FUNCTION__, returnBits);
+   UIWindowDisplayBitsLog( "returns (%s)", UIWindowDisplayBitsUTF8String( returnBits));
    return( returnBits);
 }
-
-
 
 
 - (UIWindowDisplayBits) render_adjustFrameWithFrameInfo:(struct CGFrameInfo *) info
@@ -326,7 +323,6 @@ UIWindowDisplayBits
 }
 
 
-
 //
 // Assume the user does not move the mouse, but the view is animating the
 // view may slide under the mouse pointer and we want highlighting to occur.
@@ -355,11 +351,15 @@ UIWindowDisplayBits
    @autoreleasepool // THIS IS IMPORTANT TO COLLECT CGLAYERS WHILE THE PROPER CONTEXT IS ALIVE
    {
       self->_debugDisplayBits = displayBits;
-   
-      UIWindowRenderLog( "%s", CGFrameInfoUTF8String( info));
 
-      // for demos
-      [_renderGraphicsContext setInputState:_inputState];
+      UIWindowRenderLog( "%s %s", CGFrameInfoUTF8String( info),
+                                  UIWindowDisplayBitsUTF8String( displayBits));
+
+      // for demos (memo: thread safety question
+      if( _styleMask & UIWindowStyleMousePolling)
+         [_renderGraphicsContext setInputState:[self polledInputState]];
+//      else
+//         [_renderGraphicsContext setInputState:_eventInputState];
 
       // MEMO: we have not done beginRender here, this means that the proper
       //       framebuffer may not be bound to the context (yet)
@@ -425,6 +425,5 @@ UIWindowDisplayBits
    UIWindowDisplayBitsLogVerbose( "returns (0x%tx)", returnBits);
    return( returnBits);
 }
-
 
 @end

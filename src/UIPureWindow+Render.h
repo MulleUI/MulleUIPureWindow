@@ -12,28 +12,26 @@
 #import "import.h"
 
 
-
 extern UIWindowDisplayBits
    UIPureWindowDefaultRawFrameCallback( UIPureWindow *self,
-                                    id <UIGraphicsContext> context,
-                                    struct CGFrameInfo *info,
-                                    UIWindowDisplayBits displayBits);
+                                        id <UIGraphicsContext> context,
+                                        struct CGFrameInfo *info,
+                                        UIWindowDisplayBits displayBits);
 
 extern UIWindowDisplayBits
    UIPureWindowDefaultWillRenderFrameCallback( UIPureWindow *self,
-                                           id <UIGraphicsContext> context,
-                                           struct CGFrameInfo *info,
-                                           UIWindowDisplayBits displayBits);
+                                               id <UIGraphicsContext> context,
+                                               struct CGFrameInfo *info,
+                                               UIWindowDisplayBits displayBits);
 
 extern UIWindowDisplayBits
    UIPureWindowDefaultDidRenderFrameCallback( UIPureWindow *self,
-                                          id <UIGraphicsContext> context,
-                                          struct CGFrameInfo *info,
-                                          UIWindowDisplayBits returnBits);
+                                              id <UIGraphicsContext> context,
+                                              struct CGFrameInfo *info,
+                                              UIWindowDisplayBits returnBits);
 
 
 @interface UIPureWindow( Render)
-
 
 - (void) clearFrame:(struct CGFrameInfo *) info
     graphicsContext:(id <UIGraphicsContext>) context;

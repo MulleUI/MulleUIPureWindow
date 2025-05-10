@@ -23,8 +23,18 @@
 - (UIWindowEvent *) handleWindowEvent:(UIWindowEvent *) event  MULLE_UI_MAIN_THREAD_ONLY;
 
 
-- (BOOL) willDiscardEvent:(UIEvent *) event;
-- (BOOL) willDiscardOverflowEvent:(UIEvent *) event;
+//
+// These event methods are special, you may not necessarily be in an 
+// autoreleasepool as this time! Discard event with -retain and return NO if
+// you must. Otherwise return YES and let UIPureWindow deal with it.
+//
+// The -willDiscardEvent: method must be thread safe as it can be called from 
+// -willDiscardOverflowEvent: (Main thread) or -willDiscardPendingEvent:
+// (Window thread). The default implementation just returns YES, indicating
+// approval. 
+//
+- (BOOL) willDiscardEvent:(UIEvent *) event                    MULLE_OBJC_THREADSAFE_METHOD;
+- (BOOL) willDiscardOverflowEvent:(UIEvent *) event            MULLE_UI_MAIN_THREAD_ONLY;
 - (BOOL) willDiscardPendingEvent:(UIEvent *) event;
 
 - (NSUInteger) executeEventQueue;

@@ -40,13 +40,21 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIPureWindow *self)
 }
 
 
-- (void) writeOSWindowPropertyChangesIfNeeded
+- (void) syncOSWindowPropertyChangesIfNeeded
 {
-   NSUInteger   changes;
-   NSUInteger   discardEventsMask;
-   CGRect       frame;
-   char         *title;
-   void         *cursor;
+   NSUInteger            changes;
+   NSUInteger            discardEventsMask;
+   CGRect                frame;
+   char                  *title;
+   void                  *cursor;
+   struct UIInputState   inputState;
+
+   if( _styleMask & UIWindowStyleMousePolling)
+   {
+      [_OSWindow os_pollInputState:&inputState];
+      UIWindowLog( "polled inputState %s", UIInputStateUTF8String( &inputState));
+      [self setPolledInputState:inputState];
+   }
 
    changes = (NSUInteger) _mulle_atomic_pointer_read( &_propertyChanges);
    if( ! changes)

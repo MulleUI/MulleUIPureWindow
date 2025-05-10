@@ -282,9 +282,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    _mulle_atomic_pointer_nonatomic_write( &_needsDisplay, (void *) displayBits);
 
 
-   UIInputStateInit( &_inputState, CGPointMake( -1, -1), 0, 0);
-
-   // preset with some useable values
+// preset with some useable values
    UIWindowDisplayFrameStatisticsInit( &_windowThreadStatistics);
    UIWindowDisplayFrameStatisticsInit( &_mainThreadStatistics);
 
@@ -337,6 +335,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    if( self)
    {
       // don't initialize offscreen window for events
+      [_OSWindow os_pollInputState:&_polledInputState];
       [_OSWindow os_initEvents];
       [_OSWindow setWindowEventsReceiver:self];
       [_OSWindow setEventsReceiver:self];
@@ -448,7 +447,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
          styleMask &= ~(UIWindowStyleForceEdgeAntiAlias|UIWindowStyleStencilStrokes|UIWindowStyleClearType);
    }
 
-   _styleMask                   = styleMask;
+   _styleMask = styleMask;
    //
    // we can keep the OSGraphicsContext active, if the window is running in its
    // own thread, or if it can be ascertained that only one window is open
@@ -722,19 +721,19 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (CGPoint) mouseLocation
 {
-   return( _inputState.locationInWindow);
+   return( [self inputState].locationInWindow);
 }
 
 
 - (NSUInteger) buttonStates
 {
-   return( _inputState.buttonStates);
+   return( [self inputState].buttonStates);
 }
 
 
 - (NSUInteger) keyModifiers
 {
-   return( _inputState.keyModifiers);
+   return( [self inputState].keyModifiers);
 }
 
 
@@ -966,7 +965,10 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
    NSUInteger   oldChanges;
    NSUInteger   newChanges;
 
+   assert( bit & UIWindowPropertyChangeWriteBitsMask);
+
    // changes property is read atomically, without locking
+   // only write bits are of interest (lower half)
    do
    {
       oldChanges = (NSUInteger) _mulle_atomic_pointer_read( &self->_propertyChanges);
@@ -980,7 +982,7 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 
 - (BOOL) windowPropertySet:(SEL) sel
                 parameters:(void *) param
-                       bit:(NSUInteger) bit
+                       bit:(NSUInteger) bit     MULLE_OBJC_THREADSAFE_METHOD
 {
    BOOL   changed;
 
@@ -992,6 +994,7 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
          setPropertyChangesBit( self, bit);
    }
 
+   // only lower bits send events
    if( changed)
       [UIEvent sendEmptyEvent];
    return( changed);
@@ -1011,8 +1014,14 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 }
 
 
-- (BOOL) unlocked_setTitleUTF8String:(char *) s
+//
+// this must only be called from within windowPropertySet:parameters:bit:
+// so this is "effictively" threadsafe
+//
+- (BOOL) _setTitleUTF8String_needsLocking:(char *) s   MULLE_OBJC_THREADSAFE_METHOD
 {
+   assert( ! [_windowPropertyLock tryLock]);
+
    if( _titleUTF8String == s)
       return( NO);
 
@@ -1026,7 +1035,7 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 
 - (void) setTitleUTF8String:(char *) s
 {
-   [self windowPropertySet:@selector( unlocked_setTitleUTF8String:)
+   [self windowPropertySet:@selector( _setTitleUTF8String_needsLocking:)
                parameters:s
                        bit:UIWindowPropertyChangeTitle];
 }
@@ -1041,8 +1050,14 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 }
 
 
-- (BOOL) unlocked_setFrame:(CGRect) frame
+//
+// this must only be called from within windowPropertySet:parameters:bit:
+// so this is "effictively" threadsafe
+//
+- (BOOL) _setFrame_needsLocking:(CGRect) frame MULLE_OBJC_THREADSAFE_METHOD
 {
+   assert( ! [_windowPropertyLock tryLock]);
+
    if( CGRectEqualToRect( _frame, frame))
       return( NO);
 
@@ -1055,7 +1070,7 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 
 - (void) setFrame:(CGRect) frame
 {
-   [self windowPropertySet:@selector( unlocked_setFrame:)
+   [self windowPropertySet:@selector( _setFrame_needsLocking:)
                 parameters:_param
                        bit:UIWindowPropertyChangeFrame];
 }
@@ -1072,8 +1087,14 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 }
 
 
-- (BOOL) unlocked_setCursor:(UICursor *) cursor
+//
+// this must only be called from within windowPropertySet:parameters:bit:
+// so this is "effictively" threadsafe
+//
+- (BOOL) _setCursor_needsLocking:(UICursor *) cursor MULLE_OBJC_THREADSAFE_METHOD
 {
+   assert( ! [_windowPropertyLock tryLock]);
+
    ++_cursorGenerationCount;
 
    if( _cursor == cursor)
@@ -1086,9 +1107,52 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 
 - (void) setCursor:(UICursor *) cursor
 {
-   [self windowPropertySet:@selector( unlocked_setCursor:)
+   [self windowPropertySet:@selector( _setCursor_needsLocking:)
                 parameters:cursor
                        bit:UIWindowPropertyChangeCursor];
+}
+
+
+- (struct UIInputState) polledInputState
+{
+   struct UIInputState  rval;
+
+   assert( _styleMask & UIWindowStyleMousePolling);
+
+   MulleObjCNSLockProtectedAssignReadAccessor( _polledInputState,
+                                               _windowPropertyLock,
+                                               rval);
+   return( rval);
+}
+
+
+//
+// this must only be called from within windowPropertySet:parameters:bit:
+// so this is "effictively" threadsafe
+//
+- (BOOL) _setPolledInputState_needsLocking:(struct UIInputState) state MULLE_OBJC_THREADSAFE_METHOD
+{
+   assert( ! [_windowPropertyLock tryLock]);
+
+   if( memcmp( &state, &_polledInputState, sizeof( state)))
+   {
+      _polledInputState = state;
+      [self setNeedsDisplay]; // this is needed so views actually redraw
+   }
+
+   // we are a reader variable, so we play fast and loose
+   // we don't do an event, and we are not a change bit either
+   return( NO);
+}
+
+
+- (void) setPolledInputState:(struct UIInputState) state
+{
+   assert( _styleMask & UIWindowStyleMousePolling);
+
+   [self windowPropertySet:@selector( _setPolledInputState_needsLocking:)
+                parameters:_param
+                       bit:UIWindowPropertyPollInputState];
 }
 
 
@@ -1103,7 +1167,7 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 }
 
 
-- (BOOL) unlocked_setDiscardEventsMask:(NSUInteger) discardEventsMask
+- (BOOL) _setDiscardEventsMask_needsLocking:(NSUInteger) discardEventsMask
 {
    if( _discardEventsMask == discardEventsMask)
       return( NO);
@@ -1114,7 +1178,7 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 
 - (void) setDiscardEventsMask:(NSUInteger) discardEventsMask
 {
-   [self windowPropertySet:@selector( unlocked_setDiscardEventsMask:)
+   [self windowPropertySet:@selector( _setDiscardEventsMask_needsLocking:)
                 parameters:(void *) discardEventsMask
                        bit:UIWindowPropertyChangeDiscardEventsMask];
 }

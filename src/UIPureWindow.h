@@ -187,12 +187,19 @@ static inline void   UIWindowDisplayFrameStatisticsInit( struct UIWindowFrameSta
 
 typedef NS_OPTIONS( NSUInteger, UIWindowPropertyChange)
 {
-   UIWindowPropertyChangeFrame  = 0x1,
-   UIWindowPropertyChangeTitle  = 0x2,
-   UIWindowPropertyChangeCursor = 0x4,
-   UIWindowPropertyChangeDiscardEventsMask = 0x8
+   UIWindowPropertyChangeFrame             = 0x1,
+   UIWindowPropertyChangeTitle             = 0x2,
+   UIWindowPropertyChangeCursor            = 0x4,
+   UIWindowPropertyChangeDiscardEventsMask = 0x8,
+   // mouseLocation must be enabled specifically with setMousePollingEnabled:
+   // you usually don't needz it
 //   UIWindowPropertyChangeIcon  = 0x4
+
+   // this does not send an event if changed
+   UIWindowPropertyPollInputState          = 0x10000,
 };
+
+#define UIWindowPropertyChangeWriteBitsMask 0xFFFF
 
 
 @class UIMouseTrackingEvent;
@@ -344,8 +351,14 @@ struct MulleClickDragDifferentiator
 // changed by UIWindow to enable/disable mouse events
 @property( assign) NSUInteger                      discardEventsMask    MULLE_OBJC_THREADSAFE_PROPERTY;
 
-@property( assign, readonly) struct UIInputState   inputState;
-@property( assign, readonly) struct UIInputState   previousInputState; // used in hover detection
+// this is only available if UIWindowStyleMousePolling is set
+// HINT: you want this, if you need inputState synced to out of window
+//       mouse movements
+@property( assign) struct UIInputState             polledInputState     MULLE_OBJC_THREADSAFE_PROPERTY;
+
+// these are not polled
+@property( assign, readonly) struct UIInputState   eventInputState;         // used in hover detection
+@property( assign, readonly) struct UIInputState   previousEventInputState; // used in hover detection
 
 @property( dynamic, assign, readonly) CGPoint      mouseLocation;
 @property( dynamic, assign, readonly) NSUInteger   buttonStates;
@@ -386,6 +399,7 @@ struct MulleClickDragDifferentiator
 // For multiple windows on the same thread (i.e. mainThread) this must not be
 // set, otherwise you see only drawings in one window
 @property( assign) UIGraphicsContextState           keepOSGraphicsContextActive  MULLE_OBJC_THREADSAFE_PROPERTY;
+
 
 
 // Rendercallbacks. If the renderer is in its own thread, then all these

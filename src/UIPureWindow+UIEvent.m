@@ -248,8 +248,8 @@
       break;
 
    case UIEventTypeTouches :
-      _previousInputState = _inputState;
-      _inputState         = [(UIInputEvent *) event inputState];
+      _previousEventInputState = _eventInputState;
+      _eventInputState         = [(UIInputEvent *) event inputState];
 
       // TODO: if view supports mouseDragged; don't pass down touches unless
       //       there are no follow up mouse motion events. Would need to
@@ -265,8 +265,8 @@
       break;
 
    case UIEventTypeMotion :
-      _previousInputState = _inputState;
-      _inputState         = [(UIInputEvent *) event inputState];
+      _previousEventInputState = _eventInputState;
+      _eventInputState         = [(UIInputEvent *) event inputState];
 
       // TODO: filter out drag events only for views which implement mouseDragged: methods
       //       or have a callback that makes them interested in these events (as Apple does)
@@ -363,7 +363,7 @@
 
    if( event)
    {
-      UIWindowEventLog( event, "No one wanted to handle event %@", event);
+      UIWindowEventLog( event, "No one wanted to handle event %#@", event);
    }
    return( event);
 }
@@ -498,8 +498,8 @@
          {
             _sendFakeMouseMotionEvent = 0;
 
-            event = [[UIMouseMotionNonPhysicalEvent alloc] initWithInputState:&_inputState];
-            UIWindowMouseMotionEventLog( event, "sending fake mouse motion event: %@", event);
+            event = [[UIMouseMotionNonPhysicalEvent alloc] initWithInputState:&_eventInputState];
+            UIWindowMouseMotionEventLog( event, "sending fake mouse motion event: %#@", event);
          }
          else
          {
@@ -579,7 +579,7 @@
    // TODO: sendRetainedEvent is superflous no ? As receiveRetainedEvent will
    // call wakeupWindowThread if needed
 
-   UIWindowEventLog( nil, "send %@", event);
+   UIWindowEventLog( nil, "send %#@", event);
    [self receiveRetainedEvent:event];
    [self wakeupWindowThread];
 }
