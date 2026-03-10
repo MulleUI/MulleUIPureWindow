@@ -110,6 +110,8 @@
 
    [_OSWindow getOSWindowInfo:&tmp];
 
+   memset( info, 0, sizeof( CGFrameInfo));
+
    info->window        = tmp.base;
    info->viewportFrame = CGPixelRectMake( 0,
                                           0,

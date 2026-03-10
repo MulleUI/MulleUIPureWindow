@@ -13,7 +13,7 @@
 #define _demo__export_h__
 
 
-#import "MulleObjCLoader+MulleUIPureWindow.h"
+#import "MulleObjCDeps+MulleUIPureWindow.h"
 #import "MulleUIPureWindow.h"
 #import "UIPureWindow+FrameInfo.h"
 #import "UIPureWindow+Frame.h"

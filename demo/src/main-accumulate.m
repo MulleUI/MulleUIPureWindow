@@ -27,8 +27,8 @@ static void   drawStuff( CGContext *context, CGRect canvas)
    CGFloat   t;
    CGPoint   mouse;
 
-   [context fillRect:canvas
-            hexColor:CGHexColorMakeWithColor( CGColorMakeWithGrayAlphaBytes( 20, 20))];
+   CGContextFillRectWithColor( context, canvas,
+                                        CGColorMakeWithGrayAlphaBytes( 20, 20));
 
    mouse = [context mouseLocation];
    t     = [context secondsSinceFirstRender];
@@ -48,8 +48,8 @@ static void   drawStuff( CGContext *context, CGRect canvas)
          myX = x + 20 * cosf( 2 * M_PI * t + angle);
          myY = y + 20 * sin( 2 * M_PI * t + angle);
 
-         [context fillCircle:CACircleMake( CGPointMake( myX, myY), 5.0)
-                    hexColor:CGHexColorMakeWithColor( CGColorMakeWithRGBBytes( 20, 200, 20))];
+         CGContextFillCircleWithColor( context, CACircleMakeWithCenterAndRadius( CGPointMake( myX, myY), 5.0),
+                                                CGColorMakeWithRGBBytes( 20, 200, 20));
       }
    }
 }
@@ -69,12 +69,15 @@ int   main( int argc, char *argv[])
 {
    UIPureWindow    *window;
    UIApplication   *app;
+   NSUInteger      styleMask;
 
    app = [UIApplication sharedInstance];
    {
+      styleMask = UIWindowStyleMaskDefault;
+      styleMask = UIWindowStyleMaskBySetting( styleMask, UIWindowStyleMousePolling, YES);
       window = [UIPureWindow windowWithFrame:CGRectMake( 0.0, 0.0, 600.0, 600.0)
                              titleUTF8String:"Demo"
-                                   styleMask:UIWindowStyleMaskDefault];
+                                   styleMask:styleMask];
       // prevent framebuffer from being destroyed
       [window setOpaque:YES];
       [window setBackgroundHexColor:CGHexColorGreen];

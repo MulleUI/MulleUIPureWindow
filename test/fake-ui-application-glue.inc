@@ -2,6 +2,9 @@
 // necessary glue code, as long as you don't have MulleUIOS
 //
 @interface FakeOSWindow : NSObject < UIOSWindow>
+{
+struct UIInputState   _inputState;
+}
 @property (assign) id <UIEventReceiver> windowEventsReceiver;
 @property (assign) id <UIEventReceiver> eventsReceiver;
 @property (assign) NSUInteger discardEventsMask;
@@ -270,6 +273,11 @@
     return _lastSwapTime;
 }
 
+- (void) os_pollInputState:(struct UIInputState *) state
+{
+   memset( state, 0, sizeof( struct UIInputState));
+}
+
 @end
 
 @interface FakeContext : NSObject < UIGraphicsContext, UIGraphicsDrawing>
@@ -283,6 +291,7 @@
 @property (assign) id OSWindow;
 @property (assign, readonly) UIGraphicsBackend backend;
 @property (assign) struct UIInputState inputState;
+@property (assign) NSUInteger debuggingFlags;
 @property (assign, getter=isInitializedFramebuffer) BOOL initializedFramebuffer;
 
 // Private properties for implementation
@@ -364,6 +373,13 @@
                                    shareID:shareID
                                    options:options]);
 }
+
+
+- (void) os_pollInputState:(struct UIInputState *) state
+{
+   memset( state, 0, sizeof( struct UIInputState));
+}
+
 
 - (char *)backendUTF8String
 {
@@ -605,7 +621,7 @@
 
 + (FakeApplication *) sharedInstance
 {
-   return [FakeApplication object];
+   return [FakeApplication instance];
 }
 
 - (id) init

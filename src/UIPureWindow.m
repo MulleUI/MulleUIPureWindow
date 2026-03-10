@@ -175,6 +175,15 @@ static struct
 
 + (instancetype) windowWithFrame:(CGRect) frame
                  titleUTF8String:(char *) title
+{
+   return( [self windowWithFrame:frame
+                 titleUTF8String:title
+                       styleMask:UIWindowStyleMaskDefault]);
+}
+
+
++ (instancetype) windowWithFrame:(CGRect) frame
+                 titleUTF8String:(char *) title
                        styleMask:(NSUInteger) styleMask
 {
    UIPureWindow *obj;
@@ -190,15 +199,13 @@ static struct
 
 + (Class) osWindowClass
 {
-   fprintf( stderr, "Someone needs to override %s to provide a OS window\n", __FUNCTION__);
-   abort();
+   MULLE_OBJC_METHOD_REQUIRES_OVERRIDE( " to provide a OS window");
 }
 
 
 + (Class) osGraphicsContextClass
 {
-   fprintf( stderr, "Someone needs to override %s to provide a OS graphics context\n", __FUNCTION__);
-   abort();
+   MULLE_OBJC_METHOD_REQUIRES_OVERRIDE( " to provide a OS graphics context");
 }
 
 
@@ -251,6 +258,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 - (instancetype) _initWithFrame:(CGRect) frame
 {
    UIWindowDisplayBits   displayBits;
+   char                  *s;
 
    self = [super init];
    if( ! self)
@@ -291,6 +299,19 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    [self _initInvocationQueues];
    [self _initResourceStorage:&_resourceStorage];
+
+   s = getenv( "UIPureWindowMaxRenderedFrames");
+   if( s)
+      _maxRenderedFrames = atol( s);
+
+   s = getenv( "UIPureWindowStartTraceAtFrame");
+   if( s)
+   {
+      _startTraceFrames   = atol( s);
+      _maxRenderedFrames += _startTraceFrames;
+   }
+   else
+      _startTraceFrames = (NSUInteger) -1L;
 
    return( self);
 }
@@ -350,8 +371,8 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 // it's at, and doesn't get a refresh or move notice. But a window manager
 // may reposition the subsequent window (or even the first), so we get
 // a move and refresh event. The refresh event will hit after the first
-// render forcing a second render sortof immediately, as the eventloop is
-// positioned byhind the renderloop.
+// render forcing a second render sort of immediately, as the eventloop is
+// positioned behind the renderloop.
 //
 - (instancetype) initWithFrame:(CGRect) frame
                titleUTF8String:(char *) title
@@ -367,9 +388,13 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    assert( [NSThread mulleIsMainThread]);
 
    Self          = [self class];
-   osWindowClass = [Self osWindowClass];
    hints         = [Self osGraphicsHints];
    contextClass  = [Self osGraphicsContextClass];
+
+   if( styleMask & UIWindowStyleNoDrawing)
+      osWindowClass = [UINullOSWindow class];
+   else
+      osWindowClass = [Self osWindowClass];
 
    // TTY windows w/o graphicsContext stay at 0
    if( ! styleMask && contextClass)
@@ -405,9 +430,10 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
       }
    }
 
-   // buffered with offscreen window is the default,
+      // buffered with offscreen window is the default,
    if( styleMask & (UIWindowStyleRetained|UIWindowStyleRetainedOnMainThread))
    {
+      assert( ! (styleMask & UIWindowStyleNoDrawing));
       //
       // Offscreen window can be minimally sized as we use two different
       // framebuffers. Why ? Because then we have it under control and get a
@@ -416,11 +442,12 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
       _offscreenStyleMask &= ~(UIWindowStyleResizable);
       _offscreenStyleMask |= UIWindowStyleHidden|UIWindowStyleOffscreen|UIWindowStyleBare;
 //      _offscreenStyleMask |= UIWindowStyleSingleBuffer; // save some memory from bogus buffer
-      offscreenWindow      = [[[osWindowClass alloc] initWithFrame:CGRectMake( 0, 0, 32, 32)
-                                                   titleUTF8String:"OffScreen"
-                                                         styleMask:_offscreenStyleMask
-                                                     graphicsHints:hints
-                                                     sharingWindow:nil] autorelease];
+
+      offscreenWindow = [[[osWindowClass alloc] initWithFrame:CGRectMake( 0, 0, 32, 32)
+                                              titleUTF8String:"OffScreen"
+                                                    styleMask:_offscreenStyleMask
+                                                graphicsHints:hints
+                                                sharingWindow:nil] autorelease];
       if( ! offscreenWindow)
       {
          [self release];
@@ -451,7 +478,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    //
    // we can keep the OSGraphicsContext active, if the window is running in its
    // own thread, or if it can be ascertained that only one window is open
-   // ever (user resposibility then). By default we assume that the thread
+   // ever (user responsibility then). By default we assume that the thread
    // doesn't change
    //
    _keepOSGraphicsContextActive = (styleMask & (UIWindowStyleRetained|UIWindowStyleRetainedOnMainThread)) == UIWindowStyleRetained
@@ -608,34 +635,42 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 // gain and relinquish are tailored to transfer between the UIWindow+Thread
 // and the mainThread. Not for anything else (so far)
 //
-- (void) mulleGainAccess
+- (void) mulleGainAccessWithUniquingSet:(struct mulle_pointerset *) uniquing
 {
+   assert( mulle_pointerset_get( uniquing, self) == self);
+
+   // add ivars to NOT transfer
+   mulle_pointerset_insert( uniquing, _OSWindow);
+   mulle_pointerset_insert( uniquing, _context);
+
    // more todo
-   [super mulleGainAccess];
+   [super mulleGainAccessWithUniquingSet:uniquing];
 
-   if( _firstResponder != _responder)
-      [_firstResponder mulleGainAccess];
-   [_responder mulleGainAccess];
-
-   [_offscreenOSWindow mulleGainAccess];
-   [_offscreenContext mulleGainAccess];
-   [_frameDelegate mulleGainAccess];
-   [_userInfo mulleGainAccess];
+   if( mulle_pointerset_insert( uniquing, _initialFirstResponder))
+      [_initialFirstResponder mulleGainAccessWithUniquingSet:uniquing];
+   if( mulle_pointerset_insert( uniquing, _firstResponder))
+      [_firstResponder mulleGainAccessWithUniquingSet:uniquing];
+   if( mulle_pointerset_insert( uniquing, _responder))
+      [_responder mulleGainAccessWithUniquingSet:uniquing];
 }
 
 
-- (void) mulleRelinquishAccess
+- (void) mulleRelinquishAccessWithUniquingSet:(struct mulle_pointerset *) uniquing
 {
-   [_userInfo mulleRelinquishAccess];
-   [_frameDelegate mulleRelinquishAccess];
-   [_offscreenOSWindow mulleRelinquishAccess];
-   [_offscreenContext mulleRelinquishAccess];
+   assert( mulle_pointerset_get( uniquing, self) == self);
 
-   [_responder mulleRelinquishAccess];
-   if( _firstResponder != _responder)
-      [_firstResponder mulleRelinquishAccess];
+   // add ivars to NOT transfer
+   mulle_pointerset_insert( uniquing, _OSWindow);
+   mulle_pointerset_insert( uniquing, _context);
 
-   [super mulleRelinquishAccess];
+   if( mulle_pointerset_insert( uniquing, _responder))
+      [_responder mulleRelinquishAccessWithUniquingSet:uniquing];
+   if( mulle_pointerset_insert( uniquing, _firstResponder))
+      [_firstResponder mulleRelinquishAccessWithUniquingSet:uniquing];
+   if( mulle_pointerset_insert( uniquing, _initialFirstResponder))
+      [_initialFirstResponder mulleRelinquishAccessWithUniquingSet:uniquing];
+
+   [super mulleRelinquishAccessWithUniquingSet:uniquing];
 }
 
 
@@ -1128,7 +1163,12 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 
 //
 // this must only be called from within windowPropertySet:parameters:bit:
-// so this is "effictively" threadsafe
+// so this is "effictively" threadsafe.
+// MEMO: currently for this to work, we need to run the window at a certain
+//       refresh rate, otherwise we get a "pollEvents infinite" and are
+//       stuck in UIApplication. If that styleMask bit is set, we could check
+//       another pollRefresh rate and then feed this as the wait time into
+//       pollEvents. But all this for xEyes demos ??
 //
 - (BOOL) _setPolledInputState_needsLocking:(struct UIInputState) state MULLE_OBJC_THREADSAFE_METHOD
 {

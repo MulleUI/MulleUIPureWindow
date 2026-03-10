@@ -241,18 +241,19 @@ UIWindowDisplayBits
 //   UIWindowDisplayNeedsLayout     = 0x2,   // needs immediate attention, forces redraw
 //   UIWindowDisplayNeedsAnimation  = 0x4,   // needs attention according to animationRate
 //   UIWindowDisplayNeedsMouseEvent = 0x8    // layout change needs to retrack mouse
-   CGFloat      distance    = 8.0;
-   CGFloat      diameter    = 7.0;
-   CGFloat      radius      = diameter / 2.0;
+   CGFloat      distance     = 8.0;
+   CGFloat      diameter     = 7.0;
+   CGFloat      radius       = diameter / 2.0;
    CGPoint      center;
    CACircle     circle;
-   uint32_t     backColor   = 0x202020FF;
-   uint32_t     offColor    = 0x101010FF;
+   uint32_t     backColor    = 0x202020FF;
+   uint32_t     offColor     = 0x101010FF;
    uint32_t     onColor;
-   uint32_t     greenColor  = 0x20D020FF;
-   uint32_t     orangeColor = 0xD04010FF;
-   uint32_t     yellowColor = 0xD0D020FF;
-   uint32_t     blueColor   = 0x0087FFFF;
+   uint32_t     greenColor   = 0x20D020FF;
+   uint32_t     orangeColor  = 0xD04010FF;
+   uint32_t     magentaColor = 0xD040F0FF;
+   uint32_t     yellowColor  = 0xD0D020FF;
+   uint32_t     blueColor    = 0x0087FFFF;
    NSUInteger   bit;
 
    center = CGPointMake( point.x + radius, point.y + radius);
@@ -260,13 +261,14 @@ UIWindowDisplayBits
    // only display the user events
    for( bit = UIWindowDisplayNeedsAnimation; bit; bit >>= 1)
    {
-      circle = CACircleMake( center, radius);
+      circle = CACircleMakeWithCenterAndRadius( center, radius);
       [drawing fillCircle:circle
                  hexColor:backColor];
-      circle = CACircleMake( center, radius - 0.75);
+      circle = CACircleMakeWithCenterAndRadius( center, radius - 0.75);
       switch( bit)
       {
       case UIWindowDisplayNeedsAnimation  : onColor = orangeColor; break;
+      case UIWindowDisplayNeedsStyling    : onColor = magentaColor; break;
       case UIWindowDisplayNeedsLayout     : onColor = greenColor; break;
       case UIWindowDisplayNeedsMouseEvent : onColor = yellowColor; break;
       default                             : onColor = blueColor; break;
@@ -358,6 +360,7 @@ UIWindowDisplayBits
       // for demos (memo: thread safety question
       if( _styleMask & UIWindowStyleMousePolling)
          [_renderGraphicsContext setInputState:[self polledInputState]];
+
 //      else
 //         [_renderGraphicsContext setInputState:_eventInputState];
 
@@ -392,10 +395,18 @@ UIWindowDisplayBits
 {
    UIWindowDisplayBits   returnBits;
 
+
    [self render_setupInitialFirstResponderIfNeeded];
 
    _isRendering = YES;
    displayBits  = displayBits & 0xFFFF;  // only care for user bits here
+
+   if( _renderedFrames >= _startTraceFrames && _startTraceFrames != (NSUInteger) -1L)
+   {
+      if( _renderedFrames == _startTraceFrames)
+         MulleUILog( "Starting nvgTrace");
+      info->debuggingFlags |= UIGraphicsContextTraceDrawCalls;
+   }
 
    MulleWindowProfileBegin();
    {
@@ -416,6 +427,12 @@ UIWindowDisplayBits
    }
    MulleWindowProfileEnd();
 
+
+   if( ++_renderedFrames == _maxRenderedFrames && _maxRenderedFrames)
+   {
+      MulleUILog( "Exiting on maxRenderedFrames %tu reached", _maxRenderedFrames);
+      exit( 0);
+   }
    _isRendering = NO;
 
    [self render_requestFakeMouseEventIfNeeded:returnBits];

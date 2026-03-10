@@ -12,6 +12,21 @@ if( MULLE_TRACE_INCLUDE)
 endif()
 
 #
+# Set library preference based on BUILD_SHARED_LIBS
+#
+if( BUILD_SHARED_LIBS)
+   set( MULLE_PREFERRED_LIBRARY_PREFIX "${CMAKE_SHARED_LIBRARY_PREFIX}")
+   set( MULLE_PREFERRED_LIBRARY_SUFFIX "${CMAKE_SHARED_LIBRARY_SUFFIX}")
+   set( MULLE_FALLBACK_LIBRARY_PREFIX "${CMAKE_STATIC_LIBRARY_PREFIX}")
+   set( MULLE_FALLBACK_LIBRARY_SUFFIX "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+else()
+   set( MULLE_PREFERRED_LIBRARY_PREFIX "${CMAKE_STATIC_LIBRARY_PREFIX}")
+   set( MULLE_PREFERRED_LIBRARY_SUFFIX "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+   set( MULLE_FALLBACK_LIBRARY_PREFIX "${CMAKE_SHARED_LIBRARY_PREFIX}")
+   set( MULLE_FALLBACK_LIBRARY_SUFFIX "${CMAKE_SHARED_LIBRARY_SUFFIX}")
+endif()
+
+#
 # Generated from sourcetree: 95A19A27-9AEB-4DDD-BBBC-A817592E6A6B;MulleUIApplication;no-singlephase;
 # Disable with : `mulle-sourcetree mark MulleUIApplication no-link`
 # Disable for this platform: `mulle-sourcetree mark MulleUIApplication no-cmake-platform-${MULLE_UNAME}`
@@ -22,15 +37,19 @@ if( COLLECT_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
 else()
    if( NOT MULLE_UI_APPLICATION_LIBRARY)
       find_library( MULLE_UI_APPLICATION_LIBRARY NAMES
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIApplication${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIApplication${CMAKE_STATIC_LIBRARY_SUFFIX}
+         ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleUIApplication${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+         ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleUIApplication${MULLE_PREFERRED_LIBRARY_SUFFIX}
+         ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleUIApplication${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+         ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleUIApplication${MULLE_FALLBACK_LIBRARY_SUFFIX}
          MulleUIApplication
-         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
+         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH
       )
       if( NOT MULLE_UI_APPLICATION_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
          find_library( MULLE_UI_APPLICATION_LIBRARY NAMES
-            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIApplication${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleUIApplication${CMAKE_STATIC_LIBRARY_SUFFIX}
+            ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleUIApplication${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+            ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleUIApplication${MULLE_PREFERRED_LIBRARY_SUFFIX}
+            ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleUIApplication${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+            ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleUIApplication${MULLE_FALLBACK_LIBRARY_SUFFIX}
             MulleUIApplication
          )
       endif()
@@ -69,29 +88,36 @@ else()
                list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_UI_APPLICATION_DIR}")
                #
                unset( MULLE_UI_APPLICATION_DEFINITIONS)
+               unset( MULLE_UI_APPLICATION_RENDEZVOUS_GLOBALS)
                include( "${_TMP_MULLE_UI_APPLICATION_DIR}/Definitions.cmake" OPTIONAL)
                list( APPEND INHERITED_DEFINITIONS ${MULLE_UI_APPLICATION_DEFINITIONS})
+               include( "${_TMP_MULLE_UI_APPLICATION_DIR}/Definitions.cmake" OPTIONAL)
+               list( APPEND RENDEZVOUS_GLOBALS ${MULLE_UI_APPLICATION_RENDEZVOUS_GLOBALS})
                break()
             else()
                message( STATUS "${_TMP_MULLE_UI_APPLICATION_DIR} not found")
             endif()
          endforeach()
          #
-         # Search for "MulleObjCLoader+<name>.h" in include directory.
+         # Search for "MulleObjCDeps+<name>.h" in include directory.
          # Disable with: `mulle-sourcetree mark MulleUIApplication no-cmake-loader`
          #
-         if( NOT NO_INHERIT_OBJC_LOADERS)
+         if( NOT NO_INHERIT_OBJC_DEPS)
             foreach( _TMP_MULLE_UI_APPLICATION_NAME "MulleUIApplication")
-               set( _TMP_MULLE_UI_APPLICATION_FILE "${_TMP_MULLE_UI_APPLICATION_ROOT}/include/${_TMP_MULLE_UI_APPLICATION_NAME}/MulleObjCLoader+${_TMP_MULLE_UI_APPLICATION_NAME}.h")
+               set( _TMP_MULLE_UI_APPLICATION_FILE "${_TMP_MULLE_UI_APPLICATION_ROOT}/include/${_TMP_MULLE_UI_APPLICATION_NAME}/MulleObjCDeps+${_TMP_MULLE_UI_APPLICATION_NAME}.h")
                if( EXISTS "${_TMP_MULLE_UI_APPLICATION_FILE}")
-                  list( APPEND INHERITED_OBJC_LOADERS ${_TMP_MULLE_UI_APPLICATION_FILE})
+                  list( APPEND INHERITED_OBJC_DEPS ${_TMP_MULLE_UI_APPLICATION_FILE})
                   break()
                endif()
             endforeach()
          endif()
       else()
          # Disable with: `mulle-sourcetree mark MulleUIApplication no-require-link`
-         message( SEND_ERROR "MULLE_UI_APPLICATION_LIBRARY was not found")
+         message( SEND_ERROR "MULLE_UI_APPLICATION_LIBRARY was not found in ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleUIApplication${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+${MULLE_PREFERRED_LIBRARY_PREFIX}MulleUIApplication${MULLE_PREFERRED_LIBRARY_SUFFIX}
+${MULLE_FALLBACK_LIBRARY_PREFIX}MulleUIApplication${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+${MULLE_FALLBACK_LIBRARY_PREFIX}MulleUIApplication${MULLE_FALLBACK_LIBRARY_SUFFIX}
+MulleUIApplication")
       endif()
    endif()
 endif()
@@ -108,15 +134,19 @@ if( COLLECT_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
 else()
    if( NOT MULLE_INVOCATION_QUEUE_LIBRARY)
       find_library( MULLE_INVOCATION_QUEUE_LIBRARY NAMES
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleInvocationQueue${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleInvocationQueue${CMAKE_STATIC_LIBRARY_SUFFIX}
+         ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleInvocationQueue${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+         ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleInvocationQueue${MULLE_PREFERRED_LIBRARY_SUFFIX}
+         ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleInvocationQueue${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+         ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleInvocationQueue${MULLE_FALLBACK_LIBRARY_SUFFIX}
          MulleInvocationQueue
-         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
+         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH
       )
       if( NOT MULLE_INVOCATION_QUEUE_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
          find_library( MULLE_INVOCATION_QUEUE_LIBRARY NAMES
-            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleInvocationQueue${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleInvocationQueue${CMAKE_STATIC_LIBRARY_SUFFIX}
+            ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleInvocationQueue${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+            ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleInvocationQueue${MULLE_PREFERRED_LIBRARY_SUFFIX}
+            ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleInvocationQueue${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+            ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleInvocationQueue${MULLE_FALLBACK_LIBRARY_SUFFIX}
             MulleInvocationQueue
          )
       endif()
@@ -155,29 +185,36 @@ else()
                list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_INVOCATION_QUEUE_DIR}")
                #
                unset( MULLE_INVOCATION_QUEUE_DEFINITIONS)
+               unset( MULLE_INVOCATION_QUEUE_RENDEZVOUS_GLOBALS)
                include( "${_TMP_MULLE_INVOCATION_QUEUE_DIR}/Definitions.cmake" OPTIONAL)
                list( APPEND INHERITED_DEFINITIONS ${MULLE_INVOCATION_QUEUE_DEFINITIONS})
+               include( "${_TMP_MULLE_INVOCATION_QUEUE_DIR}/Definitions.cmake" OPTIONAL)
+               list( APPEND RENDEZVOUS_GLOBALS ${MULLE_INVOCATION_QUEUE_RENDEZVOUS_GLOBALS})
                break()
             else()
                message( STATUS "${_TMP_MULLE_INVOCATION_QUEUE_DIR} not found")
             endif()
          endforeach()
          #
-         # Search for "MulleObjCLoader+<name>.h" in include directory.
+         # Search for "MulleObjCDeps+<name>.h" in include directory.
          # Disable with: `mulle-sourcetree mark MulleInvocationQueue no-cmake-loader`
          #
-         if( NOT NO_INHERIT_OBJC_LOADERS)
+         if( NOT NO_INHERIT_OBJC_DEPS)
             foreach( _TMP_MULLE_INVOCATION_QUEUE_NAME "MulleInvocationQueue")
-               set( _TMP_MULLE_INVOCATION_QUEUE_FILE "${_TMP_MULLE_INVOCATION_QUEUE_ROOT}/include/${_TMP_MULLE_INVOCATION_QUEUE_NAME}/MulleObjCLoader+${_TMP_MULLE_INVOCATION_QUEUE_NAME}.h")
+               set( _TMP_MULLE_INVOCATION_QUEUE_FILE "${_TMP_MULLE_INVOCATION_QUEUE_ROOT}/include/${_TMP_MULLE_INVOCATION_QUEUE_NAME}/MulleObjCDeps+${_TMP_MULLE_INVOCATION_QUEUE_NAME}.h")
                if( EXISTS "${_TMP_MULLE_INVOCATION_QUEUE_FILE}")
-                  list( APPEND INHERITED_OBJC_LOADERS ${_TMP_MULLE_INVOCATION_QUEUE_FILE})
+                  list( APPEND INHERITED_OBJC_DEPS ${_TMP_MULLE_INVOCATION_QUEUE_FILE})
                   break()
                endif()
             endforeach()
          endif()
       else()
          # Disable with: `mulle-sourcetree mark MulleInvocationQueue no-require-link`
-         message( SEND_ERROR "MULLE_INVOCATION_QUEUE_LIBRARY was not found")
+         message( SEND_ERROR "MULLE_INVOCATION_QUEUE_LIBRARY was not found in ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleInvocationQueue${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+${MULLE_PREFERRED_LIBRARY_PREFIX}MulleInvocationQueue${MULLE_PREFERRED_LIBRARY_SUFFIX}
+${MULLE_FALLBACK_LIBRARY_PREFIX}MulleInvocationQueue${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+${MULLE_FALLBACK_LIBRARY_PREFIX}MulleInvocationQueue${MULLE_FALLBACK_LIBRARY_SUFFIX}
+MulleInvocationQueue")
       endif()
    endif()
 endif()

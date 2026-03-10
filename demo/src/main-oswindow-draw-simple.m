@@ -54,7 +54,7 @@ static UIWindowDisplayBits   display( GLFWOSWindow *window_in)
 
    [context beginRender:&frameInfo];
    {
-      drawRedWhiteBlueFlag( CGContextGetNVGContext( context), canvas);
+       drawRedWhiteBlueFlag( context, canvas);
    }
    [context endRender];
 

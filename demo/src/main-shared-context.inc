@@ -19,31 +19,29 @@ static void  drawPrettyBackground( CGContext *context, CGRect canvas)
    CGFloat             strokeWidth;
    CGFont              *font;
    CGRect              rect;
-   struct NVGcontext   *vg;
 
    strokeWidth = 20.0;
    radius      = (CGFloatMinimum( CGRectGetWidth( canvas),
                                   CGRectGetHeight( canvas)) - strokeWidth) / 2;
    // draw circle
-   vg = CGContextGetNVGContext( context);
-   nvgBeginPath( vg);
+   CGContextBeginPath( context);
    {
-      nvgCircle( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), radius);
-      nvgStrokeColor( vg, GRAU);
-      nvgStrokeWidth( vg, strokeWidth);
+      CGContextCircle( context, CACircleMakeWithCenterAndRadius( CGPointMake( CGRectGetMidX( canvas), CGRectGetMidY( canvas)), radius));
+      CGContextStrokeColor( context, GRAU);
+      CGContextStrokeWidth( context, strokeWidth);
    }
-   nvgStroke( vg);
+   CGContextStroke( context);
 
    // draw text
    // load in font first, this will be efficient on subsequent frames
    font = [context fontWithNameUTF8String:"sans"];
    [context useFont:font];
 
-   nvgFontSize( vg, strokeWidth * 8.0);
-   nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-   nvgTextColor( vg, WEISS);
-   nvgTextBackgroundColor( vg, BLAU);
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), "1848", NULL);
+   CGContextFontSize( context, strokeWidth * 8.0);
+   CGContextCombinedTextAlignment( context, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+   CGContextTextColor( context, WEISS);
+   CGContextTextBackgroundColor( context, BLAU);
+   CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMidY( canvas)), "1848", (size_t) -1);
 }
 
 

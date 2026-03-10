@@ -1,39 +1,39 @@
 
 
-static void   drawFlag( struct NVGcontext *vg, CGRect canvas, CGColor colors[ 3])
+static void   drawFlag( CGContext *context, CGRect canvas, CGColor colors[ 3])
 {
    canvas.size.height /= 3.0;
 
    // red stripe
-   nvgBeginPath( vg);
-   nvgRect( vg, canvas.origin.x,
-                canvas.origin.y,
-                canvas.size.width,
-                canvas.size.height);
-   nvgFillColor( vg, colors[ 0]);
-   nvgFill( vg);
+   CGContextBeginPath( context);
+   CGContextRect( context, CGRectMake( canvas.origin.x,
+                                      canvas.origin.y,
+                                      canvas.size.width,
+                                      canvas.size.height));
+   CGContextFillColor( context, colors[ 0]);
+   CGContextFill( context);
 
    // white stripe
-   nvgBeginPath( vg);
-   nvgRect( vg, canvas.origin.x,
-                canvas.origin.y + canvas.size.height * 1,
-                canvas.size.width,
-                canvas.size.height);
-   nvgFillColor( vg, colors[ 1]);
-   nvgFill( vg);
+   CGContextBeginPath( context);
+   CGContextRect( context, CGRectMake( canvas.origin.x,
+                                      canvas.origin.y + canvas.size.height * 1,
+                                      canvas.size.width,
+                                      canvas.size.height));
+   CGContextFillColor( context, colors[ 1]);
+   CGContextFill( context);
 
    // blue stripe
-   nvgBeginPath( vg);
-   nvgRect( vg, canvas.origin.x,
-                canvas.origin.y + canvas.size.height * 2,
-                canvas.size.width,
-                canvas.size.height);
-   nvgFillColor( vg, colors[ 2]);
-   nvgFill( vg);
+   CGContextBeginPath( context);
+   CGContextRect( context, CGRectMake( canvas.origin.x,
+                                      canvas.origin.y + canvas.size.height * 2,
+                                      canvas.size.width,
+                                      canvas.size.height));
+   CGContextFillColor( context, colors[ 2]);
+   CGContextFill( context);
 }
 
 
-static void   drawRedWhiteBlueFlag( struct NVGcontext *vg, CGRect canvas)
+static void   drawRedWhiteBlueFlag( CGContext *context, CGRect canvas)
 {
    CGColor   colors[ 3];
 
@@ -41,5 +41,5 @@ static void   drawRedWhiteBlueFlag( struct NVGcontext *vg, CGRect canvas)
    colors[ 1] = CGColorMakeWhite();
    colors[ 2] = CGColorMakeBlue();
 
-   drawFlag( vg, canvas, colors);
+   drawFlag( context, canvas, colors);
 }

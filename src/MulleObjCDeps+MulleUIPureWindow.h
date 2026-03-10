@@ -1,5 +1,5 @@
 /*
- * template: project-oneshot/library/PROJECT_SOURCE_DIR/MulleObjCLoader+PROJECT_NAME.h
+ * template: project-oneshot/library/PROJECT_SOURCE_DIR/MulleObjCDeps+PROJECT_NAME.h
  * vendor/extension: mulle-objc/objc
  */
 #ifdef __MULLE_OBJC__
@@ -11,7 +11,7 @@
 // depend on this library to properly declare their load in their
 // MulleObjcLoader class.
 //
-@interface MulleObjCLoader( MulleUIPureWindow)
+@interface MulleObjCDeps( MulleUIPureWindow)
 
 + (struct _mulle_objc_dependency *) dependencies;
 

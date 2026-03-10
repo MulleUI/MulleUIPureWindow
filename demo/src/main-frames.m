@@ -41,68 +41,65 @@ static BOOL   drawStuff( CGContext *context, CGRect canvas)
    NSUInteger              counter;
    struct CGFrameInfo      *info;
    struct UIOSWindowInfo   windowInfo;
-   struct NVGcontext       *vg;
    UIPureWindow            *window;
 
    osWindow = MULLE_OBJC_CLASS_CAST( GLFWOSWindow, [context OSWindow]);
    window   = MULLE_OBJC_CLASS_CAST( UIPureWindow, [osWindow parentWindow]);
    assert( window);
 
-   vg = CGContextGetNVGContext( context);
-
-   nvgTextColor( vg, CGColorMakeWhite());
-   nvgTextBackgroundColor( vg, CGColorMakeChartreuse());
-   nvgTextAlign( vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+   CGContextTextColor( context, CGColorMakeWhite());
+   CGContextTextBackgroundColor( context, CGColorMakeChartreuse());
+   CGContextCombinedTextAlignment( context, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 
    font = [context fontWithNameUTF8String:"sans"];
    [context useFont:font];
 
-   nvgFontSize( vg, SMALL_FONT);
+   CGContextFontSize( context, SMALL_FONT);
    sprintf( buf, "frameRateLimiter : %s", [window frameRateLimiter] ? "YES" : "NO");
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 1 + 2, buf, NULL);
+   CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 1 + 2), buf, (size_t) -1);
 
    sprintf( buf, "swapInterval : %td", [window swapInterval]);
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 2 + 2, buf, NULL);
+   CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 2 + 2), buf, (size_t) -1);
 
    frameRate = [window frameRate];
    if( frameRate == UIWindowFrameRateAsync)
-      sprintf( buf, "frameRate : async");
+   sprintf( buf, "frameRate : async");
    else
-      if( frameRate == UIWindowFrameRateUnsynced)
-         sprintf( buf, "frameRate : unsynced");
-      else
-         if( frameRate == UIWindowFrameRateSynced)
-            sprintf( buf, "frameRate : synced");
-         else
-            sprintf( buf, "frameRate : %.2f Hz", 1.0 / frameRate);
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 3 + 2, buf, NULL);
+   if( frameRate == UIWindowFrameRateUnsynced)
+   sprintf( buf, "frameRate : unsynced");
+   else
+   if( frameRate == UIWindowFrameRateSynced)
+   sprintf( buf, "frameRate : synced");
+   else
+   sprintf( buf, "frameRate : %.2f Hz", 1.0 / frameRate);
+   CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 3 + 2), buf, (size_t) -1);
 
    [window getOSWindowInfo:&windowInfo];
 
    sprintf( buf, "slowestFrameRate : %.3f  (%.2f Hz)", UIOSWindowInfoGetSlowestFrameRate( &windowInfo), 1.0 / UIOSWindowInfoGetSlowestFrameRate( &windowInfo));
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 4 + 2, buf, NULL);
+   CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 4 + 2), buf, (size_t) -1);
 
    sprintf( buf, "fastestFrameRate : %.3f (%.2f Hz)",  UIOSWindowInfoGetFastestFrameRate( &windowInfo),  1.0 /  UIOSWindowInfoGetFastestFrameRate( &windowInfo));
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 5 + 2, buf, NULL);
+   CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 5 + 2), buf, (size_t) -1);
 
    sprintf( buf, "OSContextInfo : %s", [NSThread mulleIsMainThread] ? [osWindow os_contextInfoUTF8String] : "N/A");
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 6 + 2, buf, NULL);
+   CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 6 + 2), buf, (size_t) -1);
 
    sprintf( buf, "OSWindowInfo : %s", [NSThread mulleIsMainThread] ? [osWindow os_windowInfoUTF8String] : "N/A");
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 7 + 2, buf, NULL);
+   CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 7 + 2), buf, (size_t) -1);
 
    mulle_sprintf( buf, "thread : %@", [NSThread currentThread]);
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 8 + 2, buf, NULL);
+   CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 8 + 2), buf, (size_t) -1);
 
-   nvgFontSize( vg, LARGE_FONT);
+   CGContextFontSize( context, LARGE_FONT);
    sprintf( buf, "%td frames", [context numberOfFrames]);
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas), buf, NULL);
+   CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMidY( canvas)), buf, (size_t) -1);
 
    sprintf( buf, "%.3f s", [context secondsSinceFirstRender]);
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT + 8, buf, NULL);
+   CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT + 8), buf, (size_t) -1);
 
    sprintf( buf, "%.2f FPS", [context numberOfFrames] / [context secondsSinceFirstRender]);
-   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 2 + 8, buf, NULL);
+   CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 2 + 8), buf, (size_t) -1);
 
 //   sprintf( buf, "%.6f display+refresh", [window displayAndRefreshRate]);
 //   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 3 + 8, buf, NULL);
@@ -241,7 +238,7 @@ int   main( int argc, char *argv[])
       {
          MulleUIPerf   *perf;
 
-         perf = [MulleUIPerf object];
+         perf = [MulleUIPerf instance];
          [window setFrameDelegate:perf];
       }
 #endif
