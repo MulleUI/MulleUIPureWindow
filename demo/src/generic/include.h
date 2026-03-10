@@ -4,7 +4,7 @@
 #define HAVE_INCLUDE_DEMO
 
 /* This is a central include file to keep dependencies out of the library
-   C files. It is usally included by .h files only.
+   C files. It is usually included by .h files only.
 
    The advantage is that now .c and .h files become motile. They can
    be moved to other projects and don't need to be edited. Also less typing...

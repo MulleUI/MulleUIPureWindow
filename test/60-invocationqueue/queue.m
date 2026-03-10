@@ -8,7 +8,7 @@ int   main( void)
    MulleInvocationQueue   *queue;
    NSInvocation           *invocation;
 
-   window = [UIPureWindow object];
+   window = [UIPureWindow instance];
 
    queue = [window invocationQueueForNameUTF8String:"whatevs"];
    if( ! queue)
@@ -17,7 +17,7 @@ int   main( void)
       [window setInvocationQueue:queue
                forNameUTF8String:"whatevs"];
    }
-   invocation = [NSInvocation object];
+   invocation = [NSInvocation instance];
    [queue addInvocation:invocation];
    [window removeInvocationQueueForNameUTF8String:"whatevs"];
 

@@ -1,4 +1,4 @@
-cmake_minimum_required( VERSION 3.15)
+cmake_minimum_required( VERSION 3.15...99.99)
 
 project( MulleUIPureWindow C)
 
@@ -23,8 +23,8 @@ if( HEADERS_PHASE)
    install( FILES ${INSTALL_PRIVATE_HEADERS} DESTINATION "include/${PROJECT_NAME}")
    install( FILES ${INSTALL_CMAKE_INCLUDES}          DESTINATION "include/${PROJECT_NAME}/cmake")
    # hopefully temporary fix for Objective-C
-   if( EXISTS "src/reflect/objc-loader.inc")
-      install( FILES src/reflect/objc-loader.inc DESTINATION "include/${PROJECT_NAME}")
+   if( EXISTS "src/reflect/objc-deps.inc")
+      install( FILES src/reflect/objc-deps.inc DESTINATION "include/${PROJECT_NAME}")
    endif()
 
    # short cut out

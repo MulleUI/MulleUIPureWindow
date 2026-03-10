@@ -50,6 +50,7 @@ set( PROJECT_ONLY_HEADERS
 src/draw-flag.inc
 src/main-backend.inc
 src/main-shared-context.inc
+../src/reflect/objc-deps.inc
 src/ui-application-glue.inc
 )
 
@@ -79,7 +80,7 @@ src/generic/include.h
 # contents selected with patternfile ??-header--public-headers
 #
 set( PUBLIC_HEADERS
-../src/MulleObjCLoader+MulleUIPureWindow.h
+../src/MulleObjCDeps+MulleUIPureWindow.h
 ../src/MulleUIPureWindow.h
 ../src/UIPureWindow+FrameInfo.h
 ../src/UIPureWindow+Frame.h

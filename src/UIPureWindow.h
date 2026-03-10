@@ -166,6 +166,7 @@ struct UIWindowFrameStatistics
 };
 
 
+MULLE_UI_PURE_WINDOW_GLOBAL
 void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *stats,
                                              mulle_absolutetime_t start,
                                              mulle_absolutetime_t end);
@@ -289,6 +290,7 @@ struct MulleClickDragDifferentiator
    // used by LED display... so ugly
    NSUInteger                      _debugDisplayBits;
    NSUInteger                      _debugReturnBits;
+   NSUInteger                      _renderedFrames;
 
 // atomic variables accessed by both threads
 @protected
@@ -373,6 +375,11 @@ struct MulleClickDragDifferentiator
 
 @property( assign) NSUInteger                      swapInterval;
 
+// useful for debugging rendering you can set it to 1, and the demo will
+// only render one frame (will preempt before swapping!)
+@property( assign) NSUInteger                      maxRenderedFrames;
+@property( assign) NSUInteger                      startTraceFrames;
+
 
 @property char                                     *titleUTF8String     MULLE_OBJC_THREADSAFE_PROPERTY;
 
@@ -398,7 +405,7 @@ struct MulleClickDragDifferentiator
 // this will be NO if the window is not running in its own thread
 // For multiple windows on the same thread (i.e. mainThread) this must not be
 // set, otherwise you see only drawings in one window
-@property( assign) UIGraphicsContextState           keepOSGraphicsContextActive  MULLE_OBJC_THREADSAFE_PROPERTY;
+@property( assign) UIGraphicsContextState          keepOSGraphicsContextActive  MULLE_OBJC_THREADSAFE_PROPERTY;
 
 
 
@@ -476,15 +483,19 @@ struct MulleClickDragDifferentiator
 
 @property( readonly, assign) UIApplication    *application;
 
-@property( assign) id <UIResponder>           initialFirstResponder;
 
 // these are all "assign" only, but they WILL get called with
 // gainAccess and relinquishAccess
+@property( assign) id <UIResponder>           initialFirstResponder;
 @property( assign) id <UIResponder>           firstResponder;
 @property( assign) id <UIResponder>           responder;
 
 
 + (instancetype) windowWithFrame:(CGRect) frame;
+
+
++ (instancetype) windowWithFrame:(CGRect) frame
+                 titleUTF8String:(char *) title;
 
 + (instancetype) windowWithFrame:(CGRect) frame
                  titleUTF8String:(char *) title
@@ -689,5 +700,5 @@ static inline void
    _MulleWindowProfileAction( self, "*** sync ***", MulleWindowProfileEntrySync)
 
 
-MULLE_UI_CORE_EXTERN_GLOBAL
+MULLE_UI_PURE_WINDOW_GLOBAL
 void   UIWindowDestroyProfileQueue( struct mulle_structqueue *queue);

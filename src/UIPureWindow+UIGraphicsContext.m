@@ -52,6 +52,11 @@
    options |= (_styleMask & UIWindowStyleClearType)          ? UIGraphicsUseClearType : 0;
    options |= (_styleMask & UIWindowStyleStencilStrokes)     ? UIGraphicsUseStencilStrokes : 0;
 
+   if( _offscreenStyleMask & UIWindowStyleTraceDrawCalls)
+      options |= UIGraphicsTraceDrawCalls;
+   if( _offscreenStyleMask & UIWindowStyleNoDrawing)
+      options |= UIGraphicsNoDrawing;
+
    _context = [[cls alloc] initWithOSGraphicsContext:_OSWindow
                                       nameUTF8String:"Window"
                                              shareID:[_OSWindow shareID]
@@ -95,6 +100,11 @@
       else
          options |= UIGraphicsUseMSAA;
    }
+
+   if( _offscreenStyleMask & UIWindowStyleTraceDrawCalls)
+      options |= UIGraphicsTraceDrawCalls;
+   if( _offscreenStyleMask & UIWindowStyleNoDrawing)
+      options |= UIGraphicsNoDrawing;
 
    options |= (_offscreenStyleMask & UIWindowStyleForceEdgeAntiAlias) ? UIGraphicsEdgeAntiAliasing : 0;
    options |= (_offscreenStyleMask & UIWindowStyleClearType)          ? UIGraphicsUseClearType : 0;

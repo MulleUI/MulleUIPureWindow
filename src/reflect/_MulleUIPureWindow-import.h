@@ -19,7 +19,7 @@
 //    remove #import      : `mulle-sde dependency mark MulleUIApplication no-header`
 //    rename              : `mulle-sde dependency|library set MulleUIApplication include whatever.h`
 //    reorder             : `mulle-sde dependency move MulleUIApplication <up|down>`
-//    toggle #import      : `mulle-sde dependency mark MulleUIApplication [no-]import`
+//    toggle objc         : `mulle-sde dependency mark MulleUIApplication [no-]import`
 //    toggle public       : `mulle-sde dependency mark MulleUIApplication [no-]public`
 //    toggle optional     : `mulle-sde dependency mark MulleUIApplication [no-]require`
 //    remove for platform : `mulle-sde dependency mark MulleUIApplication no-platform-<uname>`
@@ -34,7 +34,7 @@
 //    remove #import      : `mulle-sde dependency mark MulleInvocationQueue no-header`
 //    rename              : `mulle-sde dependency|library set MulleInvocationQueue include whatever.h`
 //    reorder             : `mulle-sde dependency move MulleInvocationQueue <up|down>`
-//    toggle #import      : `mulle-sde dependency mark MulleInvocationQueue [no-]import`
+//    toggle objc         : `mulle-sde dependency mark MulleInvocationQueue [no-]import`
 //    toggle public       : `mulle-sde dependency mark MulleInvocationQueue [no-]public`
 //    toggle optional     : `mulle-sde dependency mark MulleInvocationQueue [no-]require`
 //    remove for platform : `mulle-sde dependency mark MulleInvocationQueue no-platform-<uname>`

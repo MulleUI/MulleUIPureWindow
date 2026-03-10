@@ -48,13 +48,12 @@ static UIWindowDisplayBits   display( UIPureWindow *pureWindow,
    MyWindow            *window;
    CGContext           *context;
    CGImage             *image;
-   struct NVGcontext   *vg;
    CGDrawableOptions   options =
    {
       .alpha             = 1.0,
-      .rotation          = 0.1,
-      .scale             = 1.0,
-      .flags.contentMode = CGContentModeCenterPoint
+   .rotation          = 0.1,
+   .scale             = 1.0,
+   .flags.contentMode = CGContentModeCenterPoint
    };
 
 
@@ -66,7 +65,6 @@ static UIWindowDisplayBits   display( UIPureWindow *pureWindow,
    assert( image);
 
    options.rotation = ([context numberOfFrames] % 20) / 20.0;
-   vg      = CGContextGetNVGContext( context);
    [image drawRect:CGFrameInfoGetContentRect( frameInfo)
            options:&options
            context:context];
@@ -98,16 +96,14 @@ static void   drawGradientCircle( CGContext *context, CGSize size, void *userinf
 {
    struct DrawContext  *info = userinfo;
    CGGradient          *gradient;
-   NVGcontext          *vg;
    CACircle            circle;
 
    gradient = [CGGradient gradientWithStartColor:info->startColor
                                         endColor:info->endColor
                                         rotation:info->rotation];
-   vg       = CGContextGetNVGContext( context);
-   circle   = CACircleMake( CGSizeGetCenterPoint( size),
+   circle   = CACircleMakeWithCenterAndRadius( CGSizeGetCenter( size),
                             CGSizeGetInnerRadius( size) - info->strokeWidth / 2.0 - 1.0);
-   mvgStrokeCircleWithPaint( vg, circle,
+   CGContextStrokeCircleWithPaintable( context, circle,
                                  info->strokeWidth,
                                  gradient);
 }

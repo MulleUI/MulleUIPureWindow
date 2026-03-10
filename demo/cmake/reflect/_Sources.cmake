@@ -11,6 +11,7 @@ endif()
 # contents selected with patternfile ??-source--sources
 #
 set( SOURCES
+../src/MulleObjCDeps+MulleUIPureWindow.m
 ../src/UIPureWindow+CGGeometry.m
 ../src/UIPureWindow+FrameInfo.m
 ../src/UIPureWindow+Frame.m
@@ -45,11 +46,4 @@ src/main-oswindow-draw-simple.m
 src/main-shared-framebuffer.m
 src/main-shared-image.m
 src/main-swapinterval.m
-)
-
-#
-# contents selected with patternfile ??-source--stage2-sources
-#
-set( STAGE2_SOURCES
-../src/MulleObjCLoader+MulleUIPureWindow.m
 )

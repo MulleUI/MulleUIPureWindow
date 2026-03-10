@@ -35,6 +35,7 @@ extern UIWindowDisplayBits
 
 - (void) clearFrame:(struct CGFrameInfo *) info
     graphicsContext:(id <UIGraphicsContext>) context;
+    
 - (UIWindowDisplayBits) renderWithFrameInfo:(struct CGFrameInfo *) info
                                 displayBits:(UIWindowDisplayBits) displayBits;
 

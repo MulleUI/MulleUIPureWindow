@@ -32,5 +32,5 @@ src/UIPureWindow.m
 # contents selected with patternfile ??-source--stage2-sources
 #
 set( STAGE2_SOURCES
-src/MulleObjCLoader+MulleUIPureWindow.m
+src/MulleObjCDeps+MulleUIPureWindow.m
 )

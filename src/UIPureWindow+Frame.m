@@ -128,7 +128,10 @@
    // or ?
    //
    if( _didSwapBuffersCallback)
+   {
+      UIWindowSwapLog( "Executing didSwapBuffersCallback");
       (*_didSwapBuffersCallback)( self, NO);
+   }
 
    // now call sync, so this is the first of the "not"
    MulleWindowProfileSync();
@@ -154,8 +157,10 @@
    MulleWindowProfileEnd();
 
    if( _didSwapBuffersCallback)
+   {
+      UIWindowSwapLog( "Executing didSwapBuffersCallback");
       (*_didSwapBuffersCallback)( self, YES);
-
+   }
    // now call sync, so this is the first of the "not"
    MulleWindowProfileSync();
 }

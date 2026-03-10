@@ -14,19 +14,18 @@
 // TODO: make this use the rawFrameCallback properly
 //
 
-static void   drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, NSUInteger frameNumber)
+static void   drawColorwheel(CGContext* context, float x, float y, float w, float h, NSUInteger frameNumber)
 {
    int i;
    float r0, r1, ax,ay, bx,by, cx,cy, aeps, r;
    float fummel = fmod( frameNumber / 100.0, NVG_PI * 2.0) == 0.0 ? 1.0 : fmod( frameNumber / 100.0, NVG_PI * 2.0);
    float hue = sinf( fummel * 0.12);
    float rot;
-   NVGpaint paint;
 
-   // stolen from the nanovg demo and stupedified
+   // stolen from the nanovg demo and stupidified
 
    // RING
-   nvgSave(vg);
+   CGContextSave(context);
    {
       cx = x + w*0.5f;
       cy = y + h*0.5f;
@@ -34,64 +33,71 @@ static void   drawColorwheel(NVGcontext* vg, float x, float y, float w, float h,
       r0 = r1 - 20.0f;
       aeps = 0.5f / r1; // half a pixel arc length in radians (2pi cancels out).
 
-      nvgTranslate(vg, cx,cy);
+      CGContextTranslate(context, CGPointMake(cx,cy));
       rot = -fummel;
-      nvgRotate(vg, rot);
-      nvgTranslate(vg, -cx,-cy);
+      CGContextRotate(context, rot);
+      CGContextTranslate(context, CGPointMake(-cx,-cy));
 
       for (i = 0; i < 6; i++) {
          float a0 = (float)i / 6.0f * NVG_PI * 2.0f - aeps;
          float a1 = (float)(i+1.0f) / 6.0f * NVG_PI * 2.0f + aeps;
-         nvgBeginPath(vg);
-         nvgArc(vg, cx,cy, r0, a0, a1, NVG_CW);
-         nvgArc(vg, cx,cy, r1, a1, a0, NVG_CCW);
-         nvgClosePath(vg);
+         CGContextBeginPath(context);
+         CGContextArcRadians( context, CACircleMakeWithCenterAndRadius( CGPointMake(cx,cy), r0), a0, a1, CARotationDirectionClockWise);
+         CGContextArcRadians( context, CACircleMakeWithCenterAndRadius( CGPointMake(cx,cy), r1), a1, a0, CARotationDirectionCounterClockWise);
+         CGContextClosePath(context);
          ax = cx + cosf(a0) * (r0+r1)*0.5f;
          ay = cy + sinf(a0) * (r0+r1)*0.5f;
          bx = cx + cosf(a1) * (r0+r1)*0.5f;
          by = cy + sinf(a1) * (r0+r1)*0.5f;
-         paint = nvgLinearGradient(vg, ax,ay, bx,by, nvgHSLA(a0/(NVG_PI*2),1.0f,0.55f,255), nvgHSLA(a1/(NVG_PI*2),1.0f,0.55f,255));
-         nvgFillPaint(vg, paint);
-         nvgFill(vg);
+         CGContextFillLinearGradient(context, CGPointMake(ax,ay),
+                                              CGColorMakeWithHSLA(a0/(NVG_PI*2),1.0f,0.55f,1.0f),
+                                              CGPointMake(bx,by),
+                                              CGColorMakeWithHSLA(a1/(NVG_PI*2),1.0f,0.55f,1.0f));
+         CGContextFill(context);
       }
 
-      nvgBeginPath(vg);
-      nvgCircle(vg, cx,cy, r0-0.5f);
-      nvgCircle(vg, cx,cy, r1+0.5f);
-      nvgStrokeColor(vg, nvgRGBA(0,0,0,64));
-      nvgStrokeWidth(vg, 1.0f);
-      nvgStroke(vg);
+      CGContextBeginPath(context);
+      CGContextCircle(context, CACircleMakeWithCenterAndRadius(CGPointMake(cx,cy), r0-0.5f));
+      CGContextCircle(context, CACircleMakeWithCenterAndRadius(CGPointMake(cx,cy), r1+0.5f));
+      CGContextStrokeColor(context, CGColorMakeWithRGBA(0,0,0,0.25f));
+      CGContextStrokeWidth(context, 1.0f);
+      CGContextStroke(context);
    }
-   nvgRestore(vg);
+   CGContextRestore(context);
 
    // TRIANGLE
-   nvgSave(vg);
+   CGContextSave(context);
    {
-      nvgTranslate(vg, cx,cy);
+      CGContextTranslate(context, CGPointMake(cx,cy));
       rot = fummel;
-      nvgRotate(vg, rot);
+      CGContextRotate(context, rot);
 
       r = r0 - 6;
       ax = cosf(120.0f/180.0f*NVG_PI) * r;
       ay = sinf(120.0f/180.0f*NVG_PI) * r;
       bx = cosf(-120.0f/180.0f*NVG_PI) * r;
       by = sinf(-120.0f/180.0f*NVG_PI) * r;
-      nvgBeginPath(vg);
-      nvgMoveTo(vg, r,0);
-      nvgLineTo(vg, ax,ay);
-      nvgLineTo(vg, bx,by);
-      nvgClosePath(vg);
-      paint = nvgLinearGradient(vg, r,0, ax,ay, nvgHSLA(hue,1.0f,0.5f,255), nvgRGBA(255,255,255,255));
+      CGContextBeginPath(context);
+      CGContextMoveTo(context, CGPointMake(r,0));
+      CGContextLineTo(context, CGPointMake(ax,ay));
+      CGContextLineTo(context, CGPointMake(bx,by));
+      CGContextClosePath(context);
 
-      nvgFillPaint(vg, paint);
-      nvgFill(vg);
-      paint = nvgLinearGradient(vg, (r+ax)*0.5f,(0+ay)*0.5f, bx,by, nvgRGBA(0,0,0,0), nvgRGBA(0,0,0,255));
-      nvgFillPaint(vg, paint);
-      nvgFill(vg);
-      nvgStrokeColor(vg, nvgRGBA(0,0,0,64));
-      nvgStroke(vg);
+      CGContextFillLinearGradient( context, CGPointMake(r,0),
+                                            CGColorMakeWithHSLA(hue,1.0f,0.5f,1.0f),
+                                            CGPointMake(ax,ay),
+                                            CGColorMakeWithRGBA(1.0f,1.0f,1.0f,1.0f));
+      CGContextFill(context);
+
+      CGContextFillLinearGradient( context, CGPointMake((r+ax)*0.5f,(0+ay)*0.5f),
+                                            CGColorMakeWithRGBA(0,0,0,0),
+                                            CGPointMake(bx,by),
+                                            CGColorMakeWithRGBA(0,0,0,1.0f));
+      CGContextFill(context);
+      CGContextStrokeColor(context, CGColorMakeWithRGBA(0,0,0,0.25f));
+      CGContextStroke(context);
    }
-   nvgRestore(vg);
+   CGContextRestore(context);
 }
 
 
@@ -105,15 +111,15 @@ static BOOL   drawStuff( id <UIGraphicsContext> _context, CGRect canvas)
 
    rect        = UIEdgeInsetsInsetRect( canvas, UIEdgeInsetsMake( 50, 50, 50, 50));
    diameter    = CGFloatMinimum( CGRectGetWidth( rect), CGRectGetHeight( rect));
-   rect.origin = CGSizeGetCenterPointInRect( CGSizeMake( diameter, diameter), rect);
+   rect.origin = CGSizeGetCenterInRect( CGSizeMake( diameter, diameter), rect);
    rect.size   = CGSizeMake( diameter, diameter);
 
-   drawColorwheel( CGContextGetNVGContext( context),
-                   rect.origin.x,
-                   rect.origin.y,
-                   diameter,
-                   diameter,
-                   [context numberOfFrames]);
+   drawColorwheel( context,
+   rect.origin.x,
+   rect.origin.y,
+   diameter,
+   diameter,
+   [context numberOfFrames]);
 
 #if 0
    {
@@ -194,7 +200,7 @@ int   main( int argc, char *argv[])
       {
          MulleUIPerf   *perf;
 
-         perf = [MulleUIPerf object];
+         perf = [MulleUIPerf instance];
          [window setFrameDelegate:perf];
       }
 #endif

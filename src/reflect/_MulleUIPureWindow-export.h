@@ -13,7 +13,7 @@
 #define _mulle_ui_pure_window__export_h__
 
 
-#import "MulleObjCLoader+MulleUIPureWindow.h"
+#import "MulleObjCDeps+MulleUIPureWindow.h"
 #import "UIPureWindow+FrameInfo.h"
 #import "UIPureWindow+Frame.h"
 #import "UIPureWindow+InvocationQueue.h"

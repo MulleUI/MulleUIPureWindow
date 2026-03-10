@@ -81,7 +81,7 @@ static void   drawStuff( CGContext *context, CGRect canvas)
          // starting point of each circle depends on mouse position
          size = CGPointDistanceToPoint( mouse, center);
          size = (size / max) * 66; // magic 66
-         [context fillCircle:CACircleMake( center, size / 2.0)
+         [context fillCircle:CACircleMakeWithCenterAndRadius( center, size / 2.0)
                     hexColor:CGHexColorMakeWithColor( CGColorMakeWithRGBBytes( 20, 200, 20))];
       }
    }

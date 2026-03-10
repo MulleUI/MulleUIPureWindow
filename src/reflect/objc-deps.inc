@@ -1,8 +1,8 @@
-      { @selector( MulleObjCLoader), @selector( MulleInvocationQueue) },      // 47a9beb6;MulleObjCLoader;9a5137b3;MulleInvocationQueue
-      { @selector( MulleObjCLoader), @selector( MulleObjCTimeFoundation) },      // 47a9beb6;MulleObjCLoader;cc20d48b;MulleObjCTimeFoundation
-      { @selector( MulleObjCLoader), @selector( MulleThread) },      // 47a9beb6;MulleObjCLoader;c7c34b28;MulleThread
-      { @selector( MulleObjCLoader), @selector( MulleUIApplication) },      // 47a9beb6;MulleObjCLoader;55c305e6;MulleUIApplication
-      { @selector( MulleObjCLoader), @selector( MulleUIBase) },      // 47a9beb6;MulleObjCLoader;3ebba954;MulleUIBase
+      { @selector( MulleObjCDeps), @selector( MulleInvocationQueue) },      // 47a9beb6;MulleObjCDeps;9a5137b3;MulleInvocationQueue
+      { @selector( MulleObjCDeps), @selector( MulleObjCTimeFoundation) },      // 47a9beb6;MulleObjCDeps;cc20d48b;MulleObjCTimeFoundation
+      { @selector( MulleObjCDeps), @selector( MulleThread) },      // 47a9beb6;MulleObjCDeps;c7c34b28;MulleThread
+      { @selector( MulleObjCDeps), @selector( MulleUIApplication) },      // 47a9beb6;MulleObjCDeps;55c305e6;MulleUIApplication
+      { @selector( MulleObjCDeps), @selector( MulleUIBase) },      // 47a9beb6;MulleObjCDeps;3ebba954;MulleUIBase
       { @selector( NSObject), @selector( UIPureWindow) },      // b3a66256;NSObject;8d169152;UIPureWindow
       { @selector( UIPureWindow), @selector( CGGeometry) },      // 8d169152;UIPureWindow;3ab12270;CGGeometry
       { @selector( UIPureWindow), @selector( Frame) },      // 8d169152;UIPureWindow;e7ac1465;Frame

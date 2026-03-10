@@ -1,0 +1,12 @@
+=== UIEventPlayer with UINullOSWindow Test ===
+
+Created UINullOSWindow
+Created UIPureWindow
+Set event logger
+
+Loaded event script
+Test flag setter/getter
+  abortOnInvalidWindowIndex: NO
+  abortOnInvalidWindowIndex: YES
+
+SUCCESS: UIEventPlayer loaded with UINullOSWindow

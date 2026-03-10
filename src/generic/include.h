@@ -2,7 +2,7 @@
 #define mulle_ui_pure_window_include_h__
 
 /* This is a central include file to keep dependencies out of the library
-   C files. It is usally included by .h files only.
+   C files. It is usually included by .h files only.
 
    The advantage is that now .c and .h files become motile. They can
    be moved to other projects and don't need to be edited. Also less typing...
@@ -24,10 +24,18 @@
    sourcetree, then you don't need it.
  */
 #include "_MulleUIPureWindow-include.h"
-#ifndef MULLE_UI_CORE_EXTERN_GLOBAL
-# define MULLE_UI_CORE_EXTERN_GLOBAL MULLE_C_EXTERN_GLOBAL
-#endif
 
+#ifdef MULLE_UI_PURE_WINDOW_BUILD
+# define MULLE_UI_PURE_WINDOW_GLOBAL        MULLE_C_GLOBAL
+# define MULLE_UI_PURE_WINDOW_GLOBAL_VAR    MULLE_C_GLOBAL_VAR
+#else
+# if defined( MULLE_UI_PURE_WINDOW_INCLUDE_DYNAMIC) || (defined( MULLE_INCLUDE_DYNAMIC) && ! defined( MULLE_UI_PURE_WINDOW_INCLUDE_STATIC))
+#  define MULLE_UI_PURE_WINDOW_GLOBAL       MULLE_C_EXTERN_GLOBAL
+# else
+#  define MULLE_UI_PURE_WINDOW_GLOBAL       extern
+# endif
+# define MULLE_UI_PURE_WINDOW_GLOBAL_VAR
+#endif
 
 /* You can add some more include statements here */
 
