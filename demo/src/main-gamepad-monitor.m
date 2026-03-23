@@ -57,7 +57,7 @@ static void    drawGamepad( CGContext *context, CGRect canvas, id <UIGamepad> ga
       fontSize   = CGFloatClamp( canvas.size.width * 0.02, 5.0, 44.0);
       CGContextFontSize( context, fontSize);
 
-      CGContextCombinedTextAlignment( context, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+      CGContextCombinedTextAlignment( context, CGTextAlignCenter | CGTextAlignMiddle);
       CGContextTextColor( context, color);
       CGContextTextBackgroundColor( context, bgColor);
       CGContextText( context, CGPointMake( x + width * 0.5, y + height * 0.9), name, (size_t) -1);

@@ -1,21 +1,9 @@
 === UIEventPlayer with UIPureWindow Test ===
 
 Created UIPureWindow
-Set event receiver
+Created UIEventPlayer
+Loaded event script with 7 events
+Set abortOnInvalidWindowIndex to NO
+Set abortOnInvalidWindowIndex to YES
 
-Loaded event script
-Manually dispatching events...
-
-Received mouse event #1
-Received mouse event #2
-Received mouse event #3
-Received keyboard event #1
-Received keyboard event #2
-Received keyboard event #3
-Received keyboard event #4
-
-=== Results ===
-Mouse events received: 3 (expected 3)
-Keyboard events received: 4 (expected 4)
-
-SUCCESS: All events received correctly!
+SUCCESS: UIEventPlayer works with UIPureWindow

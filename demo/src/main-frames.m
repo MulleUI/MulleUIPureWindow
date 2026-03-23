@@ -1,9 +1,8 @@
+#include <GLFW/glfw3.h>
 #import "import-private.h"
 #import "MulleUIPureWindow.h"
 
 #include "ui-application-glue.inc"
-
-
 static void  usage( void)
 {
    fprintf( stderr, "Usage: frames [frame frequency] [display mode] [other flags]\n"
@@ -25,12 +24,8 @@ static void  usage( void)
 "\n");
    exit( 1);
 }
-
-
 #define SMALL_FONT      24
 #define LARGE_FONT      32
-
-
 static BOOL   drawStuff( CGContext *context, CGRect canvas)
 {
    auto char               buf[ 64];
@@ -49,7 +44,7 @@ static BOOL   drawStuff( CGContext *context, CGRect canvas)
 
    CGContextTextColor( context, CGColorMakeWhite());
    CGContextTextBackgroundColor( context, CGColorMakeChartreuse());
-   CGContextCombinedTextAlignment( context, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+   CGContextCombinedTextAlignment( context, CGTextAlignCenter | CGTextAlignMiddle);
 
    font = [context fontWithNameUTF8String:"sans"];
    [context useFont:font];
@@ -102,16 +97,14 @@ static BOOL   drawStuff( CGContext *context, CGRect canvas)
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 2 + 8), buf, (size_t) -1);
 
 //   sprintf( buf, "%.6f display+refresh", [window displayAndRefreshRate]);
-//   nvgText( vg, CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 3 + 8, buf, NULL);
+//   CGContextText( context, CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 3 + 8, buf, NULL);
 
-// need this for singlebuffer and also need to flush out nvg calls
+// need this for singlebuffer and also need to flush out drawing calls
 // NO LONGER WELL SUPPORTED AS WAYLAND / EGL CAN'T DO IT
 
    glFlush();
    return( YES);
 }
-
-
 static UIWindowDisplayBits   display( UIPureWindow *window,
                                       id <UIGraphicsContext> context,
                                       struct CGFrameInfo *frameInfo,
@@ -120,8 +113,6 @@ static UIWindowDisplayBits   display( UIPureWindow *window,
    drawStuff( (CGContext *) context, CGFrameInfoGetContentRect( frameInfo));
    return( 1);
 }
-
-
 int   main( int argc, char *argv[])
 {
    BOOL            isDoubleBuffered;
@@ -181,8 +172,6 @@ int   main( int argc, char *argv[])
                  rate = 1.0 / rate;
                  break;
       }
-
-
    //
    // MEMO: the framerate for windows in one-thread scenario is additive
    //       the app should probably handle that
@@ -244,12 +233,8 @@ int   main( int argc, char *argv[])
 #endif
       [app addWindow:window];
    }
-
-
    return( [app runApp]);
 }
-
-
 
 //
 //                           ,╓≤æKª╨╙╙▓█D"╙╙╙*╨¥W▄╓,
