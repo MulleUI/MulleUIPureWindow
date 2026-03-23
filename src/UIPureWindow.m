@@ -32,24 +32,36 @@ PROTOCOLCLASS_IMPLEMENTATION( UIWindowFrameDelegate)
  willBeginFrame:(struct CGFrameInfo *) info
 graphicsContext:(id <UIGraphicsContext>) context
 {
+   MULLE_C_UNUSED( window);
+   MULLE_C_UNUSED( info);
+   MULLE_C_UNUSED( context);
 }
 
 - (void) window:(UIPureWindow *) window
     didEndFrame:(struct CGFrameInfo *) info
 graphicsContext:(id <UIGraphicsContext>) context
 {
+   MULLE_C_UNUSED( window);
+   MULLE_C_UNUSED( info);
+   MULLE_C_UNUSED( context);
 }
 
 - (void)  window:(UIPureWindow *) window
    willDrawFrame:(struct CGFrameInfo *) info
  graphicsContext:(id <UIGraphicsContext>) context
 {
+   MULLE_C_UNUSED( window);
+   MULLE_C_UNUSED( info);
+   MULLE_C_UNUSED( context);
 }
 
 - (void)  window:(UIPureWindow *) window
     didDrawFrame:(struct CGFrameInfo *) info
  graphicsContext:(id <UIGraphicsContext>) context
 {
+   MULLE_C_UNUSED( window);
+   MULLE_C_UNUSED( info);
+   MULLE_C_UNUSED( context);
 }
 
 PROTOCOLCLASS_END()
@@ -928,6 +940,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
 - (void) setAlpha:(CGFloat) value
 {
+   MULLE_C_UNUSED( value);
    assert( 0 && "don't set alpha on window");
 }
 
@@ -1105,6 +1118,7 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 
 - (void) setFrame:(CGRect) frame
 {
+   MULLE_C_UNUSED( frame);
    [self windowPropertySet:@selector( _setFrame_needsLocking:)
                 parameters:_param
                        bit:UIWindowPropertyChangeFrame];
@@ -1188,6 +1202,7 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 
 - (void) setPolledInputState:(struct UIInputState) state
 {
+   MULLE_C_UNUSED( state);
    assert( _styleMask & UIWindowStyleMousePolling);
 
    [self windowPropertySet:@selector( _setPolledInputState_needsLocking:)

@@ -38,7 +38,7 @@ static void  drawPrettyBackground( CGContext *context, CGRect canvas)
    [context useFont:font];
 
    CGContextFontSize( context, strokeWidth * 8.0);
-   CGContextCombinedTextAlignment( context, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+   CGContextCombinedTextAlignment( context, CGTextAlignCenter | CGTextAlignMiddle);
    CGContextTextColor( context, WEISS);
    CGContextTextBackgroundColor( context, BLAU);
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMidY( canvas)), "1848", (size_t) -1);

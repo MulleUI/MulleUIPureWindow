@@ -50,7 +50,6 @@ set( PROJECT_ONLY_HEADERS
 src/draw-flag.inc
 src/main-backend.inc
 src/main-shared-context.inc
-../src/reflect/objc-deps.inc
 src/ui-application-glue.inc
 )
 

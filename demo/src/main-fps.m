@@ -1,15 +1,14 @@
 #define _GNU_SOURCE
+#ifndef M_PI
+# define M_PI 3.14159265358979323846
+#endif
 
 #import "import-private.h"
 #import "MulleUIPureWindow.h"
 
 #include "ui-application-glue.inc"
-
-
 #include <stdio.h>
 #include <time.h>
-
-
 //
 // TODO: make this use the rawFrameCallback properly
 //
@@ -18,11 +17,11 @@ static void   drawColorwheel(CGContext* context, float x, float y, float w, floa
 {
    int i;
    float r0, r1, ax,ay, bx,by, cx,cy, aeps, r;
-   float fummel = fmod( frameNumber / 100.0, NVG_PI * 2.0) == 0.0 ? 1.0 : fmod( frameNumber / 100.0, NVG_PI * 2.0);
+   float fummel = fmod( frameNumber / 100.0, M_PI * 2.0) == 0.0 ? 1.0 : fmod( frameNumber / 100.0, M_PI * 2.0);
    float hue = sinf( fummel * 0.12);
    float rot;
 
-   // stolen from the nanovg demo and stupidified
+   // stolen from a demo and stupidified
 
    // RING
    CGContextSave(context);
@@ -33,14 +32,14 @@ static void   drawColorwheel(CGContext* context, float x, float y, float w, floa
       r0 = r1 - 20.0f;
       aeps = 0.5f / r1; // half a pixel arc length in radians (2pi cancels out).
 
-      CGContextTranslate(context, CGPointMake(cx,cy));
+      CGContextTranslate( context, CGPointMake(cx, cy));
       rot = -fummel;
       CGContextRotate(context, rot);
-      CGContextTranslate(context, CGPointMake(-cx,-cy));
+      CGContextTranslate( context, CGPointMake(-cx, -cy));
 
       for (i = 0; i < 6; i++) {
-         float a0 = (float)i / 6.0f * NVG_PI * 2.0f - aeps;
-         float a1 = (float)(i+1.0f) / 6.0f * NVG_PI * 2.0f + aeps;
+         float a0 = (float)i / 6.0f * M_PI * 2.0f - aeps;
+         float a1 = (float)(i+1.0f) / 6.0f * M_PI * 2.0f + aeps;
          CGContextBeginPath(context);
          CGContextArcRadians( context, CACircleMakeWithCenterAndRadius( CGPointMake(cx,cy), r0), a0, a1, CARotationDirectionClockWise);
          CGContextArcRadians( context, CACircleMakeWithCenterAndRadius( CGPointMake(cx,cy), r1), a1, a0, CARotationDirectionCounterClockWise);
@@ -49,16 +48,16 @@ static void   drawColorwheel(CGContext* context, float x, float y, float w, floa
          ay = cy + sinf(a0) * (r0+r1)*0.5f;
          bx = cx + cosf(a1) * (r0+r1)*0.5f;
          by = cy + sinf(a1) * (r0+r1)*0.5f;
-         CGContextFillLinearGradient(context, CGPointMake(ax,ay),
-                                              CGColorMakeWithHSLA(a0/(NVG_PI*2),1.0f,0.55f,1.0f),
+         CGContextSetFillLinearGradient(context, CGPointMake(ax,ay),
                                               CGPointMake(bx,by),
-                                              CGColorMakeWithHSLA(a1/(NVG_PI*2),1.0f,0.55f,1.0f));
+                                              CGColorMakeWithHSLA(a0/(M_PI*2),1.0f,0.55f,1.0f),
+                                              CGColorMakeWithHSLA(a1/(M_PI*2),1.0f,0.55f,1.0f));
          CGContextFill(context);
       }
 
       CGContextBeginPath(context);
-      CGContextCircle(context, CACircleMakeWithCenterAndRadius(CGPointMake(cx,cy), r0-0.5f));
-      CGContextCircle(context, CACircleMakeWithCenterAndRadius(CGPointMake(cx,cy), r1+0.5f));
+      CGContextCircle( context, CACircleMakeWithCenterAndRadius( CGPointMake(cx, cy), r0-0.5f));
+      CGContextCircle( context, CACircleMakeWithCenterAndRadius( CGPointMake(cx, cy), r1+0.5f));
       CGContextStrokeColor(context, CGColorMakeWithRGBA(0,0,0,0.25f));
       CGContextStrokeWidth(context, 1.0f);
       CGContextStroke(context);
@@ -68,30 +67,30 @@ static void   drawColorwheel(CGContext* context, float x, float y, float w, floa
    // TRIANGLE
    CGContextSave(context);
    {
-      CGContextTranslate(context, CGPointMake(cx,cy));
+      CGContextTranslate( context, CGPointMake(cx, cy));
       rot = fummel;
       CGContextRotate(context, rot);
 
       r = r0 - 6;
-      ax = cosf(120.0f/180.0f*NVG_PI) * r;
-      ay = sinf(120.0f/180.0f*NVG_PI) * r;
-      bx = cosf(-120.0f/180.0f*NVG_PI) * r;
-      by = sinf(-120.0f/180.0f*NVG_PI) * r;
+      ax = cosf(120.0f/180.0f*M_PI) * r;
+      ay = sinf(120.0f/180.0f*M_PI) * r;
+      bx = cosf(-120.0f/180.0f*M_PI) * r;
+      by = sinf(-120.0f/180.0f*M_PI) * r;
       CGContextBeginPath(context);
-      CGContextMoveTo(context, CGPointMake(r,0));
-      CGContextLineTo(context, CGPointMake(ax,ay));
-      CGContextLineTo(context, CGPointMake(bx,by));
+      CGContextMoveTo( context, CGPointMake(r, 0));
+      CGContextLineTo( context, CGPointMake(ax, ay));
+      CGContextLineTo( context, CGPointMake(bx, by));
       CGContextClosePath(context);
 
-      CGContextFillLinearGradient( context, CGPointMake(r,0),
-                                            CGColorMakeWithHSLA(hue,1.0f,0.5f,1.0f),
+      CGContextSetFillLinearGradient( context, CGPointMake(r,0),
                                             CGPointMake(ax,ay),
+                                            CGColorMakeWithHSLA(hue,1.0f,0.5f,1.0f),
                                             CGColorMakeWithRGBA(1.0f,1.0f,1.0f,1.0f));
       CGContextFill(context);
 
-      CGContextFillLinearGradient( context, CGPointMake((r+ax)*0.5f,(0+ay)*0.5f),
-                                            CGColorMakeWithRGBA(0,0,0,0),
+      CGContextSetFillLinearGradient( context, CGPointMake((r+ax)*0.5f,(0+ay)*0.5f),
                                             CGPointMake(bx,by),
+                                            CGColorMakeWithRGBA(0,0,0,0),
                                             CGColorMakeWithRGBA(0,0,0,1.0f));
       CGContextFill(context);
       CGContextStrokeColor(context, CGColorMakeWithRGBA(0,0,0,0.25f));
@@ -99,8 +98,6 @@ static void   drawColorwheel(CGContext* context, float x, float y, float w, floa
    }
    CGContextRestore(context);
 }
-
-
 static BOOL   drawStuff( id <UIGraphicsContext> _context, CGRect canvas)
 {
    CGContext  *context = (CGContext *) _context;
@@ -133,8 +130,6 @@ static BOOL   drawStuff( id <UIGraphicsContext> _context, CGRect canvas)
 #endif
    return( YES);
 }
-
-
 static UIWindowDisplayBits   rawDisplay( UIPureWindow *window,
                                          id <UIGraphicsContext> context,
                                          struct CGFrameInfo *frameInfo,
@@ -149,8 +144,6 @@ static UIWindowDisplayBits   rawDisplay( UIPureWindow *window,
 
    return( 1);
 }
-
-
 static void  usage( void)
 {
    fprintf( stderr, "Usage: fps <refresh rate>\n"
@@ -161,8 +154,6 @@ static void  usage( void)
 "   unsynced : waits for events (like mouse movements)\n");
    exit( 1);
 }
-
-
 int   main( int argc, char *argv[])
 {
    UIPureWindow    *window;
@@ -206,12 +197,8 @@ int   main( int argc, char *argv[])
 #endif
       [app addWindow:window];
    }
-
-
    return( [app runApp]);
 }
-
-
 
 //
 //                           ,╓≤æKª╨╙╙▓█D"╙╙╙*╨¥W▄╓,
