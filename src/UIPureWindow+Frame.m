@@ -121,6 +121,13 @@
    }
    [self deactivateGraphicsContext:context];
 
+   if( _needsFirstShow)
+   {
+      UIWindowSwapLog( "show window after first swap");
+      _needsFirstShow = NO;
+      [_OSWindow os_show];
+   }
+
    MulleWindowProfileEnd();
 
    //
@@ -153,6 +160,13 @@
       [_OSWindow os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
    }
    [self deactivateGraphicsContext:context];
+
+   if( _needsFirstShow)
+   {
+      UIWindowSwapLog( "show window after first immediate swap");
+      _needsFirstShow = NO;
+      [_OSWindow os_show];
+   }
 
    MulleWindowProfileEnd();
 
