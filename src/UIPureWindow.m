@@ -497,11 +497,27 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
                                   ? UIGraphicsContextAssociated|UIGraphicsContextActive
                                   : UIGraphicsContextAssociated;
 
-   osWindow = [[[osWindowClass alloc] initWithFrame:frame
-                                    titleUTF8String:title
-                                          styleMask:styleMask
-                                      graphicsHints:hints
-                                      sharingWindow:offscreenWindow] autorelease];
+   //
+   // By default, create visible windows initially hidden so they only appear
+   // after the first framebuffer swap, avoiding a black flash on startup.
+   // UIWindowStyleNoDelayedShow opts out of this behavior.
+   //
+   {
+      NSUInteger   osStyleMask;
+
+      osStyleMask = styleMask;
+      if( ! (styleMask & (UIWindowStyleHidden|UIWindowStyleNoDelayedShow)))
+      {
+         osStyleMask     |= UIWindowStyleHidden;
+         _needsFirstShow  = YES;
+      }
+
+      osWindow = [[[osWindowClass alloc] initWithFrame:frame
+                                       titleUTF8String:title
+                                             styleMask:osStyleMask
+                                         graphicsHints:hints
+                                         sharingWindow:offscreenWindow] autorelease];
+   }
 
    MulleObjCObjectSetDuplicatedUTF8String( self, &_titleUTF8String, title);
 

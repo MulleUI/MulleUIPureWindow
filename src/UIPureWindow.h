@@ -243,6 +243,7 @@ struct MulleClickDragDifferentiator
    BOOL                            _isRendering;      // used in asserts, don't depend on it
    BOOL                            _isResizing;       // obsolete yet in use (?) in OneFrame
    BOOL                            _shouldClose;      // obsolete yet in use (?) in OneFrame
+   BOOL                            _needsFirstShow;   // show window after first framebuffer swap
    NSInteger                       _oldSwapInterval;
    id                              _lastOffscreenFramebuffer;
 
