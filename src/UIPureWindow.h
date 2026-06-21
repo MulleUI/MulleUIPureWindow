@@ -119,9 +119,8 @@ typedef NSUInteger   UIWindowBackingStoreType;
 // MEMO: We can't forward declare UIWindow, because this would make the
 //       UIWindow a protocolclass
 //
-PROTOCOLCLASS_INTERFACE0( UIWindowFrameDelegate)
+@mixin UIWindowFrameDelegate
 
-@optional
 - (void) window:(id) window
  willBeginFrame:(struct CGFrameInfo *) info
 graphicsContext:(id <UIGraphicsContext>) context;
@@ -138,7 +137,7 @@ graphicsContext:(id <UIGraphicsContext>) context;
     didDrawFrame:(struct CGFrameInfo *) info
  graphicsContext:(id <UIGraphicsContext>) context;
 
-PROTOCOLCLASS_END()
+@end
 
 
 //struct UIWindowRenderInfo
@@ -242,7 +241,6 @@ struct MulleClickDragDifferentiator
    // attempting to modify the view hierarchy ?
    BOOL                            _isRendering;      // used in asserts, don't depend on it
    BOOL                            _isResizing;       // obsolete yet in use (?) in OneFrame
-   BOOL                            _shouldClose;      // obsolete yet in use (?) in OneFrame
    BOOL                            _needsFirstShow;   // show window after first framebuffer swap
    NSInteger                       _oldSwapInterval;
    id                              _lastOffscreenFramebuffer;
@@ -354,7 +352,7 @@ struct MulleClickDragDifferentiator
 // changed by UIWindow to enable/disable mouse events
 @property( assign) NSUInteger                      discardEventsMask    MULLE_OBJC_THREADSAFE_PROPERTY;
 
-// this is only available if UIWindowStyleMousePolling is set
+// this is only available if UIWindowStyleInputPolling is set
 // HINT: you want this, if you need inputState synced to out of window
 //       mouse movements
 @property( assign) struct UIInputState             polledInputState     MULLE_OBJC_THREADSAFE_PROPERTY;
@@ -471,7 +469,8 @@ struct MulleClickDragDifferentiator
 @property void   (*didSwapBuffersCallback)( UIPureWindow *window, BOOL immediately);
 
 
-// these two callbacks will only be called in UIWindowRetained mode, where
+//
+// These two callbacks will only be called in UIWindowRetained mode, where
 // a drawing thread is active. The intention of the callback is to allow
 // "hacky" global variables that are thread unsafe to be attached/detached from
 // the thread with -mulleGainAccess/-mulleRelinquishAccess (see candycrash
@@ -588,11 +587,11 @@ struct MulleClickDragDifferentiator
 @end
 
 
-@interface UIPureWindow( OSFuture)
+@interface UIPureWindow( OSFuture) < MulleObjCFuture>
 
 + (Class) osWindowClass;
 + (Class) osGraphicsContextClass;
-+ (NSUInteger) osGraphicsHints;
++ (UIOSWindowGraphicsHints) osGraphicsHints;
 
 @end
 

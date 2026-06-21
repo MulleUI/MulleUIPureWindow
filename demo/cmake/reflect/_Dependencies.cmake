@@ -82,9 +82,17 @@ else()
             # use explicit path to avoid "surprises"
             if( IS_DIRECTORY "${_TMP_MULLE_INVOCATION_QUEUE_DIR}")
                list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_INVOCATION_QUEUE_DIR}")
+               # we only want top level INHERIT_OBJC_DEPS, so disable them
+               if( NOT NO_INHERIT_OBJC_DEPS)
+                  set( NO_INHERIT_OBJC_DEPS OFF)
+               endif()
+               list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+               set( NO_INHERIT_OBJC_DEPS ON)
                #
                include( "${_TMP_MULLE_INVOCATION_QUEUE_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                #
+               list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+               list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_INVOCATION_QUEUE_DIR}")
                #
                unset( MULLE_INVOCATION_QUEUE_DEFINITIONS)
@@ -179,9 +187,17 @@ else()
             # use explicit path to avoid "surprises"
             if( IS_DIRECTORY "${_TMP_MULLE_GRAPHICS_IMAGE_DIR}")
                list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_GRAPHICS_IMAGE_DIR}")
+               # we only want top level INHERIT_OBJC_DEPS, so disable them
+               if( NOT NO_INHERIT_OBJC_DEPS)
+                  set( NO_INHERIT_OBJC_DEPS OFF)
+               endif()
+               list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+               set( NO_INHERIT_OBJC_DEPS ON)
                #
                include( "${_TMP_MULLE_GRAPHICS_IMAGE_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                #
+               list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+               list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_GRAPHICS_IMAGE_DIR}")
                #
                unset( MULLE_GRAPHICS_IMAGE_DEFINITIONS)
@@ -276,9 +292,17 @@ else()
             # use explicit path to avoid "surprises"
             if( IS_DIRECTORY "${_TMP_MULLE_UI_APPLICATION_DIR}")
                list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_UI_APPLICATION_DIR}")
+               # we only want top level INHERIT_OBJC_DEPS, so disable them
+               if( NOT NO_INHERIT_OBJC_DEPS)
+                  set( NO_INHERIT_OBJC_DEPS OFF)
+               endif()
+               list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+               set( NO_INHERIT_OBJC_DEPS ON)
                #
                include( "${_TMP_MULLE_UI_APPLICATION_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                #
+               list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+               list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_UI_APPLICATION_DIR}")
                #
                unset( MULLE_UI_APPLICATION_DEFINITIONS)
@@ -318,147 +342,210 @@ endif()
 
 
 #
-# Generated from sourcetree: 4BF684BE-3AE8-440E-9FE6-C7852E267D35;MulleCGNanoVG;no-singlephase;
-# Disable with : `mulle-sourcetree mark MulleCGNanoVG no-link`
-# Disable for this platform: `mulle-sourcetree mark MulleCGNanoVG no-cmake-platform-${MULLE_UNAME}`
-# Disable for a sdk: `mulle-sourcetree mark MulleCGNanoVG no-cmake-sdk-<name>`
+# Generated from sourcetree: 4327AA4F-CE6E-479D-8D12-9484C748B826;MulleCGNanovg;no-singlephase;
+# Disable with : `mulle-sourcetree mark MulleCGNanovg no-link`
+# Disable for this platform: `mulle-sourcetree mark MulleCGNanovg no-cmake-platform-${MULLE_UNAME}`
+# Disable for a sdk: `mulle-sourcetree mark MulleCGNanovg no-cmake-sdk-<name>`
 #
 if( COLLECT_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
-   list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES "MulleCGNanoVG")
+   list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES "MulleCGNanovg")
 else()
-   if( NOT MULLE_CG_NANO_VG_LIBRARY)
-      find_library( MULLE_CG_NANO_VG_LIBRARY NAMES
-         ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanoVG${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
-         ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanoVG${MULLE_PREFERRED_LIBRARY_SUFFIX}
-         ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanoVG${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
-         ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanoVG${MULLE_FALLBACK_LIBRARY_SUFFIX}
-         MulleCGNanoVG
+   if( NOT MULLE_CG_NANOVG_LIBRARY)
+      find_library( MULLE_CG_NANOVG_LIBRARY NAMES
+         ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanovg${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+         ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanovg${MULLE_PREFERRED_LIBRARY_SUFFIX}
+         ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanovg${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+         ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanovg${MULLE_FALLBACK_LIBRARY_SUFFIX}
+         MulleCGNanovg
          NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH
       )
-      if( NOT MULLE_CG_NANO_VG_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
-         find_library( MULLE_CG_NANO_VG_LIBRARY NAMES
-            ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanoVG${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
-            ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanoVG${MULLE_PREFERRED_LIBRARY_SUFFIX}
-            ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanoVG${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
-            ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanoVG${MULLE_FALLBACK_LIBRARY_SUFFIX}
-            MulleCGNanoVG
+      if( NOT MULLE_CG_NANOVG_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
+         find_library( MULLE_CG_NANOVG_LIBRARY NAMES
+            ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanovg${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+            ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanovg${MULLE_PREFERRED_LIBRARY_SUFFIX}
+            ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanovg${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+            ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanovg${MULLE_FALLBACK_LIBRARY_SUFFIX}
+            MulleCGNanovg
          )
       endif()
-      message( STATUS "MULLE_CG_NANO_VG_LIBRARY is ${MULLE_CG_NANO_VG_LIBRARY}")
+      message( STATUS "MULLE_CG_NANOVG_LIBRARY is ${MULLE_CG_NANOVG_LIBRARY}")
       #
       # The order looks ascending, but due to the way this file is read
       # it ends up being descending, which is what we need.
       #
-      if( MULLE_CG_NANO_VG_LIBRARY)
+      if( MULLE_CG_NANOVG_LIBRARY)
          #
-         # Add MULLE_CG_NANO_VG_LIBRARY to ALL_LOAD_DEPENDENCY_LIBRARIES list.
-         # Disable with: `mulle-sourcetree mark MulleCGNanoVG no-cmake-add`
+         # Add MULLE_CG_NANOVG_LIBRARY to ALL_LOAD_DEPENDENCY_LIBRARIES list.
+         # Disable with: `mulle-sourcetree mark MulleCGNanovg no-cmake-add`
          #
-         list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_CG_NANO_VG_LIBRARY})
+         list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_CG_NANOVG_LIBRARY})
          #
          # Inherit information from dependency.
          # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
-         # Disable with: `mulle-sourcetree mark MulleCGNanoVG no-cmake-inherit`
+         # Disable with: `mulle-sourcetree mark MulleCGNanovg no-cmake-inherit`
          #
          # temporarily expand CMAKE_MODULE_PATH
-         get_filename_component( _TMP_MULLE_CG_NANO_VG_ROOT "${MULLE_CG_NANO_VG_LIBRARY}" DIRECTORY)
-         get_filename_component( _TMP_MULLE_CG_NANO_VG_ROOT "${_TMP_MULLE_CG_NANO_VG_ROOT}" DIRECTORY)
+         get_filename_component( _TMP_MULLE_CG_NANOVG_ROOT "${MULLE_CG_NANOVG_LIBRARY}" DIRECTORY)
+         get_filename_component( _TMP_MULLE_CG_NANOVG_ROOT "${_TMP_MULLE_CG_NANOVG_ROOT}" DIRECTORY)
          #
          #
          # Search for "Definitions.cmake" and "DependenciesAndLibraries.cmake" to include.
-         # Disable with: `mulle-sourcetree mark MulleCGNanoVG no-cmake-dependency`
+         # Disable with: `mulle-sourcetree mark MulleCGNanovg no-cmake-dependency`
          #
-         foreach( _TMP_MULLE_CG_NANO_VG_NAME "MulleCGNanoVG")
-            set( _TMP_MULLE_CG_NANO_VG_DIR "${_TMP_MULLE_CG_NANO_VG_ROOT}/include/${_TMP_MULLE_CG_NANO_VG_NAME}/cmake")
+         foreach( _TMP_MULLE_CG_NANOVG_NAME "MulleCGNanovg")
+            set( _TMP_MULLE_CG_NANOVG_DIR "${_TMP_MULLE_CG_NANOVG_ROOT}/include/${_TMP_MULLE_CG_NANOVG_NAME}/cmake")
             # use explicit path to avoid "surprises"
-            if( IS_DIRECTORY "${_TMP_MULLE_CG_NANO_VG_DIR}")
-               list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_CG_NANO_VG_DIR}")
+            if( IS_DIRECTORY "${_TMP_MULLE_CG_NANOVG_DIR}")
+               list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_CG_NANOVG_DIR}")
+               # we only want top level INHERIT_OBJC_DEPS, so disable them
+               if( NOT NO_INHERIT_OBJC_DEPS)
+                  set( NO_INHERIT_OBJC_DEPS OFF)
+               endif()
+               list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+               set( NO_INHERIT_OBJC_DEPS ON)
                #
-               include( "${_TMP_MULLE_CG_NANO_VG_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
+               include( "${_TMP_MULLE_CG_NANOVG_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                #
-               list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_CG_NANO_VG_DIR}")
+               list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+               list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
+               list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_CG_NANOVG_DIR}")
                #
-               unset( MULLE_CG_NANO_VG_DEFINITIONS)
-               unset( MULLE_CG_NANO_VG_RENDEZVOUS_GLOBALS)
-               include( "${_TMP_MULLE_CG_NANO_VG_DIR}/Definitions.cmake" OPTIONAL)
-               list( APPEND INHERITED_DEFINITIONS ${MULLE_CG_NANO_VG_DEFINITIONS})
-               include( "${_TMP_MULLE_CG_NANO_VG_DIR}/Definitions.cmake" OPTIONAL)
-               list( APPEND RENDEZVOUS_GLOBALS ${MULLE_CG_NANO_VG_RENDEZVOUS_GLOBALS})
+               unset( MULLE_CG_NANOVG_DEFINITIONS)
+               unset( MULLE_CG_NANOVG_RENDEZVOUS_GLOBALS)
+               include( "${_TMP_MULLE_CG_NANOVG_DIR}/Definitions.cmake" OPTIONAL)
+               list( APPEND INHERITED_DEFINITIONS ${MULLE_CG_NANOVG_DEFINITIONS})
+               include( "${_TMP_MULLE_CG_NANOVG_DIR}/Definitions.cmake" OPTIONAL)
+               list( APPEND RENDEZVOUS_GLOBALS ${MULLE_CG_NANOVG_RENDEZVOUS_GLOBALS})
                break()
             else()
-               message( STATUS "${_TMP_MULLE_CG_NANO_VG_DIR} not found")
+               message( STATUS "${_TMP_MULLE_CG_NANOVG_DIR} not found")
             endif()
          endforeach()
          #
          # Search for "MulleObjCDeps+<name>.h" in include directory.
-         # Disable with: `mulle-sourcetree mark MulleCGNanoVG no-cmake-loader`
+         # Disable with: `mulle-sourcetree mark MulleCGNanovg no-cmake-loader`
          #
          if( NOT NO_INHERIT_OBJC_DEPS)
-            foreach( _TMP_MULLE_CG_NANO_VG_NAME "MulleCGNanoVG")
-               set( _TMP_MULLE_CG_NANO_VG_FILE "${_TMP_MULLE_CG_NANO_VG_ROOT}/include/${_TMP_MULLE_CG_NANO_VG_NAME}/MulleObjCDeps+${_TMP_MULLE_CG_NANO_VG_NAME}.h")
-               if( EXISTS "${_TMP_MULLE_CG_NANO_VG_FILE}")
-                  list( APPEND INHERITED_OBJC_DEPS ${_TMP_MULLE_CG_NANO_VG_FILE})
+            foreach( _TMP_MULLE_CG_NANOVG_NAME "MulleCGNanovg")
+               set( _TMP_MULLE_CG_NANOVG_FILE "${_TMP_MULLE_CG_NANOVG_ROOT}/include/${_TMP_MULLE_CG_NANOVG_NAME}/MulleObjCDeps+${_TMP_MULLE_CG_NANOVG_NAME}.h")
+               if( EXISTS "${_TMP_MULLE_CG_NANOVG_FILE}")
+                  list( APPEND INHERITED_OBJC_DEPS ${_TMP_MULLE_CG_NANOVG_FILE})
                   break()
                endif()
             endforeach()
          endif()
       else()
-         # Disable with: `mulle-sourcetree mark MulleCGNanoVG no-require-link`
-         message( SEND_ERROR "MULLE_CG_NANO_VG_LIBRARY was not found in ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanoVG${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
-${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanoVG${MULLE_PREFERRED_LIBRARY_SUFFIX}
-${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanoVG${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
-${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanoVG${MULLE_FALLBACK_LIBRARY_SUFFIX}
-MulleCGNanoVG")
+         # Disable with: `mulle-sourcetree mark MulleCGNanovg no-require-link`
+         message( SEND_ERROR "MULLE_CG_NANOVG_LIBRARY was not found in ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanovg${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanovg${MULLE_PREFERRED_LIBRARY_SUFFIX}
+${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanovg${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanovg${MULLE_FALLBACK_LIBRARY_SUFFIX}
+MulleCGNanovg")
       endif()
    endif()
 endif()
 
 
 #
-# Generated from sourcetree: 7B3445A7-549E-4A54-B762-9AE489E374A8;MulleObjC-startup;no-cmake-dependency,no-cmake-loader,no-cmake-searchpath,no-dynamic-link,no-header,no-intermediate-link;
-# Disable with : `mulle-sourcetree mark MulleObjC-startup no-link`
-# Disable for this platform: `mulle-sourcetree mark MulleObjC-startup no-cmake-platform-${MULLE_UNAME}`
-# Disable for a sdk: `mulle-sourcetree mark MulleObjC-startup no-cmake-sdk-<name>`
+# Generated from sourcetree: 208D59E9-36B0-4A1B-B598-ABEF8A502985;MulleCGNanovgGL;no-singlephase;
+# Disable with : `mulle-sourcetree mark MulleCGNanovgGL no-link`
+# Disable for this platform: `mulle-sourcetree mark MulleCGNanovgGL no-cmake-platform-${MULLE_UNAME}`
+# Disable for a sdk: `mulle-sourcetree mark MulleCGNanovgGL no-cmake-sdk-<name>`
 #
-if( COLLECT_STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
-   list( APPEND STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES "MulleObjC-startup")
+if( COLLECT_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
+   list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES "MulleCGNanovgGL")
 else()
-   if( NOT MULLE_OBJC__STARTUP_LIBRARY)
-      find_library( MULLE_OBJC__STARTUP_LIBRARY NAMES
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}
+   if( NOT MULLE_CG_NANOVG_GL_LIBRARY)
+      find_library( MULLE_CG_NANOVG_GL_LIBRARY NAMES
+         ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanovgGL${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+         ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanovgGL${MULLE_PREFERRED_LIBRARY_SUFFIX}
+         ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanovgGL${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+         ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanovgGL${MULLE_FALLBACK_LIBRARY_SUFFIX}
+         MulleCGNanovgGL
          NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH
       )
-      if( NOT MULLE_OBJC__STARTUP_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
-         find_library( MULLE_OBJC__STARTUP_LIBRARY NAMES
-            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}
+      if( NOT MULLE_CG_NANOVG_GL_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
+         find_library( MULLE_CG_NANOVG_GL_LIBRARY NAMES
+            ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanovgGL${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+            ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanovgGL${MULLE_PREFERRED_LIBRARY_SUFFIX}
+            ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanovgGL${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+            ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanovgGL${MULLE_FALLBACK_LIBRARY_SUFFIX}
+            MulleCGNanovgGL
          )
       endif()
-      message( STATUS "MULLE_OBJC__STARTUP_LIBRARY is ${MULLE_OBJC__STARTUP_LIBRARY}")
+      message( STATUS "MULLE_CG_NANOVG_GL_LIBRARY is ${MULLE_CG_NANOVG_GL_LIBRARY}")
       #
       # The order looks ascending, but due to the way this file is read
       # it ends up being descending, which is what we need.
       #
-      if( MULLE_OBJC__STARTUP_LIBRARY)
+      if( MULLE_CG_NANOVG_GL_LIBRARY)
          #
-         # Add MULLE_OBJC__STARTUP_LIBRARY to STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES list.
-         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-add`
+         # Add MULLE_CG_NANOVG_GL_LIBRARY to ALL_LOAD_DEPENDENCY_LIBRARIES list.
+         # Disable with: `mulle-sourcetree mark MulleCGNanovgGL no-cmake-add`
          #
-         list( APPEND STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_OBJC__STARTUP_LIBRARY})
+         list( APPEND ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_CG_NANOVG_GL_LIBRARY})
          #
          # Inherit information from dependency.
          # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
-         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-inherit`
+         # Disable with: `mulle-sourcetree mark MulleCGNanovgGL no-cmake-inherit`
          #
          # temporarily expand CMAKE_MODULE_PATH
-         get_filename_component( _TMP_MULLE_OBJC__STARTUP_ROOT "${MULLE_OBJC__STARTUP_LIBRARY}" DIRECTORY)
-         get_filename_component( _TMP_MULLE_OBJC__STARTUP_ROOT "${_TMP_MULLE_OBJC__STARTUP_ROOT}" DIRECTORY)
+         get_filename_component( _TMP_MULLE_CG_NANOVG_GL_ROOT "${MULLE_CG_NANOVG_GL_LIBRARY}" DIRECTORY)
+         get_filename_component( _TMP_MULLE_CG_NANOVG_GL_ROOT "${_TMP_MULLE_CG_NANOVG_GL_ROOT}" DIRECTORY)
          #
+         #
+         # Search for "Definitions.cmake" and "DependenciesAndLibraries.cmake" to include.
+         # Disable with: `mulle-sourcetree mark MulleCGNanovgGL no-cmake-dependency`
+         #
+         foreach( _TMP_MULLE_CG_NANOVG_GL_NAME "MulleCGNanovgGL")
+            set( _TMP_MULLE_CG_NANOVG_GL_DIR "${_TMP_MULLE_CG_NANOVG_GL_ROOT}/include/${_TMP_MULLE_CG_NANOVG_GL_NAME}/cmake")
+            # use explicit path to avoid "surprises"
+            if( IS_DIRECTORY "${_TMP_MULLE_CG_NANOVG_GL_DIR}")
+               list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_CG_NANOVG_GL_DIR}")
+               # we only want top level INHERIT_OBJC_DEPS, so disable them
+               if( NOT NO_INHERIT_OBJC_DEPS)
+                  set( NO_INHERIT_OBJC_DEPS OFF)
+               endif()
+               list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+               set( NO_INHERIT_OBJC_DEPS ON)
+               #
+               include( "${_TMP_MULLE_CG_NANOVG_GL_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
+               #
+               list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+               list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
+               list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_CG_NANOVG_GL_DIR}")
+               #
+               unset( MULLE_CG_NANOVG_GL_DEFINITIONS)
+               unset( MULLE_CG_NANOVG_GL_RENDEZVOUS_GLOBALS)
+               include( "${_TMP_MULLE_CG_NANOVG_GL_DIR}/Definitions.cmake" OPTIONAL)
+               list( APPEND INHERITED_DEFINITIONS ${MULLE_CG_NANOVG_GL_DEFINITIONS})
+               include( "${_TMP_MULLE_CG_NANOVG_GL_DIR}/Definitions.cmake" OPTIONAL)
+               list( APPEND RENDEZVOUS_GLOBALS ${MULLE_CG_NANOVG_GL_RENDEZVOUS_GLOBALS})
+               break()
+            else()
+               message( STATUS "${_TMP_MULLE_CG_NANOVG_GL_DIR} not found")
+            endif()
+         endforeach()
+         #
+         # Search for "MulleObjCDeps+<name>.h" in include directory.
+         # Disable with: `mulle-sourcetree mark MulleCGNanovgGL no-cmake-loader`
+         #
+         if( NOT NO_INHERIT_OBJC_DEPS)
+            foreach( _TMP_MULLE_CG_NANOVG_GL_NAME "MulleCGNanovgGL")
+               set( _TMP_MULLE_CG_NANOVG_GL_FILE "${_TMP_MULLE_CG_NANOVG_GL_ROOT}/include/${_TMP_MULLE_CG_NANOVG_GL_NAME}/MulleObjCDeps+${_TMP_MULLE_CG_NANOVG_GL_NAME}.h")
+               if( EXISTS "${_TMP_MULLE_CG_NANOVG_GL_FILE}")
+                  list( APPEND INHERITED_OBJC_DEPS ${_TMP_MULLE_CG_NANOVG_GL_FILE})
+                  break()
+               endif()
+            endforeach()
+         endif()
       else()
-         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-require-link`
-         message( SEND_ERROR "MULLE_OBJC__STARTUP_LIBRARY was not found in ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
-${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}")
+         # Disable with: `mulle-sourcetree mark MulleCGNanovgGL no-require-link`
+         message( SEND_ERROR "MULLE_CG_NANOVG_GL_LIBRARY was not found in ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanovgGL${CMAKE_DEBUG_POSTFIX}${MULLE_PREFERRED_LIBRARY_SUFFIX}
+${MULLE_PREFERRED_LIBRARY_PREFIX}MulleCGNanovgGL${MULLE_PREFERRED_LIBRARY_SUFFIX}
+${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanovgGL${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
+${MULLE_FALLBACK_LIBRARY_PREFIX}MulleCGNanovgGL${MULLE_FALLBACK_LIBRARY_SUFFIX}
+MulleCGNanovgGL")
       endif()
    endif()
 endif()
@@ -520,9 +607,17 @@ else()
             # use explicit path to avoid "surprises"
             if( IS_DIRECTORY "${_TMP_MULLE_GLFW_DIR}")
                list( INSERT CMAKE_MODULE_PATH 0 "${_TMP_MULLE_GLFW_DIR}")
+               # we only want top level INHERIT_OBJC_DEPS, so disable them
+               if( NOT NO_INHERIT_OBJC_DEPS)
+                  set( NO_INHERIT_OBJC_DEPS OFF)
+               endif()
+               list( APPEND _TMP_INHERIT_OBJC_DEPS ${NO_INHERIT_OBJC_DEPS})
+               set( NO_INHERIT_OBJC_DEPS ON)
                #
                include( "${_TMP_MULLE_GLFW_DIR}/DependenciesAndLibraries.cmake" OPTIONAL)
                #
+               list( GET _TMP_INHERIT_OBJC_DEPS -1 NO_INHERIT_OBJC_DEPS)
+               list( REMOVE_AT _TMP_INHERIT_OBJC_DEPS -1)
                list( REMOVE_ITEM CMAKE_MODULE_PATH "${_TMP_MULLE_GLFW_DIR}")
                #
                unset( MULLE_GLFW_DEFINITIONS)
@@ -556,6 +651,56 @@ ${MULLE_PREFERRED_LIBRARY_PREFIX}MulleGLFW${MULLE_PREFERRED_LIBRARY_SUFFIX}
 ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleGLFW${CMAKE_DEBUG_POSTFIX}${MULLE_FALLBACK_LIBRARY_SUFFIX}
 ${MULLE_FALLBACK_LIBRARY_PREFIX}MulleGLFW${MULLE_FALLBACK_LIBRARY_SUFFIX}
 MulleGLFW")
+      endif()
+   endif()
+endif()
+
+
+#
+# Generated from sourcetree: 7B3445A7-549E-4A54-B762-9AE489E374A8;MulleObjC-startup;no-cmake-dependency,no-cmake-loader,no-cmake-searchpath,no-dynamic-link,no-header,no-intermediate-link;
+# Disable with : `mulle-sourcetree mark MulleObjC-startup no-link`
+# Disable for this platform: `mulle-sourcetree mark MulleObjC-startup no-cmake-platform-${MULLE_UNAME}`
+# Disable for a sdk: `mulle-sourcetree mark MulleObjC-startup no-cmake-sdk-<name>`
+#
+if( COLLECT_STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES_AS_NAMES)
+   list( APPEND STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES "MulleObjC-startup")
+else()
+   if( NOT MULLE_OBJC__STARTUP_LIBRARY)
+      find_library( MULLE_OBJC__STARTUP_LIBRARY NAMES
+         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+         ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}
+         NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_FIND_ROOT_PATH
+      )
+      if( NOT MULLE_OBJC__STARTUP_LIBRARY AND NOT DEPENDENCY_IGNORE_SYSTEM_LIBARIES)
+         find_library( MULLE_OBJC__STARTUP_LIBRARY NAMES
+            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+            ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}
+         )
+      endif()
+      message( STATUS "MULLE_OBJC__STARTUP_LIBRARY is ${MULLE_OBJC__STARTUP_LIBRARY}")
+      #
+      # The order looks ascending, but due to the way this file is read
+      # it ends up being descending, which is what we need.
+      #
+      if( MULLE_OBJC__STARTUP_LIBRARY)
+         #
+         # Add MULLE_OBJC__STARTUP_LIBRARY to STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES list.
+         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-add`
+         #
+         list( APPEND STARTUP_ALL_LOAD_DEPENDENCY_LIBRARIES ${MULLE_OBJC__STARTUP_LIBRARY})
+         #
+         # Inherit information from dependency.
+         # Encompasses: no-cmake-searchpath,no-cmake-dependency,no-cmake-loader
+         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-cmake-inherit`
+         #
+         # temporarily expand CMAKE_MODULE_PATH
+         get_filename_component( _TMP_MULLE_OBJC__STARTUP_ROOT "${MULLE_OBJC__STARTUP_LIBRARY}" DIRECTORY)
+         get_filename_component( _TMP_MULLE_OBJC__STARTUP_ROOT "${_TMP_MULLE_OBJC__STARTUP_ROOT}" DIRECTORY)
+         #
+      else()
+         # Disable with: `mulle-sourcetree mark MulleObjC-startup no-require-link`
+         message( SEND_ERROR "MULLE_OBJC__STARTUP_LIBRARY was not found in ${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+${CMAKE_STATIC_LIBRARY_PREFIX}MulleObjC-startup${CMAKE_STATIC_LIBRARY_SUFFIX}")
       endif()
    endif()
 endif()

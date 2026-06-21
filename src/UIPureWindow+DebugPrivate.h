@@ -40,6 +40,7 @@ enum
 
    UIWindowDebugMouseMotionEvent   = 0x01000000, // UIViewDebugMouseMotionEvent,   // 0x01000000
    UIWindowDebugMouseTrackingEvent = 0x02000000, // UIViewDebugMouseTrackingEvent, // 0x02000000
+   UIWindowDebugTraceDrawCalls     = 0x04000000, // enable nvg trace on all contexts
 
    UIWindowDebugDumpFrameToFile    = 0x08000000,
    UIWindowDebugRenderDisplayBits  = 0x10000000,

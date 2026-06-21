@@ -1,8 +1,10 @@
 # demo
 
-#### 🛸 demo does something
+#### 🛸 demo demoes UIPureWindow
 
-It can be useful, sometimes...
+This is complicated! The demo compiles UIPureWindow files directly, so we
+can not have MulleUIWindow or anything "on" top of UIPureWindow as a dependency
+and need to setup everything manually and not with MulleUIOS!
 
 
 ## mulle-sde

@@ -1,3 +1,5 @@
+      { @selector( MulleObjCDeps), @selector( MulleInvocationQueue) },      // 3c20656f;MulleObjCDeps;9a5137b3;MulleInvocationQueue
+      { @selector( MulleObjCDeps), @selector( MulleUIApplication) },      // 3c20656f;MulleObjCDeps;55c305e6;MulleUIApplication
       { @selector( NSObject), @selector( UIPureWindow) },      // b3a66256;NSObject;8d169152;UIPureWindow
       { @selector( UIPureWindow), @selector( CGGeometry) },      // 8d169152;UIPureWindow;3ab12270;CGGeometry
       { @selector( UIPureWindow), @selector( Frame) },      // 8d169152;UIPureWindow;e7ac1465;Frame

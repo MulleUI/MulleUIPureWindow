@@ -3,6 +3,7 @@
 #import "MulleUIPureWindow.h"
 
 #include "ui-application-glue.inc"
+#include "graphics-hints.inc"
 static void  usage( void)
 {
    fprintf( stderr, "Usage: frames [frame frequency] [display mode] [other flags]\n"
@@ -28,7 +29,7 @@ static void  usage( void)
 #define LARGE_FONT      32
 static BOOL   drawStuff( CGContext *context, CGRect canvas)
 {
-   auto char               buf[ 64];
+   auto char               buf[ 256];
    CGFont                  *font;
    char                    *s;
    double                  frameRate;
@@ -50,50 +51,50 @@ static BOOL   drawStuff( CGContext *context, CGRect canvas)
    [context useFont:font];
 
    CGContextFontSize( context, SMALL_FONT);
-   sprintf( buf, "frameRateLimiter : %s", [window frameRateLimiter] ? "YES" : "NO");
+   snprintf( buf, sizeof( buf), "frameRateLimiter : %s", [window frameRateLimiter] ? "YES" : "NO");
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 1 + 2), buf, (size_t) -1);
 
-   sprintf( buf, "swapInterval : %td", [window swapInterval]);
+   snprintf( buf, sizeof( buf), "swapInterval : %td", [window swapInterval]);
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 2 + 2), buf, (size_t) -1);
 
    frameRate = [window frameRate];
    if( frameRate == UIWindowFrameRateAsync)
-   sprintf( buf, "frameRate : async");
+   snprintf( buf, sizeof( buf), "frameRate : async");
    else
    if( frameRate == UIWindowFrameRateUnsynced)
-   sprintf( buf, "frameRate : unsynced");
+   snprintf( buf, sizeof( buf), "frameRate : unsynced");
    else
    if( frameRate == UIWindowFrameRateSynced)
-   sprintf( buf, "frameRate : synced");
+   snprintf( buf, sizeof( buf), "frameRate : synced");
    else
-   sprintf( buf, "frameRate : %.2f Hz", 1.0 / frameRate);
+   snprintf( buf, sizeof( buf), "frameRate : %.2f Hz", 1.0 / frameRate);
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 3 + 2), buf, (size_t) -1);
 
    [window getOSWindowInfo:&windowInfo];
 
-   sprintf( buf, "slowestFrameRate : %.3f  (%.2f Hz)", UIOSWindowInfoGetSlowestFrameRate( &windowInfo), 1.0 / UIOSWindowInfoGetSlowestFrameRate( &windowInfo));
+   snprintf( buf, sizeof( buf), "slowestFrameRate : %.3f  (%.2f Hz)", UIOSWindowInfoGetSlowestFrameRate( &windowInfo), 1.0 / UIOSWindowInfoGetSlowestFrameRate( &windowInfo));
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 4 + 2), buf, (size_t) -1);
 
-   sprintf( buf, "fastestFrameRate : %.3f (%.2f Hz)",  UIOSWindowInfoGetFastestFrameRate( &windowInfo),  1.0 /  UIOSWindowInfoGetFastestFrameRate( &windowInfo));
+   snprintf( buf, sizeof( buf), "fastestFrameRate : %.3f (%.2f Hz)",  UIOSWindowInfoGetFastestFrameRate( &windowInfo),  1.0 /  UIOSWindowInfoGetFastestFrameRate( &windowInfo));
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 5 + 2), buf, (size_t) -1);
 
-   sprintf( buf, "OSContextInfo : %s", [NSThread mulleIsMainThread] ? [osWindow os_contextInfoUTF8String] : "N/A");
+   snprintf( buf, sizeof( buf), "OSContextInfo : %s", [NSThread mulleIsMainThread] ? [osWindow os_contextInfoUTF8String] : "N/A");
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 6 + 2), buf, (size_t) -1);
 
-   sprintf( buf, "OSWindowInfo : %s", [NSThread mulleIsMainThread] ? [osWindow os_windowInfoUTF8String] : "N/A");
+   snprintf( buf, sizeof( buf), "OSWindowInfo : %s", [NSThread mulleIsMainThread] ? [osWindow os_windowInfoUTF8String] : "N/A");
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 7 + 2), buf, (size_t) -1);
 
    mulle_sprintf( buf, "thread : %@", [NSThread currentThread]);
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMinY( canvas) + SMALL_FONT * 8 + 2), buf, (size_t) -1);
 
    CGContextFontSize( context, LARGE_FONT);
-   sprintf( buf, "%td frames", [context numberOfFrames]);
+   snprintf( buf, sizeof( buf), "%td frames", [context numberOfFrames]);
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMidY( canvas)), buf, (size_t) -1);
 
-   sprintf( buf, "%.3f s", [context secondsSinceFirstRender]);
+   snprintf( buf, sizeof( buf), "%.3f s", [context secondsSinceFirstRender]);
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT + 8), buf, (size_t) -1);
 
-   sprintf( buf, "%.2f FPS", [context numberOfFrames] / [context secondsSinceFirstRender]);
+   snprintf( buf, sizeof( buf), "%.2f FPS", [context numberOfFrames] / [context secondsSinceFirstRender]);
    CGContextText( context, CGPointMake( CGRectGetMidX( canvas), CGRectGetMidY( canvas) + LARGE_FONT * 2 + 8), buf, (size_t) -1);
 
 //   sprintf( buf, "%.6f display+refresh", [window displayAndRefreshRate]);
@@ -115,6 +116,7 @@ static UIWindowDisplayBits   display( UIPureWindow *window,
 }
 int   main( int argc, char *argv[])
 {
+   UIOSWindowGraphicsHints   hints;
    BOOL            isDoubleBuffered;
    BOOL            isMainThread;
    BOOL            isRetained;
@@ -133,7 +135,13 @@ int   main( int argc, char *argv[])
    isDoubleBuffered = YES;
    swapInterval     = 0;
 
+   if( ! UIConfigureGraphicsHints( argc, argv, &hints))
+      usage();
+
    for( i = 1; i < argc; i++)
+   {
+      if( ! argv[ i])
+         continue;
       switch( argv[ i][ 0])
       {
       default  : usage();
@@ -172,6 +180,7 @@ int   main( int argc, char *argv[])
                  rate = 1.0 / rate;
                  break;
       }
+   }
    //
    // MEMO: the framerate for windows in one-thread scenario is additive
    //       the app should probably handle that
@@ -271,4 +280,3 @@ int   main( int argc, char *argv[])
 //                 "▀╦,       M ╙▌  ▀       `█W▐▌       wæQ▄▀╙
 //                     ╙▀W╥,╓╣   ╙█║        ╫M  █    ,╓▄╝╙`
 //                          ╙╙▀%▄▄▄▌,≤▄_▄≡,▐▓▓▄▄#ª▀"`
-

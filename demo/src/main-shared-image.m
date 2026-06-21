@@ -2,6 +2,7 @@
 #import "MulleUIPureWindow.h"
 
 #include "ui-application-glue.inc"
+#include "graphics-hints.inc"
 
 static BOOL  drawStuff( CGContext *context, CGRect canvas);
 
@@ -88,4 +89,3 @@ static BOOL  drawStuff( CGContext *context, CGRect canvas)
 //                 "▀╦,       M ╙▌  ▀       `█W▐▌       wæQ▄▀╙
 //                     ╙▀W╥,╓╣   ╙█║        ╫M  █    ,╓▄╝╙`
 //                          ╙╙▀%▄▄▄▌,≤▄_▄≡,▐▓▓▄▄#ª▀"`
-

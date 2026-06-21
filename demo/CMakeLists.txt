@@ -20,6 +20,11 @@ include( IDESupport OPTIONAL)
 
 include( Dependencies OPTIONAL)
 
+find_package( PkgConfig QUIET)
+if( PkgConfig_FOUND)
+   pkg_check_modules( WAYLAND_CLIENT QUIET wayland-client)
+endif()
+
 foreach( SOURCE ${SOURCES})
    # get rid off src/main- prefix and .m suffix
    #             offset 9  length -9 - 2
@@ -41,9 +46,12 @@ foreach( MAIN_SOURCE ${DEMO_MAIN_SOURCES})
 
    set( SOURCES "${MAIN_SOURCE}" ${DEMO_OTHER_SOURCES})
    include( Executable)
+   if( WAYLAND_CLIENT_FOUND)
+      target_link_libraries( "${EXECUTABLE_LINK_TARGET}" ${WAYLAND_CLIENT_LIBRARIES})
+      target_include_directories( "${EXECUTABLE_COMPILE_TARGET}" PRIVATE ${WAYLAND_CLIENT_INCLUDE_DIRS})
+   endif()
    include( InstallExecutable)
    include( FinalOutput OPTIONAL)
    # only for Executable
    include( Motd OPTIONAL)
 endforeach()
-

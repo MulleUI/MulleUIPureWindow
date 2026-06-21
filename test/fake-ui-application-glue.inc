@@ -49,13 +49,13 @@ struct UIInputState   _inputState;
 - (instancetype)initWithFrame:(CGRect)frame
                titleUTF8String:(char *)title
                      styleMask:(NSUInteger)styleMask
-                 graphicsHints:(NSUInteger)hints
+                 graphicsHints:(UIOSWindowGraphicsHints)hints
                  sharingWindow:(id<UIOSWindow>)sharingWindow
 {
-    if (self = [super init]) {
-        _frame = frame;
-        _antiAliasing = (hints & 0x1) != 0; // Assuming 0x1 might be antialiasing flag
-        _rateLimiter = YES;
+     if (self = [super init]) {
+         _frame = frame;
+         _antiAliasing = (styleMask & UIWindowStyleAntiAlias) != 0;
+         _rateLimiter = YES;
         _frameRateValue = 1.0 / 60.0;
         _frameRateHzValue = 60.0;
         _backendType = 0;
@@ -587,9 +587,9 @@ struct UIInputState   _inputState;
 }
 
 
-+ (NSUInteger) osGraphicsHints
++ (UIOSWindowGraphicsHints) osGraphicsHints
 {
-   return( 0);
+   return( (UIOSWindowGraphicsHints) { 0 });
 }
 
 @end
@@ -671,4 +671,3 @@ struct UIInputState   _inputState;
 }
 
 @end
-

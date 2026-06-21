@@ -10,40 +10,51 @@
 
 static struct
 {
-   Class   contextClass;
-   Class   windowClass;
-} Self;
+   Class                    contextClass;
+   Class                    windowClass;
+   UIOSWindowGraphicsHints  graphicsHints;
+   BOOL                     hasGraphicsHints;
+} ClassStatic;
 
 
 + (void) setOSWindowClass:(Class) cls
 {
    assert( ! cls || [cls isSubclassOfClass:[GLFWOSWindow class]]);
-   Self.windowClass = cls;
+   ClassStatic.windowClass = cls;
 }
 
 
 + (void) setOSGraphicsContextClass:(Class) cls
 {
    assert( ! cls || [cls isSubclassOfClass:[CGContext class]]);
-   Self.contextClass = cls;
+   ClassStatic.contextClass = cls;
 }
 
 
 + (Class) osWindowClass
 {
-   return( Self.windowClass ? Self.windowClass : [GLFWOSWindow class]);
+   return( ClassStatic.windowClass ? ClassStatic.windowClass : [GLFWOSWindow class]);
 }
 
 
 + (Class) osGraphicsContextClass
 {
-   return( Self.contextClass ? Self.contextClass : [CGContext class]);
+   return( ClassStatic.contextClass ? ClassStatic.contextClass : [CGContext class]);
+}
+
++ (void) setOSGraphicsHints:(UIOSWindowGraphicsHints) hints
+{
+   ClassStatic.graphicsHints    = hints;
+   ClassStatic.hasGraphicsHints = YES;
 }
 
 
-+ (NSUInteger) osGraphicsHints
++ (UIOSWindowGraphicsHints) osGraphicsHints
 {
-   NSUInteger   hints;
+   UIOSWindowGraphicsHints   hints;
+
+   if( ClassStatic.hasGraphicsHints)
+      return( ClassStatic.graphicsHints);
 
    hints = GLFW_DEFAULT_CONTEXT;
    switch( [CGContext nanoVGBackend])

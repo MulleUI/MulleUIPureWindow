@@ -48,6 +48,7 @@ set( PRIVATE_HEADERS
 #
 set( PROJECT_ONLY_HEADERS
 src/draw-flag.inc
+src/graphics-hints.inc
 src/main-backend.inc
 src/main-shared-context.inc
 src/ui-application-glue.inc

@@ -14,6 +14,7 @@
 #include "draw-flag.inc"
 
 #include "ui-application-glue.inc"
+#include "graphics-hints.inc"
 
 
 @interface MyWindow : GLFWOSWindow
@@ -64,11 +65,14 @@ static UIWindowDisplayBits   display( GLFWOSWindow *window_in)
 
 int   main( int argc, char *argv[])
 {
+   UIOSWindowGraphicsHints   hints;
    UIApplication  *app;
    MyWindow       *osWindow;
    UIPureWindow   *uiWindow;
    CGContext      *context;
 
+   if( ! UIConfigureGraphicsHints( argc, argv, &hints))
+      return( 1);
    app = [UIApplication sharedInstance];
       // this is part of MulleUIOS
 
@@ -141,4 +145,3 @@ int   main( int argc, char *argv[])
 //                 "▀╦,       M ╙▌  ▀       `█W▐▌       wæQ▄▀╙
 //                     ╙▀W╥,╓╣   ╙█║        ╫M  █    ,╓▄╝╙`
 //                          ╙╙▀%▄▄▄▌,≤▄_▄≡,▐▓▓▄▄#ª▀"`
-
