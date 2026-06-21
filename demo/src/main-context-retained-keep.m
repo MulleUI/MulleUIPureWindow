@@ -4,6 +4,7 @@
 #import "MulleUIPureWindow.h"
 
 #include "ui-application-glue.inc"
+#include "graphics-hints.inc"
 
 
 #ifndef STYLE_MASK
@@ -143,10 +144,13 @@ CGImage   *create_image( UIPureWindow *window, CGSize size)
 
 int   main( int argc, char *argv[])
 {
+   UIOSWindowGraphicsHints   hints;
    UIApplication   *app;
    MyWindow        *window;
    CGImage         *image;
 
+   if( ! UIConfigureGraphicsHints( argc, argv, &hints))
+      return( 1);
    app = [UIApplication sharedInstance];
    /*
     * window and app
@@ -209,4 +213,3 @@ int   main( int argc, char *argv[])
 //                 "▀╦,       M ╙▌  ▀       `█W▐▌       wæQ▄▀╙
 //                     ╙▀W╥,╓╣   ╙█║        ╫M  █    ,╓▄╝╙`
 //                          ╙╙▀%▄▄▄▌,≤▄_▄≡,▐▓▓▄▄#ª▀"`
-

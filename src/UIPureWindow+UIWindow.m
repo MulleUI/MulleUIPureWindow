@@ -49,7 +49,7 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIPureWindow *self)
    void                  *cursor;
    struct UIInputState   inputState;
 
-   if( _styleMask & UIWindowStyleMousePolling)
+   if( _styleMask & UIWindowStyleInputPolling)
    {
       [_OSWindow os_pollInputState:&inputState];
       UIWindowLog( "polled inputState %s", UIInputStateUTF8String( &inputState));

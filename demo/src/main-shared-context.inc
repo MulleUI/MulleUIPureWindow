@@ -57,6 +57,7 @@ static UIWindowDisplayBits   display( UIPureWindow *window,
 
 int   main( int argc, char *argv[])
 {
+   UIOSWindowGraphicsHints   hints;
    GLFWOSWindow    *glfwWindow[ 2];
    GLFWOSWindow    *sharingWindow;
    UIApplication   *app;
@@ -65,6 +66,8 @@ int   main( int argc, char *argv[])
    BOOL            closed[ 2];
    CGRect          frame;
 
+   if( ! UIConfigureGraphicsHints( argc, argv, &hints))
+      return( 1);
    app = [UIApplication sharedInstance];
    {
       image = (UIBitmapImage *) [UIImage imageWithContentsOfFileUTF8String:"magpie-clipart-free-8.png"];
@@ -84,7 +87,7 @@ int   main( int argc, char *argv[])
          glfwWindow[ i] = [[[GLFWOSWindow alloc] initWithFrame:frame
                                                titleUTF8String:! i ? "Demo" : "Demo2"
                                                      styleMask:GLFWOSWindowStyleMaskDefault //|UIWindowStyleSingleBuffer
-                                                 graphicsHints:0
+                                                 graphicsHints:GLFW_DEFAULT_CONTEXT
                                                  sharingWindow:sharingWindow] autorelease];
 
          window[ i] = [[[UIPureWindow alloc] initWithOSWindow:glfwWindow[ i]
@@ -157,4 +160,3 @@ int   main( int argc, char *argv[])
 //                 "▀╦,       M ╙▌  ▀       `█W▐▌       wæQ▄▀╙
 //                     ╙▀W╥,╓╣   ╙█║        ╫M  █    ,╓▄╝╙`
 //                          ╙╙▀%▄▄▄▌,≤▄_▄≡,▐▓▓▄▄#ª▀"`
-

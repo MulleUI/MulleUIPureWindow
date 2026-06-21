@@ -58,6 +58,44 @@
 }
 
 
+//
+// does a screenshot of the primary context (front buffer)
+// TODO: could grab hidden framebuffer, maybe even more easy ?
+//
+- (id <UIPureWindowBitmapImage>) screenshotBitmapImage
+{
+   struct CGBitmap   bitmap;
+   Class             Self;
+   Class             cls;
+
+   cls  = Nil;
+   Self = [self class];
+   if( [Self respondsToSelector:@selector( bitmapImageClass)])
+      cls = [Self bitmapImageClass];
+   if( ! cls)
+   {
+      UIWindowLog( "No +bitmapImageClass returned, no sreenshot");
+      return( nil);
+   }
+
+   bitmap = [self screenshotBitmap];
+   return( [cls imageWithBitmap:bitmap
+                   freeWhenDone:YES]);
+}
+
+
+- (BOOL) writeScreenshotToPNGUTF8String:(char *) filename
+{
+   id <UIPureWindowBitmapImage>  image;
+
+   image = [self screenshotBitmapImage];
+
+   // TODO: maybe don't overwrite old file
+   //       but use numbering scheme...
+   return( [image writeToPNGUTF8String:filename]);
+}
+
+
 
 /***
  *** SWAP

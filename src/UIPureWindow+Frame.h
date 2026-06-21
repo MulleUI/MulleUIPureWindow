@@ -11,6 +11,17 @@
 
 @class CGContext;
 
+
+
+@protocol UIPureWindowBitmapImage
+
++ (id) imageWithBitmap:(struct CGBitmap) bitmap
+          freeWhenDone:(BOOL) YES;
+- (BOOL) writeToPNGUTF8String:(char *) filename;
+
+@end
+
+
 //
 // Frame is about layouting views, animating views and layers and
 // finally rendering into a framebuffer. If you want to directly get called
@@ -21,7 +32,6 @@
 - (void) swapBuffers                MULLE_OBJC_THREADSAFE_METHOD;
 - (void) swapBuffersImmediately     MULLE_OBJC_THREADSAFE_METHOD;
 
-- (struct CGBitmap) screenshotBitmap;
 
 #if 0
 // this will activate the window context!
@@ -73,5 +83,15 @@
 //
 //
 
+- (struct CGBitmap) screenshotBitmap;
+- (id <UIPureWindowBitmapImage>) screenshotBitmapImage;
+- (BOOL) writeScreenshotToPNGUTF8String:(char *) filename;
+
 @end
 
+
+@interface UIPureWindow( FrameFuture) <MulleObjCFuture>
+
++ (Class) bitmapImageClass;
+
+@end

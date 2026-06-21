@@ -32,6 +32,8 @@
 - (id <UIGraphicsContext>) activateOffscreenGraphicsContext MULLE_OBJC_THREADSAFE_METHOD;
 
 - (void) deactivateGraphicsContext:(id <UIGraphicsContext>) context  MULLE_OBJC_THREADSAFE_METHOD;
+- (void) deactivateGraphicsContext:(id <UIGraphicsContext>) context
+                         keepState:(UIGraphicsContextState) keepState  MULLE_OBJC_THREADSAFE_METHOD;
 
 - (void) deactivateRenderGraphicsContextKeepState:(UIGraphicsContextState) keepState MULLE_OBJC_THREADSAFE_METHOD;
 
@@ -45,4 +47,3 @@
                                           OSWindow:(id<UIOSWindow>) OSWindow    MULLE_OBJC_THREADSAFE_METHOD;
 
 @end
-

@@ -13,6 +13,7 @@
 #import "UIPureWindow+NSTimer.h"
 #import "UIPureWindow+Render.h"
 #import "UIPureWindow+ThreadRefresh.h"
+#import "UIPureWindow+UIGraphicsContext.h"
 #import "UIPureWindow+UIEvent.h"
 
 // #define THREAD_DEBUG
@@ -44,7 +45,7 @@
    assert( ! _windowThread);
 
    _windowPropertyLock = [NSLock new];
-   _windowThreadLock   = [[NSConditionLock alloc] initWithCondition:0];
+   _windowThreadLock   = [[NSConditionLock alloc] initWithCondition:UIWindowThreadLockConditionStarting];
 
    // the _windowThreadLock needs to **unlock** this lock, when it's going
    // down, idiotically POSIX requires the unlock to be from
@@ -70,7 +71,12 @@
    [_windowThread mulleStart];
 
    // condition will be set to 1 by _windowThread
-   if( ! [_windowThreadLock mulleLockWhenCondition:1
+   UIWindowThreadLog( "trying to lock with UIWindowThreadLockConditionIdle (%#@ = %td, %s) (%.3f)",
+                       _windowThreadLock, [_windowThreadLock condition],
+                       [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED",
+                       RENDER_THREAD_GRACE_PERIOD);
+
+   if( ! [_windowThreadLock mulleLockWhenCondition:UIWindowThreadLockConditionIdle
                                            timeout:RENDER_THREAD_GRACE_PERIOD])
    {
       fprintf( stderr, "Could not spin off render thread in %.f seconds\n", RENDER_THREAD_GRACE_PERIOD);
@@ -78,7 +84,8 @@
    }
 
    // now give the 2 to windows thread
-   [_windowThreadLock unlockWithCondition:2];
+   UIWindowThreadLogVerbose( "unlocking to UIWindowThreadLockConditionRunning %#@", _windowThread);
+   [_windowThreadLock unlockWithCondition:UIWindowThreadLockConditionRunning];
 
 #ifdef THREAD_DEBUG
    MulleUICLog( "\033[1mwindow thread started\033[0m");
@@ -100,12 +107,12 @@
 
    timeout = RENDER_THREAD_GRACE_PERIOD;
 
-   UIWindowThreadLog( "trying to lock with 1 (%#@ = %td, %s) (%.3f)",
+   UIWindowThreadLog( "trying to lock with UIWindowThreadLockConditionIdle (%#@ = %td, %s) (%.3f)",
                        _windowThreadLock, [_windowThreadLock condition],
                        [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED",
                        timeout);
 
-   if( [_windowThreadLock mulleLockWhenCondition:1
+   if( [_windowThreadLock mulleLockWhenCondition:UIWindowThreadLockConditionIdle
                                          timeout:timeout])
    {
       UIWindowThreadLog( "locked with 1, unlocking with 2 (%#@ = %td, %s)",
@@ -116,16 +123,14 @@
       // context keeping our nose clean
 
       [self setLastOffscreenFramebuffer:nil];
-      // or place a shutdown event into the event pipe ? We are the only one
-      // who cancel the thread. This means a thread could possibly have gone
-      // down somehow or is in an endless loop if it doesn't catch this
+
+      // signal the window thread to check isCancelled and exit
       [_windowThread cancel];
-      [_windowThreadLock unlockWithCondition:2];
 
-      UIWindowThreadLog( "waiting for unlock to 1 (%#@ = %td)",
+      UIWindowThreadLogVerbose( "unlocking to UIWindowThreadLockConditionRunning %#@", _windowThread);
+      [_windowThreadLock unlockWithCondition:UIWindowThreadLockConditionRunning];      UIWindowThreadLog( "waiting for unlock to UIWindowThreadLockConditionIdle (%#@ = %td)",
                          _windowThreadLock, [_windowThreadLock condition]);
-
-      if( [_windowThreadLock mulleLockWhenCondition:1
+      if( [_windowThreadLock mulleLockWhenCondition:UIWindowThreadLockConditionIdle
                                              timeout:timeout])
       {
          // windows thread is nicely gone
@@ -150,7 +155,7 @@
 
    // wait for lock to be acquirable
    // if we need to wait for more than 0.25s,
-   UIWindowThreadLog( "\033[1mwindow thread stopped\033[0m");
+   UIWindowThreadLog( "\033[1mrequested window thread to stop\033[0m");
 
    // MEMO: when we got condition 1, it means the thread is shutting down
    //       but it may not be done yet. With the join, we know the finalizers
@@ -180,10 +185,10 @@
    UIWindowThreadLog( "(%#@ = %td, %s)",
                _windowThreadLock, [_windowThreadLock condition],
                [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
-   if( [_windowThreadLock tryLockWhenCondition:1])
+   if( [_windowThreadLock tryLockWhenCondition:UIWindowThreadLockConditionIdle])
    {
-      UIWindowThreadLogVerbose( "unlocking %#@", _windowThread);
-      [_windowThreadLock unlockWithCondition:2];
+      UIWindowThreadLogVerbose( "unlocking to UIWindowThreadLockConditionRunning %#@", _windowThread);
+      [_windowThreadLock unlockWithCondition:UIWindowThreadLockConditionRunning];
    }
    else
    {
@@ -300,8 +305,11 @@
 
    // if we really block here forever, so be it. The main thread must have
    // some real problems
-   [_windowThreadLock lockWhenCondition:0];
-   [_windowThreadLock unlockWithCondition:1];
+   UIWindowThreadLogVerbose( "unlocking to UIWindowThreadLockConditionStarting %#@", _windowThread);
+   [_windowThreadLock lockWhenCondition:UIWindowThreadLockConditionStarting];
+
+   UIWindowThreadLogVerbose( "unlocking to UIWindowThreadLockConditionIdle %#@", _windowThread);
+   [_windowThreadLock unlockWithCondition:UIWindowThreadLockConditionIdle];
 
    //
    // The first time around we wait infinitely. This ensures that we don't
@@ -323,7 +331,7 @@
                   [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED",
                   timeout);
       [pool mulleReleaseAllPoolObjects];
-      haveLock = [_windowThreadLock mulleLockWhenCondition:2
+      haveLock = [_windowThreadLock mulleLockWhenCondition:UIWindowThreadLockConditionRunning
                                                    timeout:timeout];
       MulleWindowProfileBegin();
       do
@@ -332,12 +340,38 @@
          {
             if( haveLock)
             {
+               // The render thread may keep the OS graphics context active
+               // between frames. On shutdown we must always relinquish access
+               // and deactivate the context, otherwise finalization later runs
+               // on main thread with stale "active/associated" state.
+               if( _renderGraphicsContext)
+               {
+                  NSUInteger   state;
+
+                  state = [_renderGraphicsContext state];
+                  if( (state & (UIGraphicsContextActive|UIGraphicsContextAssociated)) == (UIGraphicsContextActive|UIGraphicsContextAssociated))
+                     [self deactivateRenderGraphicsContextKeepState:0];
+                  else
+                     _renderGraphicsContext = nil;  // already deactivated by render cycle
+               }
+               else
+                  if( _offscreenContext)
+                  {
+                     NSUInteger   state;
+
+                     state = [_offscreenContext state];
+                     if( (state & (UIGraphicsContextActive|UIGraphicsContextAssociated)) == (UIGraphicsContextActive|UIGraphicsContextAssociated))
+                        [self deactivateGraphicsContext:_offscreenContext
+                                              keepState:0];
+                  }
+
                // TODO: ensure no events are queued from now on
                if( self->_didStopDrawingInThreadCallback)
                   (*self->_didStopDrawingInThreadCallback)( self, thread);
                [pool release];
 
-               [_windowThreadLock unlockWithCondition:1];
+               UIWindowThreadLogVerbose( "unlocking to UIWindowThreadLockConditionIdle %#@", _windowThread);
+               [_windowThreadLock unlockWithCondition:UIWindowThreadLockConditionIdle];
                UIWindowThreadLog( "going down (%#@ = %td, %s)",
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");
@@ -418,7 +452,8 @@
       // nothing to do, wait for something to happen
       if( haveLock)
       {
-         [_windowThreadLock unlockWithCondition:1];
+         UIWindowThreadLogVerbose( "unlocking to UIWindowThreadLockConditionIdle %#@", _windowThread);
+         [_windowThreadLock unlockWithCondition:UIWindowThreadLockConditionIdle];
          UIWindowThreadLogVerbose( "unlockWithCondition 1 (%#@ = %td, %s)",
                         _windowThreadLock, [_windowThreadLock condition],
                         [_windowThreadLock mulleIsLocked] ? "*LOCKED*" : "UNLOCKED");

@@ -6,6 +6,7 @@
 #include <math.h>
 
 #include "ui-application-glue.inc"
+#include "graphics-hints.inc"
 
 /*
  * stolen from: https://editor.p5js.org/p5/sketches/Interaction:_Wavemaker
@@ -67,14 +68,17 @@ static UIWindowDisplayBits   display( UIPureWindow *window,
 
 int   main( int argc, char *argv[])
 {
+   UIOSWindowGraphicsHints   hints;
    UIPureWindow    *window;
    UIApplication   *app;
    NSUInteger      styleMask;
 
+   if( ! UIConfigureGraphicsHints( argc, argv, &hints))
+      return( 1);
    app = [UIApplication sharedInstance];
    {
       styleMask = UIWindowStyleMaskDefault;
-      styleMask = UIWindowStyleMaskBySetting( styleMask, UIWindowStyleMousePolling, YES);
+      styleMask = UIWindowStyleMaskBySetting( styleMask, UIWindowStyleInputPolling, YES);
       window = [UIPureWindow windowWithFrame:CGRectMake( 0.0, 0.0, 600.0, 600.0)
                              titleUTF8String:"Demo"
                                    styleMask:styleMask];
@@ -125,4 +129,3 @@ int   main( int argc, char *argv[])
 //                 "▀╦,       M ╙▌  ▀       `█W▐▌       wæQ▄▀╙
 //                     ╙▀W╥,╓╣   ╙█║        ╫M  █    ,╓▄╝╙`
 //                          ╙╙▀%▄▄▄▌,≤▄_▄≡,▐▓▓▄▄#ª▀"`
-

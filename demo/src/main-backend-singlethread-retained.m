@@ -7,4 +7,5 @@
 #define FRAMERATE   0.5
 
 #include "ui-application-glue.inc"
+#include "graphics-hints.inc"
 #include "main-backend.inc"

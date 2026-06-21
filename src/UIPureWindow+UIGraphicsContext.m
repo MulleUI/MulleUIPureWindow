@@ -94,7 +94,7 @@
    //
    if( _offscreenStyleMask & UIWindowStyleAntiAlias)
    {
-      if( [_OSWindow isAntiAliasing] == NO ||
+      if( [_offscreenOSWindow isAntiAliasing] == NO ||
           [cls supportsAntiAliasing] == NO)
          options |= UIGraphicsEdgeAntiAliasing;
       else
@@ -133,6 +133,7 @@
                                           OSWindow:(id <UIOSWindow>) OSWindow
 {
    NSUInteger   state;
+   NSThread     *activeThread;
 
    MulleWindowProfileBegin();
 
@@ -142,6 +143,11 @@
    assert( OSWindow);
 
    state = [context state];
+   if( state & UIGraphicsContextActive)
+   {
+      activeThread = [context activeThread];
+      assert( ! activeThread || activeThread == [NSThread currentThread]);
+   }
 
    if( ! (state & UIGraphicsContextActive))
    {

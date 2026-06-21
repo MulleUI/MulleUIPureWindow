@@ -82,9 +82,12 @@ static UIWindowDisplayBits   display( UIPureWindow *window,
 
 int   main( int argc, char *argv[])
 {
+   UIOSWindowGraphicsHints   hints;
    UIPureWindow    *window;
    UIApplication   *app;
 
+   if( ! UIConfigureGraphicsHints( argc, argv, &hints))
+      return( 1);
    app = [UIApplication sharedInstance];
 
    window = [UIPureWindow windowWithFrame:CGRectMake( 0.0, 0.0, 400.0, 400.0)
@@ -137,4 +140,3 @@ int   main( int argc, char *argv[])
 //                 "▀╦,       M ╙▌  ▀       `█W▐▌       wæQ▄▀╙
 //                     ╙▀W╥,╓╣   ╙█║        ╫M  █    ,╓▄╝╙`
 //                          ╙╙▀%▄▄▄▌,≤▄_▄≡,▐▓▓▄▄#ª▀"`
-

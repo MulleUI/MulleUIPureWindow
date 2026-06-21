@@ -88,7 +88,7 @@ Display Flags:
 
 Event Handling:
 - `@property NSUInteger discardEventsMask` - Bitmask of event types to ignore (thread-safe)
-- `@property struct UIInputState polledInputState` - Current input state (thread-safe, requires UIWindowStyleMousePolling)
+- `@property struct UIInputState polledInputState` - Current input state (thread-safe, requires UIWindowStyleInputPolling)
 - `@property(readonly) struct UIInputState eventInputState` - Input state from last event
 - `@property(readonly) struct UIInputState previousEventInputState` - Previous event input state
 - `@property(readonly) CGPoint mouseLocation` - Current mouse position
@@ -132,7 +132,7 @@ Style masks combine flags:
 - `UIWindowStyleStencilStrokes` - Use stencil buffer for strokes
 - `UIWindowStyleClearType` - Enable subpixel rendering
 - `UIWindowOpenGLLibraryFallback` - Fallback to older OpenGL
-- `UIWindowStyleMousePolling` - Enable polled mouse state
+- `UIWindowStyleInputPolling` - Enable polled mouse state
 - `UIWindowStyleMaskDefault` - Recommended defaults (includes Retained)
 - `UIWindowStyleMaskNonRetained` - Default without retained mode
 

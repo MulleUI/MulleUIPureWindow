@@ -46,7 +46,6 @@
 - (NSUInteger) waitForEventsUntil:(mulle_absolutetime_t) then
                      returnsEarly:(BOOL) returnsEarly
 {
-   struct timespec        delay;
    NSUInteger             mask;
    mulle_absolutetime_t   now;
    mulle_relativetime_t   diff;
@@ -54,8 +53,6 @@
 
    mask          = 0;
    diff          = 0.0;
-   delay.tv_sec  = 0;
-   delay.tv_nsec = 0;
 
 #ifdef PROCESS_EVENT_DEBUG
    MulleUILog( "is waiting for events until %.4fs", then);
@@ -108,11 +105,15 @@
          // In a worker thread it's nanosleep, to time
          // sleep time must be less then the GRACE_PERIOD
          // Change this to some better code...
+         {
+            mulle_relativetime_t   sleep_time;
 
-         delay.tv_sec  = 0;
-         delay.tv_nsec = diff < THREAD_WAIT_PERIOD ? diff : THREAD_WAIT_PERIOD;
-         if( delay.tv_nsec)
-            nanosleep( &delay, NULL);
+            sleep_time = diff < (mulle_relativetime_t) THREAD_WAIT_PERIOD / 1e9
+                       ? diff
+                       : (mulle_relativetime_t) THREAD_WAIT_PERIOD / 1e9;
+            if( sleep_time > 0.0)
+               mulle_relativetime_sleep( sleep_time);
+         }
       }
       else
       {
@@ -238,7 +239,7 @@
       [self syncOSWindowPropertyChangesIfNeeded];
    }
 
-   return( _shouldClose ? NO : YES);
+   return( [self shouldClose] ? NO : YES);
 }
 
 - (BOOL) processOneFrame

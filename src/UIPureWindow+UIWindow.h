@@ -14,4 +14,5 @@
 
 @end
 
+MULLE_UI_PURE_WINDOW_GLOBAL
 mulle_relativetime_t    UIWindowGetAnimationRate( UIPureWindow *self);

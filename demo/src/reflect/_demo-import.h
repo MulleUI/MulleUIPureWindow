@@ -57,19 +57,34 @@
 #import <MulleUIApplication/MulleUIApplication.h>   // MulleUIApplication
 
 // To remove the following dependency (headers and library) completely:
-//   `mulle-sde dependency remove MulleCGNanoVG`
-// (Use 4BF684BE-3AE8-440E-9FE6-C7852E267D35 instead of MulleCGNanoVG, if there are duplicate entries)
+//   `mulle-sde dependency remove MulleCGNanovg`
+// (Use 4327AA4F-CE6E-479D-8D12-9484C748B826 instead of MulleCGNanovg, if there are duplicate entries)
 //
 // You can tweak the following #import with these commands:
-//    remove #import      : `mulle-sde dependency mark MulleCGNanoVG no-header`
-//    rename              : `mulle-sde dependency|library set MulleCGNanoVG include whatever.h`
-//    reorder             : `mulle-sde dependency move MulleCGNanoVG <up|down>`
-//    toggle objc         : `mulle-sde dependency mark MulleCGNanoVG [no-]import`
-//    toggle public       : `mulle-sde dependency mark MulleCGNanoVG [no-]public`
-//    toggle optional     : `mulle-sde dependency mark MulleCGNanoVG [no-]require`
-//    remove for platform : `mulle-sde dependency mark MulleCGNanoVG no-platform-<uname>`
+//    remove #import      : `mulle-sde dependency mark MulleCGNanovg no-header`
+//    rename              : `mulle-sde dependency|library set MulleCGNanovg include whatever.h`
+//    reorder             : `mulle-sde dependency move MulleCGNanovg <up|down>`
+//    toggle objc         : `mulle-sde dependency mark MulleCGNanovg [no-]import`
+//    toggle public       : `mulle-sde dependency mark MulleCGNanovg [no-]public`
+//    toggle optional     : `mulle-sde dependency mark MulleCGNanovg [no-]require`
+//    remove for platform : `mulle-sde dependency mark MulleCGNanovg no-platform-<uname>`
 //        (use `mulle-sourcetree-to-c --unames` to list known values)
-#import <MulleCGNanoVG/MulleCGNanoVG.h>   // MulleCGNanoVG
+#import <MulleCGNanovg/MulleCGNanovg.h>   // MulleCGNanovg
+
+// To remove the following dependency (headers and library) completely:
+//   `mulle-sde dependency remove MulleCGNanovgGL`
+// (Use 208D59E9-36B0-4A1B-B598-ABEF8A502985 instead of MulleCGNanovgGL, if there are duplicate entries)
+//
+// You can tweak the following #import with these commands:
+//    remove #import      : `mulle-sde dependency mark MulleCGNanovgGL no-header`
+//    rename              : `mulle-sde dependency|library set MulleCGNanovgGL include whatever.h`
+//    reorder             : `mulle-sde dependency move MulleCGNanovgGL <up|down>`
+//    toggle objc         : `mulle-sde dependency mark MulleCGNanovgGL [no-]import`
+//    toggle public       : `mulle-sde dependency mark MulleCGNanovgGL [no-]public`
+//    toggle optional     : `mulle-sde dependency mark MulleCGNanovgGL [no-]require`
+//    remove for platform : `mulle-sde dependency mark MulleCGNanovgGL no-platform-<uname>`
+//        (use `mulle-sourcetree-to-c --unames` to list known values)
+#import <MulleCGNanovgGL/MulleCGNanovgGL.h>   // MulleCGNanovgGL
 
 // To remove the following dependency (headers and library) completely:
 //   `mulle-sde dependency remove MulleGLFW`

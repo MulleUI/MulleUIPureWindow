@@ -12,6 +12,13 @@
 #import "import.h"
 
 
+enum UIWindowThreadLockCondition
+{
+   UIWindowThreadLockConditionStarting = 0,  // thread not yet ready
+   UIWindowThreadLockConditionIdle     = 1,  // thread ready, waiting for work
+   UIWindowThreadLockConditionRunning  = 2   // thread has work, running
+};
+
 //
 // just a self documentating bit, that tells the user that the method is
 // technically thread-safe, as it can only be accessed by the main thread
@@ -30,7 +37,7 @@
 @end
 
 
-@interface UIPureWindow( ThreadFuture)
+@interface UIPureWindow( ThreadFuture) < MulleObjCFuture>
 
 - (void) refresh     MULLE_UI_MAIN_THREAD_ONLY;
 

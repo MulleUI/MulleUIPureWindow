@@ -13,7 +13,7 @@
 
 // To remove the following dependency (headers and library) completely:
 //   `mulle-sde dependency remove MulleUIApplication`
-// (Use 95A19A27-9AEB-4DDD-BBBC-A817592E6A6B instead of MulleUIApplication, if there are duplicate entries)
+// (Use A12AAAAE-5BBE-4665-A128-6ED44AFD3296 instead of MulleUIApplication, if there are duplicate entries)
 //
 // You can tweak the following #import with these commands:
 //    remove #import      : `mulle-sde dependency mark MulleUIApplication no-header`

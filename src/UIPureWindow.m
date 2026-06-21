@@ -26,7 +26,7 @@
 @end
 
 
-PROTOCOLCLASS_IMPLEMENTATION( UIWindowFrameDelegate)
+@implementation  UIWindowFrameDelegate
 
 - (void) window:(UIPureWindow *) window
  willBeginFrame:(struct CGFrameInfo *) info
@@ -64,7 +64,7 @@ graphicsContext:(id <UIGraphicsContext>) context
    MULLE_C_UNUSED( context);
 }
 
-PROTOCOLCLASS_END()
+@end
 
 
 #define MulleObjCNSLockProtectedAssignReadAccessor( ivar, lockIvar, rval) \
@@ -144,7 +144,7 @@ MULLE_OBJC_DEPENDS_ON_CLASS( UIApplication);
 static struct
 {
    NSUInteger   _debuggingFlags;
-} Self;
+} ClassStatic;
 
 
 + (void) initialize
@@ -159,7 +159,7 @@ static struct
    if( ! s)
       s = getenv( "UIDebuggingFlags");
    if( s)
-      Self._debuggingFlags = strtol( s, NULL, 0);
+      ClassStatic._debuggingFlags = strtol( s, NULL, 0);
 }
 
 
@@ -170,7 +170,7 @@ static struct
 
 + (void) setDebuggingFlags:(NSUInteger) flag    MULLE_OBJC_THREADSAFE_METHOD
 {
-   Self._debuggingFlags = flag;
+   ClassStatic._debuggingFlags = flag;
 }
 
 
@@ -262,7 +262,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 #ifdef UIWINDOW_DEBUGGING_FLAGS
    _debuggingFlags = UIWINDOW_DEBUGGING_FLAGS;
 #else
-   _debuggingFlags = Self._debuggingFlags;
+   _debuggingFlags = ClassStatic._debuggingFlags;
 #endif
 }
 
@@ -392,21 +392,21 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 {
    id <UIOSWindow>   osWindow;
    id <UIOSWindow>   offscreenWindow;
-   NSUInteger        hints;
+   UIOSWindowGraphicsHints hints;
    Class             osWindowClass;
-   Class             Self;
+   Class             ClassStatic;
    Class             contextClass;
 
    assert( [NSThread mulleIsMainThread]);
 
-   Self          = [self class];
-   hints         = [Self osGraphicsHints];
-   contextClass  = [Self osGraphicsContextClass];
+   ClassStatic          = [self class];
+   hints         = [ClassStatic osGraphicsHints];
+   contextClass  = [ClassStatic osGraphicsContextClass];
 
    if( styleMask & UIWindowStyleNoDrawing)
       osWindowClass = [UINullOSWindow class];
    else
-      osWindowClass = [Self osWindowClass];
+      osWindowClass = [ClassStatic osWindowClass];
 
    // TTY windows w/o graphicsContext stay at 0
    if( ! styleMask && contextClass)
@@ -423,6 +423,9 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    // default for now
    _backingStore       = UIWindowBackingStoreVolatile;
    _offscreenStyleMask = styleMask;
+
+   if( _debuggingFlags & UIWindowDebugTraceDrawCalls)
+      _offscreenStyleMask |= UIWindowStyleTraceDrawCalls;
 
    if( styleMask & UIWindowStyleProfileQueue)
       _profileQueue = mulle_structqueue_create_default( sizeof( struct MulleWindowProfileEntry),
@@ -455,6 +458,10 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
       _offscreenStyleMask |= UIWindowStyleHidden|UIWindowStyleOffscreen|UIWindowStyleBare;
 //      _offscreenStyleMask |= UIWindowStyleSingleBuffer; // save some memory from bogus buffer
 
+// this ties in nicely with MulleGLFW/SDL code
+#ifdef DEBUG
+      mulle_fprintf( stderr, "OSwindow \"Offscreen\"\n");
+#endif
       offscreenWindow = [[[osWindowClass alloc] initWithFrame:CGRectMake( 0, 0, 32, 32)
                                               titleUTF8String:"OffScreen"
                                                     styleMask:_offscreenStyleMask
@@ -483,7 +490,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
       if( [offscreenWindow isAntiAliasing] == NO)
          styleMask &= ~(UIWindowStyleAntiAlias|UIWindowStyleForceEdgeAntiAlias|UIWindowStyleClearType|UIWindowStyleStencilStrokes);
       else
-         styleMask &= ~(UIWindowStyleForceEdgeAntiAlias|UIWindowStyleStencilStrokes|UIWindowStyleClearType);
+         styleMask &= ~(UIWindowStyleAntiAlias|UIWindowStyleForceEdgeAntiAlias|UIWindowStyleStencilStrokes|UIWindowStyleClearType);
    }
 
    _styleMask = styleMask;
@@ -512,6 +519,9 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
          _needsFirstShow  = YES;
       }
 
+#ifdef DEBUG
+      mulle_fprintf( stderr, "OSwindow \"%s\"\n", title);
+#endif
       osWindow = [[[osWindowClass alloc] initWithFrame:frame
                                        titleUTF8String:title
                                              styleMask:osStyleMask
@@ -643,7 +653,6 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
    [_reusableTrackingEvent release];
 
    // now done locally in _dealloc
-   //_mulle__pointerset_done( &_layoutedViews, MulleObjCInstanceGetAllocator( self));
 
    [self _doneResourceStorage:&_resourceStorage];
    [self _doneInvocationQueues];
@@ -797,6 +806,12 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 - (NSUInteger) keyModifiers
 {
    return( [self inputState].keyModifiers);
+}
+
+
+- (struct UIKeyStates) keyStates
+{
+   return( [self inputState].keyStates);
 }
 
 
@@ -1182,7 +1197,7 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 {
    struct UIInputState  rval;
 
-   assert( _styleMask & UIWindowStyleMousePolling);
+   assert( _styleMask & UIWindowStyleInputPolling);
 
    MulleObjCNSLockProtectedAssignReadAccessor( _polledInputState,
                                                _windowPropertyLock,
@@ -1219,7 +1234,7 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 - (void) setPolledInputState:(struct UIInputState) state
 {
    MULLE_C_UNUSED( state);
-   assert( _styleMask & UIWindowStyleMousePolling);
+   assert( _styleMask & UIWindowStyleInputPolling);
 
    [self windowPropertySet:@selector( _setPolledInputState_needsLocking:)
                 parameters:_param

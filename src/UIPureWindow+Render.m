@@ -358,11 +358,11 @@ UIWindowDisplayBits
                                   UIWindowDisplayBitsUTF8String( displayBits));
 
       // for demos (memo: thread safety question
-      if( _styleMask & UIWindowStyleMousePolling)
+      if( _styleMask & UIWindowStyleInputPolling)
          [_renderGraphicsContext setInputState:[self polledInputState]];
 
-//      else
-//         [_renderGraphicsContext setInputState:_eventInputState];
+      else
+         [_renderGraphicsContext setInputState:_eventInputState];
 
       // MEMO: we have not done beginRender here, this means that the proper
       //       framebuffer may not be bound to the context (yet)

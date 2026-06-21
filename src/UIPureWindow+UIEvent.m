@@ -88,10 +88,6 @@
    switch( [event windowEventType])
    {
    case UIWindowEventTypeClose :
-      // this will be polled by the main loop, which will then
-      // finalize the window
-      //
-      _shouldClose = YES;
       return( nil);
 
    case UIWindowEventTypeFramebufferResize :
@@ -205,8 +201,8 @@
          if( [self respondsToSelector:@selector( writeScreenshotToPNGUTF8String:)])
          {
             if( [self performSelector:@selector( writeScreenshotToPNGUTF8String:)
-                        withObject:(id) "screenshot.png"])
-               fprintf( stderr, "Saved \"screenshot.png\"\n");
+                           withObject:(id) "screenshot.png"])
+               mulleui_log( "Saved \"screenshot.png\"\n");
             return( nil);
          }
          break;

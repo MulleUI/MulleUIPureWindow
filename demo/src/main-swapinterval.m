@@ -10,6 +10,7 @@
 #include <time.h>
 
 #include "ui-application-glue.inc"
+#include "graphics-hints.inc"
 static void   drawColorwheel(CGContext* context, float x, float y, float w, float h, NSUInteger frameNumber)
 {
    int i;
@@ -146,15 +147,31 @@ static UIWindowDisplayBits   display( UIPureWindow *window,
 }
 int   main( int argc, char *argv[])
 {
+   UIOSWindowGraphicsHints   hints;
    UIPureWindow    *window;
    UIApplication   *app;
    CGFloat         rate;
    NSUInteger      swapInterval;
+   int             i;
+   BOOL            haveSwapInterval;
 
+   if( ! UIConfigureGraphicsHints( argc, argv, &hints))
+      return( 1);
    swapInterval = 0;
-   rate = UIWindowFrameRateSynced;
-   if( argc > 1)
-      swapInterval = atoi( argv[ 1]);
+    rate = UIWindowFrameRateSynced;
+   haveSwapInterval = NO;
+   for( i = 1; i < argc; i++)
+   {
+      if( ! argv[ i])
+         continue;
+      if( haveSwapInterval)
+      {
+         fprintf( stderr, "swapinterval: too many arguments\n");
+         return( 1);
+      }
+      swapInterval     = atoi( argv[ i]);
+      haveSwapInterval = YES;
+   }
 
    app = [UIApplication sharedInstance];
    {
@@ -216,4 +233,3 @@ int   main( int argc, char *argv[])
 //                 "▀╦,       M ╙▌  ▀       `█W▐▌       wæQ▄▀╙
 //                     ╙▀W╥,╓╣   ╙█║        ╫M  █    ,╓▄╝╙`
 //                          ╙╙▀%▄▄▄▌,≤▄_▄≡,▐▓▓▄▄#ª▀"`
-

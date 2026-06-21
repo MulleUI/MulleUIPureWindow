@@ -7,7 +7,10 @@
 #import "MulleUIPureWindow.h"
 
 #include "ui-application-glue.inc"
+#include "graphics-hints.inc"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 //
 // TODO: make this use the rawFrameCallback properly
@@ -146,45 +149,140 @@ static UIWindowDisplayBits   rawDisplay( UIPureWindow *window,
 }
 static void  usage( void)
 {
-   fprintf( stderr, "Usage: fps <refresh rate>\n"
+   fprintf( stderr, "Usage: fps [options] [refresh rate]\n"
 "Refresh rate can be a floating point refresh rate in HZ or one of the\n"
 "following words:\n"
 "   synced   : synced to (primary) monitor refresh rate\n"
 "   async    : runs as fast as possible\n"
-"   unsynced : waits for events (like mouse movements)\n");
+"   unsynced : waits for events (like mouse movements)\n"
+"\n");
+   UIPrintGraphicsHintsUsage( stderr);
    exit( 1);
 }
+
+
+static void  reportWindowCreationFailure( UIOSWindowGraphicsHints hints)
+{
+   fprintf( stderr,
+            "fps: failed to create demo window\n"
+            "     requested graphics hints: lib=%u profile=%u forward=%u software=%u\n"
+            "     this can happen if retained/offscreen and onscreen contexts use different creation APIs\n"
+            "     try --native or --egl (or remove --osmesa and conflicting overrides)\n",
+            hints.lib,
+            hints.profile,
+            hints.forward,
+            hints.software);
+}
+
+
+static void  updateWindowTitleWithBackend( UIPureWindow *window)
+{
+   char   *info;
+   char   *open;
+   char   *close;
+   char   *bopen;
+   char   *bclose;
+   char   *rendend;
+   int    len;
+   int    rendlen;
+   char   buf[ 128];
+
+   info = [window os_contextInfoUTF8String];
+   if( ! info)
+      return;
+
+   open = strchr( info, '(');
+   if( ! open)
+      return;
+   close = strchr( open + 1, ')');
+   if( ! close || close <= open + 1)
+      return;
+   len = (int) (close - (open + 1));
+   if( len <= 0)
+      return;
+
+   bopen = strchr( close, '[');
+   if( ! bopen)
+   {
+      snprintf( buf, sizeof( buf), "fps (%.*s)", len, open + 1);
+      [window setTitleUTF8String:buf];
+      return;
+   }
+
+   bclose = strchr( bopen + 1, ']');
+   if( ! bclose || bclose <= bopen + 1)
+   {
+      snprintf( buf, sizeof( buf), "fps (%.*s)", len, open + 1);
+      [window setTitleUTF8String:buf];
+      return;
+   }
+
+   rendend = strpbrk( bopen + 1, " (]");
+   if( ! rendend || rendend > bclose)
+      rendend = bclose;
+   rendlen = (int) (rendend - (bopen + 1));
+   if( rendlen > 0)
+      snprintf( buf, sizeof( buf), "fps (%.*s, %.*s)", len, open + 1, rendlen, bopen + 1);
+   else
+      snprintf( buf, sizeof( buf), "fps (%.*s)", len, open + 1);
+
+   [window setTitleUTF8String:buf];
+}
+
+
 int   main( int argc, char *argv[])
 {
    UIPureWindow    *window;
    UIApplication   *app;
+   UIOSWindowGraphicsHints   hints;
    CGFloat         rate;
+   int             i;
+   BOOL            haveRate;
 
-   if( argc > 2)
+   hints    = [UIPureWindow osGraphicsHints];
+   rate     = UIWindowFrameRateSynced;
+   haveRate = NO;
+
+   if( ! UIConfigureGraphicsHints( argc, argv, &hints))
       usage();
 
-   rate = UIWindowFrameRateSynced;
-   if( argc > 1)
-      switch( argv[ 1][ 0])
+   for( i = 1; i < argc; i++)
+   {
+      if( ! argv[ i])
+         continue;
+
+      if( argv[ i][ 0] == '-')
+         usage();
+
+      if( haveRate)
+         usage();
+      haveRate = YES;
+      switch( argv[ i][ 0])
       {
       case 'a' : rate = UIWindowFrameRateAsync; break;
       case 's' : rate = UIWindowFrameRateSynced; break;
       case 'u' : rate = UIWindowFrameRateUnsynced; break;
-      default  : rate = atof( argv[ 1]);
+      default  : rate = atof( argv[ i]);
                  if( rate == 0.0)
                     usage();
                  rate = 1.0/rate;
       }
+   }
 
    app = [UIApplication sharedInstance];
    {
       window = [UIPureWindow windowWithFrame:CGRectMake( 0.0, 0.0, 800.0, 600.0)];
-      assert( window);
+      if( ! window)
+      {
+         reportWindowCreationFailure( hints);
+         return( 1);
+      }
 
       [window setBackgroundHexColor:CGHexColorWhite];
 
       [window setFrameRate:rate];
       [window setRawFrameCallback:rawDisplay];
+      updateWindowTitleWithBackend( window);
 //      setupSceneInView( [window contentView]);
 
 #ifdef HAVE_MULLE_UI
@@ -235,4 +333,3 @@ int   main( int argc, char *argv[])
 //                 "▀╦,       M ╙▌  ▀       `█W▐▌       wæQ▄▀╙
 //                     ╙▀W╥,╓╣   ╙█║        ╫M  █    ,╓▄╝╙`
 //                          ╙╙▀%▄▄▄▌,≤▄_▄≡,▐▓▓▄▄#ª▀"`
-
