@@ -39,6 +39,6 @@ enum UIWindowThreadLockCondition
 
 @interface UIPureWindow( ThreadFuture) < MulleObjCFuture>
 
-- (void) refresh     MULLE_UI_MAIN_THREAD_ONLY;
+- (BOOL) refresh     MULLE_UI_MAIN_THREAD_ONLY;
 
 @end

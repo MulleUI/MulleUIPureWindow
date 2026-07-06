@@ -200,7 +200,7 @@ UIWindowDisplayBits
    if( ! CGSizeEqualToSize( info->window.frame.size, [self frame].size))
    {
       [self _setFrame:info->window.frame]; // don't trigger property change
-      displayBits |= UIWindowDisplayNeedsLayout;
+      displayBits |= UIWindowDisplayNeedsLayout | UIWindowDisplayNeedsDisplay;
    }
    return( displayBits);
 }
@@ -237,10 +237,10 @@ UIWindowDisplayBits
                          atPoint:(CGPoint) point
                  graphicsDrawing:(id <UIGraphicsDrawing>) drawing
 {
-//   UIWindowDisplayNeedsRedraw     = 0x1,   // needs immediate attention
-//   UIWindowDisplayNeedsLayout     = 0x2,   // needs immediate attention, forces redraw
-//   UIWindowDisplayNeedsAnimation  = 0x4,   // needs attention according to animationRate
-//   UIWindowDisplayNeedsMouseEvent = 0x8    // layout change needs to retrack mouse
+//   UIWindowDisplayNeedsDisplay    = 0x1,   // views push state to layers
+//   UIWindowDisplayNeedsLayout     = 0x2,   // reposition views, cascades to NeedsDisplay
+//   UIWindowDisplayNeedsStyling    = 0x4,   // restyle, cascades to NeedsLayout
+//   UIWindowDisplayNeedsNextFrame  = 0x8,   // schedule next frame at animation rate
    CGFloat      distance     = 8.0;
    CGFloat      diameter     = 7.0;
    CGFloat      radius       = diameter / 2.0;
@@ -259,7 +259,7 @@ UIWindowDisplayBits
    center = CGPointMake( point.x + radius, point.y + radius);
 
    // only display the user events
-   for( bit = UIWindowDisplayNeedsAnimation; bit; bit >>= 1)
+   for( bit = UIWindowDisplayNeedsNextFrame; bit; bit >>= 1)
    {
       circle = CACircleMakeWithCenterAndRadius( center, radius);
       [drawing fillCircle:circle
@@ -267,7 +267,7 @@ UIWindowDisplayBits
       circle = CACircleMakeWithCenterAndRadius( center, radius - 0.75);
       switch( bit)
       {
-      case UIWindowDisplayNeedsAnimation  : onColor = orangeColor; break;
+      case UIWindowDisplayNeedsNextFrame  : onColor = orangeColor; break;
       case UIWindowDisplayNeedsStyling    : onColor = magentaColor; break;
       case UIWindowDisplayNeedsLayout     : onColor = greenColor; break;
       case UIWindowDisplayNeedsMouseEvent : onColor = yellowColor; break;
@@ -437,8 +437,8 @@ UIWindowDisplayBits
 
    [self render_requestFakeMouseEventIfNeeded:returnBits];
 
-   // only pass UIWindowDisplayNeedsAnimation back, if needed
-   returnBits = (returnBits & UIWindowDisplayDidAnimate) ? UIWindowDisplayNeedsAnimation : 0;
+   // only pass UIWindowDisplayNeedsNextFrame back, if needed
+   returnBits = (returnBits & UIWindowDisplayDidAnimate) ? UIWindowDisplayNeedsNextFrame : 0;
    UIWindowDisplayBitsLogVerbose( "returns (0x%tx)", returnBits);
    return( returnBits);
 }

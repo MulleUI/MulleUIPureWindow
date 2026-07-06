@@ -67,7 +67,7 @@
          return( INFINITY);
 
       // if only animation is needed, we need to use the animationRate
-      if( displayBits != UIWindowDisplayNeedsAnimation)
+      if( displayBits != UIWindowDisplayNeedsNextFrame)
          return( 0.0);
 
       rate = animationRate;

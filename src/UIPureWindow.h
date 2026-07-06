@@ -212,6 +212,8 @@ struct MulleClickDragDifferentiator
 };
 
 
+#define s_UIPureWindowNonLockingName   64
+
 //
 // TODO: firstResponder needed for UITextField to gain keyboard focus
 //
@@ -320,6 +322,7 @@ struct MulleClickDragDifferentiator
 
    // only used to create UIEventTypeWindowFramebufferGeometry events
    struct CGWindowInfo             _previousWindowInfo;
+   char                            _nonlockingName[ s_UIPureWindowNonLockingName];  // will be set once for the first title then never changed
 }
 
 //
@@ -417,7 +420,7 @@ struct MulleClickDragDifferentiator
 // render callbacks and delegate methods will be invoked (except 
 // -willRenderFrameCallback and -didRenderFrameCallback). So in general keep it
 // as UIPureWindowDefaultRawFrameCallback. DisplayBits are
-// UIWindowDisplayNeedsRedraw et.al.
+// UIWindowDisplayNeedsDisplay et.al.
 // Returns YES, if any animations were run.
 //
 // Will be usually either  or 

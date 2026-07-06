@@ -298,7 +298,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    // don't use ~0 it traces ugly
    // we could probably use UIWindowDisplayBitsInititalState here
-   displayBits = UIWindowDisplayNeedsRedraw;
+   displayBits = UIWindowDisplayNeedsDisplay;
    _mulle_atomic_pointer_nonatomic_write( &_needsDisplay, (void *) displayBits);
 
 
@@ -495,14 +495,19 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 
    _styleMask = styleMask;
    //
-   // we can keep the OSGraphicsContext active, if the window is running in its
-   // own thread, or if it can be ascertained that only one window is open
-   // ever (user responsibility then). By default we assume that the thread
-   // doesn't change
+   // keepOSGraphicsContextActive governs only the window/screen context,
+   // which lives on the (shared) main thread. Keeping it active across swaps
+   // is a worthwhile optimization when this is the only window on the main
+   // thread, but is unsafe with multiple windows (another window's
+   // activate/deactivate displaces our context between swaps -- see
+   // WAYLAND-RETAINED-WINDOW-PAIR-AGONY.md).
    //
-   _keepOSGraphicsContextActive = (styleMask & (UIWindowStyleRetained|UIWindowStyleRetainedOnMainThread)) == UIWindowStyleRetained
-                                  ? UIGraphicsContextAssociated|UIGraphicsContextActive
-                                  : UIGraphicsContextAssociated;
+   // We default to the single-window optimization here. UIApplication
+   // authoritatively (re)sets this via -applicationDidChangeWindowCount:
+   // whenever windows are added or removed, so multi-window configurations
+   // are handled automatically without the caller having to know about this.
+   //
+   _keepOSGraphicsContextActive = UIGraphicsContextAssociated|UIGraphicsContextActive;
 
    //
    // By default, create visible windows initially hidden so they only appear
@@ -777,6 +782,10 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 }
 
 
+//
+// Sent by UIApplication (main thread) whenever the number of windows it
+// manages changes. The window/screen context lives on the shared main
+// thread, so keeping it active across swaps is only safe when this is the
 - (void) requestClose
 {
    UIWindowLog( "");
@@ -879,7 +888,7 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 {
    assert( ! _isRendering || "window is rendering, your change will be discarded unnoticed soon");
 
-   _mulle_atomic_pointer_write( &_needsDisplay, (void *) ~0);
+   _mulle_atomic_pointer_write( &_needsDisplay, (void *) UIWindowDisplayNeedsDisplay);
 
    UIWindowDisplayBitsLog( "needsDisplay: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsDisplay));
 }
@@ -1106,6 +1115,9 @@ static void   setPropertyChangesBit( UIPureWindow *self, NSUInteger bit)
 
    if( s && _titleUTF8String && ! strcmp( s, _titleUTF8String))
       return( NO);
+
+   if( s && *s && ! self->_nonlockingName[ 0])
+      strncpy( self-> _nonlockingName, s, s_UIPureWindowNonLockingName - 1);
 
    MulleObjCObjectSetDuplicatedUTF8String( self, &_titleUTF8String, s);
    return( YES);
@@ -1418,4 +1430,18 @@ void   UIWindowDestroyProfileQueue( struct mulle_structqueue *queue)
 }
 
 
+- (char *) nonLockingUTF8String
+{
+   char   *s;
+
+   mulle_buffer_do_autoreleased_string( buffer, NULL, s)
+   {
+      s = MulleObjCClassGetNameUTF8String( NSClassFromObject( self));
+      mulle_buffer_sprintf( buffer, "<%s %p", s, self);
+      if( _nonlockingName[ 0])
+         mulle_buffer_sprintf( buffer, " \"%s\"", self->_nonlockingName);
+      mulle_buffer_add_string( buffer, ">");
+   }
+   return( s);
+}
 @end

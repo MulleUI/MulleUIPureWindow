@@ -210,7 +210,7 @@
    assert( _backingStore != UIWindowBackingStoreRetained && "Don't call processOneFrame on a UIWindowStyleRetained window");
 
    displayBits  = [self needsDisplayBitsClearIfSet];
-   displayBits |= UIWindowDisplayNeedsRedraw;
+   displayBits |= UIWindowDisplayNeedsDisplay;
    [self getFrameInfo:&frameInfo];  // retrieve newest geometry
    displayBits  = [self renderWithFrameInfo:&frameInfo
                                 displayBits:displayBits];

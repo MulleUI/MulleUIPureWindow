@@ -43,6 +43,7 @@ src/main-gamepad-monitor.m
 src/main-mouse-signals.m
 src/main-oswindow-draw-simple.m
 src/main-shared-framebuffer.m
+src/main-shared-framebuffer-retained.m
 src/main-shared-image.m
 src/main-swapinterval.m
 )

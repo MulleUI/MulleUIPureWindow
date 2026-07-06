@@ -150,6 +150,17 @@
 
    UIWindowSwapLog( "swap");
 
+   // GLFW (see https://github.com/glfw/glfw/issues/2109) silently skips
+   // glfwSwapBuffers while the window is not yet visible. So we must show
+   // the window first, otherwise this first swap is a no-op and the
+   // rendered content never reaches the front buffer.
+   if( _needsFirstShow)
+   {
+      UIWindowSwapLog( "show window before first swap");
+      _needsFirstShow = NO;
+      [_OSWindow os_show];
+   }
+
    context = [self activateWindowGraphicsContext];
    {
       [_OSWindow os_swapBuffers];
@@ -158,13 +169,6 @@
       [self changeSwapIntervalIfNeeded];
    }
    [self deactivateGraphicsContext:context];
-
-   if( _needsFirstShow)
-   {
-      UIWindowSwapLog( "show window after first swap");
-      _needsFirstShow = NO;
-      [_OSWindow os_show];
-   }
 
    MulleWindowProfileEnd();
 
@@ -191,6 +195,15 @@
 
    MulleWindowProfileBegin();
 
+   // See swapBuffers: GLFW skips glfwSwapBuffers while invisible, so show
+   // the window first on the very first swap.
+   if( _needsFirstShow)
+   {
+      UIWindowSwapLog( "show window before first immediate swap");
+      _needsFirstShow = NO;
+      [_OSWindow os_show];
+   }
+
    context = [self activateWindowGraphicsContext];
    {
       [_OSWindow os_setSwapInterval:0]; 
@@ -198,13 +211,6 @@
       [_OSWindow os_setSwapInterval:_swapInterval];  // need 0 for smooth pointer/control sync
    }
    [self deactivateGraphicsContext:context];
-
-   if( _needsFirstShow)
-   {
-      UIWindowSwapLog( "show window after first immediate swap");
-      _needsFirstShow = NO;
-      [_OSWindow os_show];
-   }
 
    MulleWindowProfileEnd();
 

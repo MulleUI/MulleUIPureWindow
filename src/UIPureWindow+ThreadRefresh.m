@@ -35,11 +35,11 @@
 //
 //  if( needsRefresh)
 //  {
-//     [self refresh];
-//     [self swapBuffers];
+//     if( [self refresh])
+//        [self swapBuffers];
 //  }
 //
-- (void) refresh
+- (BOOL) refresh
 {
    BOOL                     isScaling;
    NSUInteger               color;
@@ -52,6 +52,7 @@
    CGContentMode            refreshContentMode;
    struct CGFrameInfo       frameInfo;
    char                     *nameUTF8String;
+   char                     *s;
 
    MulleWindowProfileBegin();
 
@@ -81,7 +82,9 @@
          if( ! framebuffer)
          {
             UIWindowSwapLog( "There is nothing to display (yet ?)");
-            return;  // cold indicate "no need to swap" here
+            [self deactivateGraphicsContext:context];
+            MulleWindowProfileEnd();
+            return( NO);  // cold indicate "no need to swap" here
          }
          UIWindowSwapLog( "Reuse previously acquired offscreen framebuffer %#@", framebuffer);
       }
@@ -118,7 +121,7 @@
             {
                static NSUInteger   counter;  // just for debugging
 
-               nameUTF8String = MulleObjC_asprintf( "RefreshImage #%td", counter++);
+               nameUTF8String = MulleObjC_asprintf( "%s refresh image #%td", [self titleUTF8String], counter++);
             }
 #else
             nameUTF8String = NULL;
@@ -165,9 +168,21 @@
 
             if( _debuggingFlags & UIWindowDebugDumpFrameToFile)
             {
-               MulleUIWriteImageToPNGFileSequenceAsync( image, "refresh-image");
-               // Can't do this as framebuffer owned by other thread really
-               // MulleUIWriteImageToPNGFileSequenceAsync( framebuffer, "refresh-framebuffer");
+               mulle_buffer_do( buffer)
+               {
+                  mulle_buffer_add_string( buffer, "refresh-image");
+                  s = [self titleUTF8String];
+                  if( *s)
+                  {
+                     mulle_buffer_add_char( buffer, '-');
+                     mulle_buffer_slugify_utf8data( buffer, mulle_utf8data_make( s, -1));
+                  }
+                  MulleUIWriteImageToPNGFileSequenceAsync( image, mulle_buffer_get_string( buffer));
+               }
+               // Can NOT dump "framebuffer" here as it's owned (thread affine)
+               // to the render thread, not this (calling) thread. "image" is
+               // the CGImage just blitted into our own window context, so
+               // it's safe.
             }
 
             UIWindowSwapLog( "Drew image %#@ of size %.1f %.1f into %.1f %.1f %.1f %.1f for refresh",
@@ -184,6 +199,7 @@
    [self deactivateGraphicsContext:context];
 
    MulleWindowProfileEnd();
+   return( YES);
 }
 
 
