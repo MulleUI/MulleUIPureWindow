@@ -30,6 +30,7 @@
 {
    Class        cls;
    NSUInteger   options;
+   char         *title;
 
    UIWindowSwapLog( "creating offscreen context");
 
@@ -57,10 +58,14 @@
    if( _offscreenStyleMask & UIWindowStyleNoDrawing)
       options |= UIGraphicsNoDrawing;
 
-   _context = [[cls alloc] initWithOSGraphicsContext:_OSWindow
-                                      nameUTF8String:"Window"
-                                             shareID:[_OSWindow shareID]
-                                             options:options];      // have to do this manually, because the context is created manually
+   title = [self titleUTF8String];   // guaranteed to be non null!
+   mulle_sprintf_do( buf, "%s screen", *title ? title : MulleObjCClassGetNameUTF8String( [self class]))
+   {
+      _context = [[cls alloc] initWithOSGraphicsContext:_OSWindow
+                                         nameUTF8String:buf
+                                                shareID:[_OSWindow shareID]
+                                                options:options];      // have to do this manually, because the context is created manually
+   }
 
    if( ! _context)
    {
@@ -79,6 +84,7 @@
 {
    Class        cls;
    NSUInteger   options;
+   char         *title;
 
    UIWindowSwapLog( "creating offscreen context");
 
@@ -110,10 +116,14 @@
    options |= (_offscreenStyleMask & UIWindowStyleClearType)          ? UIGraphicsUseClearType : 0;
    options |= (_offscreenStyleMask & UIWindowStyleStencilStrokes)     ? UIGraphicsUseStencilStrokes : 0;
 
-   _offscreenContext = [[cls alloc] initWithOSGraphicsContext:_offscreenOSWindow
-                                               nameUTF8String:"Offscreen"
-                                                      shareID:[_offscreenOSWindow shareID]
-                                                      options:options];
+   title = [self titleUTF8String];  // guaranteed to be non null!
+   mulle_sprintf_do( buf, "%s offscreen", *title ? title : MulleObjCClassGetNameUTF8String( [self class]))
+   {
+      _offscreenContext = [[cls alloc] initWithOSGraphicsContext:_offscreenOSWindow
+                                                  nameUTF8String:buf
+                                                         shareID:[_offscreenOSWindow shareID]
+                                                         options:options];
+   }
    if( ! _offscreenContext)
    {
       MulleUILog( "Could not acquire an offscreen context for backend: 0x%tx shareID: 0x%tx options: 0x%tx",
@@ -133,7 +143,6 @@
                                           OSWindow:(id <UIOSWindow>) OSWindow
 {
    NSUInteger   state;
-   NSThread     *activeThread;
 
    MulleWindowProfileBegin();
 
@@ -143,11 +152,16 @@
    assert( OSWindow);
 
    state = [context state];
+
+#ifndef NDEBUG
    if( state & UIGraphicsContextActive)
    {
+      NSThread   *activeThread;
+
       activeThread = [context activeThread];
       assert( ! activeThread || activeThread == [NSThread currentThread]);
    }
+#endif
 
    if( ! (state & UIGraphicsContextActive))
    {
@@ -268,10 +282,34 @@
    id <UIOSWindow>          OSWindow;
 
    // memo: we can ask the context about this now...
-   OSWindow  = (context == _context)
-               ? _OSWindow
-               : _offscreenOSWindow;
-   keepState = [self keepOSGraphicsContextActive];
+   //
+   // The two contexts have fundamentally different sharing properties, so
+   // the "keep active across swaps" decision differs between them:
+   //
+   // - the window/screen context (_context) lives on the main thread, which
+   //   is shared: the main thread presents/swaps EVERY window there. Keeping
+   //   it active across swaps is only safe when this is the sole window on
+   //   the main thread, otherwise another window's activate/deactivate
+   //   displaces our context between our swaps (the "only one window shows"
+   //   bug). This is what keepOSGraphicsContextActive tracks, and it is
+   //   driven by UIApplication based on the current window count (see
+   //   -applicationDidChangeWindowCount:).
+   //
+   // - the offscreen context (_offscreenContext) lives on the window's own
+   //   dedicated render thread, which is exclusive to this window. Keeping it
+   //   active across frames is therefore always safe, regardless of how many
+   //   windows exist, so we always keep it active here.
+   //
+   if( context == _context)
+   {
+      OSWindow  = _OSWindow;
+      keepState = [self keepOSGraphicsContextActive];
+   }
+   else
+   {
+      OSWindow  = _offscreenOSWindow;
+      keepState = UIGraphicsContextActive | UIGraphicsContextAssociated;
+   }
    [self _deactivateGraphicsContext:context
                            OSWindow:OSWindow
                           keepState:keepState];
@@ -319,13 +357,16 @@
 
 
 //
-// only call this during construction of the window, when its effectively
-// single-threaded
+// This governs ONLY the window/screen context, which lives exclusively on
+// the main thread. It is therefore safe to change at runtime from the main
+// thread (UIApplication does so via -applicationDidChangeWindowCount: when
+// windows are added/removed). The window's render thread, if any, only ever
+// touches the offscreen context, which is handled separately and always kept
+// active, so a running render thread is not a concern here.
 //
 - (void) setKeepOSGraphicsContextActive:(UIGraphicsContextState) state
 {
    assert( [NSThread mulleIsMainThread]);
-   assert( _windowThread == nil);
 
 #if 0
    NSThread   *activeThread;

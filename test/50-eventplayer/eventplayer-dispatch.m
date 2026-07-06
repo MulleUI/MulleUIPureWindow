@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
    mulle_printf( "Created UIEventPlayer\n");
    
    // Load a simple script
-   result = [player loadScriptFromUTF8String:
+   result = [player loadScriptWithUTF8String:
       "0.0 mouseMove x=100 y=100\n"
       "0.1 mouseDown button=Left x=100 y=100\n"
       "0.2 mouseUp button=Left x=100 y=100\n"

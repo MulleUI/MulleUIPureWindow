@@ -290,9 +290,11 @@
    NSUInteger              displayBits;
    NSUInteger              mask;
    struct UIOSWindowInfo   windowInfo;
+   char                    *title;
 
    thread = [NSThread currentThread];
-   [thread mulleSetNameUTF8String:"UIWindowThread"];
+   title  = [self titleUTF8String]; // guaranteed to be non null!
+   [thread mulleSetNameUTF8String: *title ? title : "UIPureWindowThread"];
 
    UIWindowThreadLog( "coming up (%#@ = %td, %s)",
                      _windowThreadLock, [_windowThreadLock condition],
@@ -411,15 +413,15 @@
          // animationNeeded bits, if not ready for redraw yet
          displayBits = [self needsDisplay];
          if( remainingFrameTime == 0.0)
-            displayBits |= UIWindowDisplayNeedsRedraw;
+            displayBits |= UIWindowDisplayNeedsDisplay;
 
          // if we are animating, we want to wait until remainingFrameTime
          // is down to 0.0 too or ?
-         if( displayBits & UIWindowDisplayNeedsRedraw)
+         if( displayBits & UIWindowDisplayNeedsDisplay)
          {
             // not 100% sure if this is needed, since we will overwrite displayBits
             // in windowThreadDraw:
-            //displayBits = [self needsDisplayBitsClearIfSet] | UIWindowDisplayNeedsRedraw;
+            //displayBits = [self needsDisplayBitsClearIfSet] | UIWindowDisplayNeedsDisplay;
             UIWindowThreadLogVerbose( "start rendering: displayBits=0x%tx mask=0x%tx",
                                        displayBits,
                                        mask);
@@ -468,7 +470,7 @@
       // MEMO: the window thread doesn't need to lock indefinitely, the
       //       condition lock is there to conserve energy and cycles, so
       //       it doesn't busy loop.
-      timeout = [self windowThreadTimeoutIsAnimating:(displayBits & UIWindowDisplayNeedsAnimation) ? YES : NO];
+      timeout = [self windowThreadTimeoutIsAnimating:(displayBits & UIWindowDisplayNeedsNextFrame) ? YES : NO];
       UIWindowThreadLogVerbose( "done handling events: remainingFrameTime=%.6f proposed timeout=%.6f frameRate=%.6f",
                                  remainingFrameTime,
                                  timeout,

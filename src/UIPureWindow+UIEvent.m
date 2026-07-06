@@ -93,7 +93,7 @@
    case UIWindowEventTypeFramebufferResize :
       // TODO: should set bounds ?
       // [self _setFramebufferSize:[(UIWindowFramebufferResizeEvent *) event size]];
-      [self setNeedsDisplayBits:~0];
+      [self setNeedsDisplayBits:UIWindowDisplayNeedsLayout | UIWindowDisplayNeedsDisplay];
       return( nil);
 
    case UIWindowEventTypeResize :
@@ -101,7 +101,7 @@
       // [self _setSize:CGSizeMakeWithPixelSize( [(UIWindowResizeEvent *) event size])];
       _isResizing = YES;
 
-      [self setNeedsDisplayBits:~0];
+      [self setNeedsDisplayBits:UIWindowDisplayNeedsLayout | UIWindowDisplayNeedsDisplay];
       return( nil);
 
    //
@@ -139,8 +139,10 @@
 
          // immediately refresh framebuffer
          [self setNeedsRefresh:NO];
-         [self refresh];
-         [self swapBuffersImmediately];
+         if( [self refresh])
+            [self swapBuffersImmediately];
+         else
+            [self setNeedsRefresh];  // nothing to show yet, try again later
 
          // window thread may want to check if geometry has changed and
          // redraw if needed

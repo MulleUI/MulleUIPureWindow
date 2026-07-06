@@ -75,7 +75,7 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIPureWindow *self)
 
    if( changes & UIWindowPropertyChangeTitle)
    {
-      title = [self titleUTF8String];
+      title = [self titleUTF8String];  // guaranteed to be non null!
       UIWindowLog( "push title %s", title);
       [_OSWindow os_setTitleUTF8String:title];
    }
@@ -136,8 +136,8 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIPureWindow *self)
       if( needsRefresh)
       {
          UIWindowRenderLog( "refresh and swap");
-         [self refresh];
-         [self swapBuffers];
+         if( [self refresh])
+            [self swapBuffers];
       }
 
       // if an empty event has hit us, we pass through here and also tell
@@ -184,11 +184,11 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIPureWindow *self)
    // possibly generated during the render. But not earlier, except if
    // one diligently calls flushRender
    //
-   // MEMO: could also set UIWindowDisplayNeedsAnimation, is it useful ?
+   // MEMO: could also set UIWindowDisplayNeedsNextFrame, is it useful ?
    //
    displayBits  = [self needsDisplayBitsClearIfSet];
    if( _backingStore == UIWindowBackingStoreVolatile)
-      displayBits |= UIWindowDisplayNeedsRedraw;
+      displayBits |= UIWindowDisplayNeedsDisplay;
    [self getFrameInfo:&frameInfo];  // retrieve newest geometry
    displayBits  = [self renderWithFrameInfo:&frameInfo
                                 displayBits:displayBits];
@@ -196,9 +196,12 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIPureWindow *self)
    // no refresh in UIWindowBackingStoreVolatile
    // in the UIWindow case this
    if( _backingStore == UIWindowBackingStoreRetainedOnMainThread)
-      [self refresh];
-
-   [self swapBuffers];
+   {
+      if( [self refresh])
+         [self swapBuffers];
+   }
+   else
+      [self swapBuffers];
    [self setNeedsDisplayBits:displayBits];
 
    flag = [self receivesMouseMotionEvents];
@@ -214,7 +217,7 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIPureWindow *self)
    desiredFrameRate = 0.0;
    if( ! _swapInterval)
    {
-      if( displayBits & UIWindowDisplayNeedsAnimation)
+      if( displayBits & UIWindowDisplayNeedsNextFrame)
          desiredFrameRate = UIWindowGetAnimationRate( self);
       else
          desiredFrameRate = UIOSWindowInfoGetSlowestFrameRate( &windowInfo);
@@ -223,6 +226,34 @@ mulle_relativetime_t    UIWindowGetAnimationRate( UIPureWindow *self)
    UIWindowRenderLog( "now wait %.6fs", desiredFrameRate);
 
    return( desiredFrameRate);
+}
+
+
+- (void) os_requestClose
+{
+   [_OSWindow os_requestClose];
+}
+
+
+//
+// With a single window we can keep the main-thread graphics context active
+// (associated + active) across swaps for efficiency.  With multiple windows the
+// sole window there; with more than one window we must fully deactivate it
+// each swap, otherwise another window's activate/deactivate displaces our
+// context between our swaps and only one window ends up visible (see
+// WAYLAND-RETAINED-WINDOW-PAIR-AGONY.md). Offscreen render-thread contexts
+// are unaffected -- each is exclusive to its own thread and always kept
+// active -- so this only concerns the screen context.
+//
+- (void) applicationDidChangeWindowCount:(NSUInteger) count
+{
+   assert( [NSThread mulleIsMainThread]);
+
+   UIWindowLog( "%ld", (long) count);
+
+   [self setKeepOSGraphicsContextActive:(count <= 1)
+                                        ? (UIGraphicsContextAssociated|UIGraphicsContextActive)
+                                        : UIGraphicsContextAssociated];
 }
 
 @end
