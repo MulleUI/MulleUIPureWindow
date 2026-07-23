@@ -1,5 +1,5 @@
 # MulleUIPureWindow Library Documentation for AI
-<!-- Keywords: window, framebuffer, threading, events, rendering -->
+<!-- Keywords: window, framebuffer, threading, events, rendering, refresh -->
 
 ## 1. Introduction & Purpose
 
@@ -52,6 +52,12 @@ Windows support MulleUIResourceMap protocol for storing context-specific resourc
 
 ### 3.1. `UIPureWindow.h` - Main Window Class
 
+Version macro:
+- `#define MULLE_UI_PURE_WINDOW_VERSION  ((0 << 20) | (0 << 8) | 1)`
+
+Name buffer length macro:
+- `#define s_UIPureWindowNonLockingName   64`
+
 #### `@interface UIPureWindow : MulleObject <MulleUIResourceMap>`
 **Purpose:** Core window object managing framebuffer, graphics context, events, and threading.
 
@@ -67,6 +73,9 @@ Graphics Context:
 - `@property(readonly) id<UIGraphicsContext> renderGraphicsContext` - Context available during rendering only
 - `@property(readonly) id<UIOSWindow> OSWindow` - Underlying OS window object
 
+Thread-Local Identification:
+- `- (char *) nonLockingUTF8String` - Returns a debug string of the form `<ClassName pointer "title">`. The title portion is captured lock-free from the first `setTitleUTF8String:` call that passes a non-empty string into the fixed-size 64-byte ivar `_nonlockingName`. It never changes thereafter, so it is safe to read from any thread without holding `_windowPropertyLock`. The returned string is autoreleased and must be used immediately. *(Declared in `UIPureWindow.m` only, not in the public header.)*
+
 Window Appearance:
 - `@property char *titleUTF8String` - Window title (thread-safe)
 - `@property UICursor *cursor` - Current cursor (thread-safe)
@@ -77,7 +86,7 @@ Window Appearance:
 Rendering Configuration:
 - `@property(readonly) UIWindowBackingStoreType backingStore` - Threading mode
 - `@property CGContentMode refreshContentMode` - How backing store scales to window (thread-safe)
-- `@property UIGraphicsContextState keepOSGraphicsContextActive` - Minimize context switches (thread-safe)
+- `@property UIGraphicsContextState keepOSGraphicsContextActive` - Controls whether the screen/window context stays active across buffer swaps. Defaults to `Active|Associated` (single-window optimization). UIApplication **automatically manages** this via `-applicationDidChangeWindowCount:`: with a single window the context stays active across swaps for efficiency; with multiple windows it reverts to `Associated` only to prevent context displacement. Avoid setting this manually unless you have a specific reason.
 - `@property NSUInteger swapInterval` - VSYNC interval (0=unlimited, 1=60Hz, etc.)
 - `@property mulle_relativetime_t asyncAnimationRate` - Animation frame rate (default 1.0/60.0)
 
@@ -140,7 +149,7 @@ Style masks combine flags:
 
 Display and Refresh (thread-safe):
 ```c
-- (void) setNeedsDisplay;                              // Request redraw (all bits)
+- (void) setNeedsDisplay;                              // Set UIWindowDisplayNeedsDisplay bit
 - (void) setNeedsDisplayBit:(UIWindowDisplayBits) bit; // Request specific phase
 - (void) setNeedsDisplayBits:(UIWindowDisplayBits) bits; // Set multiple bits
 - (UIWindowDisplayBits) needsDisplay;                  // Query display bits
@@ -153,9 +162,16 @@ Display and Refresh (thread-safe):
 ```
 
 Display bits (can OR together):
-- `UIWindowDisplayNeedsLayout` - Run layout pass
-- `UIWindowDisplayNeedsAnimation` - Run animation pass
-- `UIWindowDisplayNeedsRedraw` - Run drawing pass
+- `UIWindowDisplayNeedsDisplay` - Views push state to layers (cascading stage: Display)
+- `UIWindowDisplayNeedsLayout` - Reposition views, cascades to NeedsDisplay
+- `UIWindowDisplayNeedsStyling` - Restyle, cascades to NeedsLayout
+- `UIWindowDisplayNeedsNextFrame` - Schedule next frame at animation rate (previously `UIWindowDisplayNeedsAnimation`)
+- `UIWindowDisplayNeedsMouseEvent` - Layout change needs to retrack mouse (set during render, ignored if set by user)
+- `UIWindowDisplayDidAnimate` - Animation code made changes, will need next frame (set during render)
+
+Aliases (deprecated):
+- `UIWindowDisplayNeedsAnimation` = `UIWindowDisplayNeedsNextFrame`
+- `UIWindowDisplayNeedsRedraw` = `UIWindowDisplayNeedsDisplay`
 
 Window State:
 ```c
@@ -169,6 +185,15 @@ Application Integration:
 - (void) applicationDidAddWindow:(UIApplication *) app;    // Called by UIApplication
 - (void) applicationDidRemoveWindow:(UIApplication *) app; // Called by UIApplication
 - (UIApplication *) application;                           // Get owning application
+```
+The following method is implemented in `UIPureWindow+UIWindow.m` only (not declared in any public header):
+```c
+- (void) applicationDidChangeWindowCount:(NSUInteger) count; // Automatically adjusts keepOSGraphicsContextActive for multi-window. Called by UIApplication when windows are added/removed.
+```
+
+OS Window Integration:
+```c
+- (void) os_requestClose;                                  // Forward close request to OS. *(Declared in UIPureWindow+UIWindow.m only, not in the public header.)*
 ```
 
 **Render Callbacks:**
@@ -327,6 +352,18 @@ MulleWindowProfileSync()
 - (mulle_relativetime_t) displayFrameIfNeeded:(mulle_absolutetime_t) now;
 ```
 
+**Additional Methods:**
+```c
+// Forward close request to underlying OS window
+- (void) os_requestClose;
+
+// Called by UIApplication when total window count changes.
+// Automatically adjusts keepOSGraphicsContextActive:
+// single window → optimize (Active|Associated),
+// multiple windows → degrade (Associated only).
+- (void) applicationDidChangeWindowCount:(NSUInteger) count;
+```
+
 **Functions:**
 ```c
 mulle_relativetime_t UIWindowGetAnimationRate(UIPureWindow *self);
@@ -354,7 +391,7 @@ mulle_relativetime_t UIWindowGetAnimationRate(UIPureWindow *self);
 - (UIWindowDisplayBits) render_frameWithFrameInfo:(struct CGFrameInfo *) info
                                       displayBits:(UIWindowDisplayBits) displayBits;
 
-// Adjust frame geometry if window resized
+// Adjust frame geometry if window resized (also sets UIWindowDisplayNeedsLayout | UIWindowDisplayNeedsDisplay)
 - (UIWindowDisplayBits) render_adjustFrameWithFrameInfo:(struct CGFrameInfo *) info
                                             displayBits:(UIWindowDisplayBits) displayBits;
 
@@ -407,8 +444,32 @@ render_requestFakeMouseEventIfNeeded
 // Swap immediately ignoring swapInterval
 - (void) swapBuffersImmediately;                // Thread-safe
 
-// Capture current framebuffer as bitmap
+// Capture current framebuffer as bitmap (raw CGBitmap)
 - (struct CGBitmap) screenshotBitmap;
+
+// Capture current framebuffer as an image object
+- (id <UIPureWindowBitmapImage>) screenshotBitmapImage;
+
+// Capture and write screenshot to PNG file
+- (BOOL) writeScreenshotToPNGUTF8String:(char *) filename;
+```
+
+#### `@protocol UIPureWindowBitmapImage`
+**Purpose:** Protocol for screenshot image objects returned by `-screenshotBitmapImage`.
+
+**Methods:**
+```c
++ (id) imageWithBitmap:(struct CGBitmap) bitmap
+          freeWhenDone:(BOOL) YES;
+- (BOOL) writeToPNGUTF8String:(char *) filename;
+```
+
+#### `@interface UIPureWindow(FrameFuture)`
+**Purpose:** Override to provide custom bitmap image class.
+
+**Class Methods:**
+```c
++ (Class) bitmapImageClass;
 ```
 
 ### 3.5. `UIPureWindow+UIEvent.h` - Event Handling
@@ -509,7 +570,16 @@ render_requestFakeMouseEventIfNeeded
 
 // Deactivate any context
 - (void) deactivateGraphicsContext:(id<UIGraphicsContext>) context; // Thread-safe
+- (void) deactivateGraphicsContext:(id<UIGraphicsContext>) context
+                         keepState:(UIGraphicsContextState) keepState; // Thread-safe
 ```
+
+**Usage Pattern:**
+Place NSAutoreleasePool between activate and deactivate to properly release temporary GPU resources.
+
+**Context Deactivation Strategy:** The deactivation policy differs between the two contexts:
+- The **screen/window context** (`_context`) on the shared main thread honours `keepOSGraphicsContextActive`: when this window is the only one, the context stays active across swaps; with multiple windows it fully deactivates to prevent context displacement.
+- The **offscreen context** (`_offscreenContext`) on the window's exclusive render thread is always kept active, since no other window shares that thread.
 
 **Render Context (Internal):**
 ```c
@@ -522,9 +592,6 @@ render_requestFakeMouseEventIfNeeded
 - (id<UIGraphicsContext>) activateGraphicsContext:(id<UIGraphicsContext>) context
                                          OSWindow:(id<UIOSWindow>) OSWindow; // Thread-safe
 ```
-
-**Usage Pattern:**
-Place NSAutoreleasePool between activate and deactivate to properly release temporary GPU resources.
 
 ### 3.8. `UIPureWindow+FrameInfo.h` - Frame Timing
 
@@ -652,8 +719,8 @@ Place NSAutoreleasePool between activate and deactivate to properly release temp
 
 **Methods:**
 ```c
-// Refresh display (main thread only)
-- (void) refresh;                                       // Main thread only
+// Refresh display (main thread only). Returns YES if a framebuffer was available.
+- (BOOL) refresh                                       MULLE_UI_MAIN_THREAD_ONLY;
 ```
 
 ### 3.12. `UIPureWindow+ThreadRefresh.h` - Buffer Refresh
@@ -663,8 +730,8 @@ Place NSAutoreleasePool between activate and deactivate to properly release temp
 
 **Methods:**
 ```c
-// Refresh window from offscreen buffer (main thread in retained mode)
-- (void) refresh;                                       // Thread-safe
+// Refresh window from offscreen buffer (thread-safe). Returns YES if a framebuffer was available for display.
+- (BOOL) refresh                                       MULLE_OBJC_THREADSAFE_METHOD;
 
 // Set last rendered framebuffer for next refresh
 - (void) setLastOffscreenFramebuffer:(id<UIFramebuffer>) framebuffer; // Thread-safe
@@ -705,24 +772,35 @@ Place NSAutoreleasePool between activate and deactivate to properly release temp
 
 **Usage:** For simple applications without UIApplication run loop, typically in volatile backing store mode.
 
-### 3.14. `UIPureWindow+UIPasteboard.h` - Clipboard
+### 3.14. `UIPureWindow.h` — `Forward` Category
 
 #### `@interface UIPureWindow(Forward) <UIOSWindow>`
-**Purpose:** OS window protocol forwarding and clipboard access.
+**Purpose:** Provides the underlying OS window handle and clipboard string access. Declared in the main `UIPureWindow.h` header.
 
-**Clipboard Methods:**
+**Methods:**
 ```c
-// Get clipboard content as C string
+// Get OS window handle (e.g. GLFWwindow*)
+- (void *) os_window                                    MULLE_OBJC_THREADSAFE_METHOD;
+
+// Get clipboard content as C string (reads from OS pasteboard)
 - (char *) pasteboardCString;
 
-// Set clipboard content from C string
+// Set clipboard content from C string (writes to OS pasteboard)
 - (void) setPasteboardCString:(char *) s;
-
-// Get OS window handle
-- (void *) os_window;                                   // Thread-safe
 ```
 
-### 3.15. `UIPureWindow(OSFuture)` - OS Abstraction Hooks
+### 3.15. `UIPureWindow+UIPasteboard.h` - Clipboard Object
+
+#### `@interface UIPureWindow(UIPasteboard)`
+**Purpose:** Provides access to a `UIPasteboard` object for clipboard operations.
+
+**Methods:**
+```c
+// Get the UIPasteboard object for this window
+- (UIPasteboard *) pasteboard;
+```
+
+### 3.16. `UIPureWindow(OSFuture)` - OS Abstraction Hooks
 
 #### `@interface UIPureWindow(OSFuture)`
 **Purpose:** Customization points for OS window and graphics implementation.
@@ -736,10 +814,10 @@ Place NSAutoreleasePool between activate and deactivate to properly release temp
 + (Class) osGraphicsContextClass;
 
 // Override to provide graphics hints (OpenGL version, etc.)
-+ (NSUInteger) osGraphicsHints;
++ (UIOSWindowGraphicsHints) osGraphicsHints;
 ```
 
-### 3.16. `UIPureWindow(Dump)` - Debugging
+### 3.17. `UIPureWindow(Dump)` - Debugging
 
 #### `@interface UIPureWindow(Dump)`
 **Purpose:** Debug output of window state.
@@ -792,11 +870,13 @@ Place NSAutoreleasePool between activate and deactivate to properly release temp
 
 2. **Respect thread boundaries**: Methods marked `MULLE_UI_MAIN_THREAD_ONLY` must only be called from main thread. Methods marked `MULLE_UI_PURE_WINDOW_THREAD_ONLY` only from window thread. Methods marked `MULLE_OBJC_THREADSAFE_METHOD` are safe from any thread.
 
-3. **Use atomic display flags**: Always use `setNeedsDisplayBit:` or `setNeedsDisplayBits:` rather than direct ivar access. Use `needsDisplayBitsClearIfSet` for atomic test-and-clear.
+3. **Use atomic display flags**: Always use `setNeedsDisplayBit:` or `setNeedsDisplayBits:` rather than direct ivar access. Use `needsDisplayBitsClearIfSet` for atomic test-and-clear. Note that `setNeedsDisplay` now sets only the `UIWindowDisplayNeedsDisplay` bit, not all bits.
 
-4. **Minimize context switches**: Set `keepOSGraphicsContextActive = YES` for windows that render frequently. For multiple windows on same thread, must be NO.
+4. **Check `refresh` return value**: `-refresh` now returns `BOOL`. It returns `NO` when no offscreen framebuffer is available yet (e.g. first frame hasn't been rendered). Only call `swapBuffers` when refresh returns `YES`. If you discard the return value and swap anyway, you'll swap empty content.
 
-5. **Place autorelease pools around context activation**:
+5. **Minimize context switches**: The `keepOSGraphicsContextActive` for the screen context is now managed automatically by `UIApplication` via `applicationDidChangeWindowCount:`. Avoid setting it manually unless you have a specific reason. For the offscreen context, keeping it active is always safe since each window has its own render thread.
+
+6. **Place autorelease pools around context activation**:
 ```objc
 context = [window activateOffscreenGraphicsContext];
 {
@@ -809,15 +889,15 @@ context = [window activateOffscreenGraphicsContext];
 [window deactivateGraphicsContext:context];
 ```
 
-6. **Use frameCallback for simple rendering**: If you don't need UIViews, set `frameCallback` property to bypass view hierarchy entirely.
+7. **Use frameCallback for simple rendering**: If you don't need UIViews, set `frameCallback` property to bypass view hierarchy entirely.
 
-7. **Check window thread**: Use `[window isWindowThread]` to verify thread context if unsure.
+8. **Check window thread**: Use `[window isWindowThread]` to verify thread context if unsure.
 
-8. **Add window to application before timers**: Timers require window to be in UIApplication's window list.
+9. **Add window to application before timers**: Timers require window to be in UIApplication's window list.
 
-9. **Don't access internal fields**: Respect `@protected` and `_`-prefixed fields. Use properties and methods.
+10. **Don't access internal fields**: Respect `@protected` and `_`-prefixed fields. Use properties and methods.
 
-10. **Handle event overflow gracefully**: Override `willDiscardOverflowEvent:` to handle event queue overflow (>128 events pending).
+11. **Handle event overflow gracefully**: Override `willDiscardOverflowEvent:` to handle event queue overflow (>128 events pending).
 
 ### Common Pitfalls
 
@@ -869,7 +949,7 @@ static UIWindowDisplayBits   myFrameCallback( UIPureWindow *window,
    [drawing rect:CGRectMake( 10, 10, 100, 100)];
    [drawing fillHexColor:0xFF0000FF];
    
-   return( bits & UIWindowDisplayNeedsAnimation); // Return non-zero if animating
+    return( bits & UIWindowDisplayNeedsNextFrame); // Return non-zero if animating
 }
 
 [window setFrameCallback:myFrameCallback];
@@ -919,7 +999,7 @@ responder = [MyResponder new];
 - (void) timerFired:(NSTimer *) timer
 {
    printf( "Timer fired\n");
-   [window setNeedsDisplayBit:UIWindowDisplayNeedsRedraw];
+   [window setNeedsDisplayBit:UIWindowDisplayNeedsDisplay];
 }
 
 NSTimer   *timer;
@@ -1055,7 +1135,7 @@ static UIWindowDisplayBits   animatedDrawing( UIPureWindow *window,
    
    [drawing restore];
    
-   return( UIWindowDisplayNeedsRedraw); // Keep animating
+   return( UIWindowDisplayNeedsDisplay); // Keep animating
 }
 
 int   main( int argc, char *argv[])
@@ -1108,14 +1188,14 @@ int   main( int argc, char *argv[])
    _isMouseDown    = YES;
    _mouseLocation  = [event locationInWindow];
    
-   [[self window] setNeedsDisplayBit:UIWindowDisplayNeedsRedraw];
+   [[self window] setNeedsDisplayBit:UIWindowDisplayNeedsDisplay];
    return( nil);
 }
 
 - (UIMouseEvent *) mouseUp:(UIMouseEvent *) event
 {
    _isMouseDown = NO;
-   [[self window] setNeedsDisplayBit:UIWindowDisplayNeedsRedraw];
+   [[self window] setNeedsDisplayBit:UIWindowDisplayNeedsDisplay];
    return( nil);
 }
 
@@ -1124,7 +1204,7 @@ int   main( int argc, char *argv[])
    if( _isMouseDown)
    {
       _mouseLocation = [event locationInWindow];
-      [[self window] setNeedsDisplayBit:UIWindowDisplayNeedsRedraw];
+      [[self window] setNeedsDisplayBit:UIWindowDisplayNeedsDisplay];
    }
    return( nil);
 }
@@ -1144,7 +1224,7 @@ int   main( int argc, char *argv[])
    case UIKeySpace :
       _isMouseDown   = NO;
       _mouseLocation = CGPointMake( 0, 0);
-      [[self window] setNeedsDisplayBit:UIWindowDisplayNeedsRedraw];
+      [[self window] setNeedsDisplayBit:UIWindowDisplayNeedsDisplay];
       break;
    }
    
@@ -1257,7 +1337,7 @@ int   main( int argc, char *argv[])
    
    sprintf( title, "Timer Example - Count: %lu", (unsigned long) _counter);
    [window setTitleUTF8String:title];
-   [window setNeedsDisplayBit:UIWindowDisplayNeedsRedraw];
+   [window setNeedsDisplayBit:UIWindowDisplayNeedsDisplay];
 }
 
 - (NSUInteger) counter
@@ -1363,7 +1443,7 @@ static UIWindowDisplayBits   simpleDrawing( UIPureWindow *window,
                              100.0)];
    [drawing fillHexColor:color];
    
-   return( UIWindowDisplayNeedsRedraw); // Keep animating
+   return( UIWindowDisplayNeedsDisplay); // Keep animating
 }
 
 int   main( int argc, char *argv[])
@@ -1449,7 +1529,6 @@ int   main( int argc, char *argv[])
    [window1 setFrameCallback:window1Drawing];
    [window1 setBackgroundHexColor:0x000000FF];
    [window1 setOpaque:YES];
-   [window1 setKeepOSGraphicsContextActive:NO]; // Important for multiple windows!
    [app addWindow:window1];
    [window1 setNeedsDisplay];
    
@@ -1460,7 +1539,6 @@ int   main( int argc, char *argv[])
    [window2 setFrameCallback:window2Drawing];
    [window2 setBackgroundHexColor:0x000000FF];
    [window2 setOpaque:YES];
-   [window2 setKeepOSGraphicsContextActive:NO]; // Important for multiple windows!
    [app addWindow:window2];
    [window2 setNeedsDisplay];
    

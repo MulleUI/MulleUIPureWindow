@@ -1,4 +1,4 @@
-<!-- Keywords: patterns, framecallback, retained mode, graphics context, oneframe, event sync, invocation queue -->
+<!-- Keywords: patterns, framecallback, retained mode, graphics context, oneframe, event sync, invocation queue, framedelgate, screenshot, bitmap -->
 # Patterns
 
 ## Draw straight into the window framebuffer
@@ -73,6 +73,20 @@ while( [window processOneFrame])
 - Prefer this for volatile or demo-style code.
 - Use `renderAndSwapOneFrame` when you need one render tick without the full event step.
 
+## Use UIApplicationRunWindow for single-window apps
+
+The demo glue (`demo/src/main-backend.inc`, `demo/src/main-context-retained-keep.m`) uses the helper `UIApplicationRunWindow(window)` instead of manually calling `[app run]`:
+
+```objc
+window = [UIPureWindow windowWithFrame:...];
+[window setFrameCallback:display];
+[window setFrameRateHz:60.0];
+return( UIApplicationRunWindow( window));
+```
+
+- This adds the window to the shared `UIApplication`, starts the event loop, and blocks until the window closes.
+- It is the simplest entry point for a single-window retained-mode application.
+
 ## Propagate OS-facing property changes before asserting on the OS window
 
 `test/20-window/window-events-test.m` demonstrates the local sync point:
@@ -105,3 +119,62 @@ if( ! queue)
 
 - Reuse the window's queue registry instead of hanging ad-hoc worker state elsewhere.
 - Pair this with the timer APIs in `src/UIPureWindow+NSTimer.h` when work must wake the window thread.
+
+## Observe frame lifecycle via delegate
+
+The `UIWindowFrameDelegate` mixin in `src/UIPureWindow.h` provides four notification methods that bracket the frame pipeline:
+
+```objc
+@interface MyDelegate : NSObject <UIWindowFrameDelegate>
+@end
+
+@implementation MyDelegate
+
+- (void) window:(id) window
+ willBeginFrame:(struct CGFrameInfo *) info
+graphicsContext:(id <UIGraphicsContext>) context
+{
+   // graphics context active, framebuffer not yet bound
+}
+
+- (void) window:(id) window
+    didEndFrame:(struct CGFrameInfo *) info
+graphicsContext:(id <UIGraphicsContext>) context
+{
+   // frame complete, before swap
+}
+
+- (void)  window:(id) window
+   willDrawFrame:(struct CGFrameInfo *) info
+ graphicsContext:(id <UIGraphicsContext>) context
+{
+   // about to draw
+}
+
+- (void)  window:(id) window
+    didDrawFrame:(struct CGFrameInfo *) info
+ graphicsContext:(id <UIGraphicsContext>) context
+{
+   // drawing done, still before swap
+}
+
+@end
+
+[window setFrameDelegate:delegate];
+```
+
+- These fire on the render thread (in retained mode) alongside `willRenderFrameCallback`/`didRenderFrameCallback`.
+- Use the delegate when you need frame observation without replacing the default frame callback.
+
+## Capture the current framebuffer
+
+`src/UIPureWindow+Frame.h` exposes three screenshot entry points:
+
+```objc
+struct CGBitmap  bitmap = [window screenshotBitmap];
+id <UIPureWindowBitmapImage> image = [window screenshotBitmapImage];
+BOOL ok = [window writeScreenshotToPNGUTF8String:"frame.png"];
+```
+
+- `screenshotBitmapImage` returns an object conforming to `UIPureWindowBitmapImage` which has `imageWithBitmap:freeWhenDone:` and `writeToPNGUTF8String:`.  
+- Call from the main thread after the render thread has finished a frame.

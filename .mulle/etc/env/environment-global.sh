@@ -49,7 +49,7 @@ export MULLE_SOURCETREE_TO_C_PRIVATEINCLUDE_FILE="ON"
 #
 #
 #
-export vibecoding="on"
+export vibecoding="off"
 
 
 #
