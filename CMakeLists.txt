@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.15...99.99)
 
-project( MulleUIPureWindow C)
+project( MulleUIPureWindow VERSION 0.0.1 LANGUAGES C)
 
 
 ### mulle-sde environment
