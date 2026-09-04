@@ -1,5 +1,36 @@
 //
-// Copyright (c) 2021 Nat!, Mulle kybernetiK
+//  UIPureWindow+UIGraphicsContext.m
+//  MulleUIPureWindow
+//
+//  Copyright (c) 2025 Nat! - Mulle kybernetiK.
+//  All rights reserved.
+//
+//
+//  Redistribution and use in source and binary forms, with or without
+//  modification, are permitted provided that the following conditions are met:
+//
+//  Redistributions of source code must retain the above copyright notice, this
+//  list of conditions and the following disclaimer.
+//
+//  Redistributions in binary form must reproduce the above copyright notice,
+//  this list of conditions and the following disclaimer in the documentation
+//  and/or other materials provided with the distribution.
+//
+//  Neither the name of Mulle kybernetiK nor the names of its contributors
+//  may be used to endorse or promote products derived from this software
+//  without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
 //
 #define _GNU_SOURCE
 
@@ -37,7 +68,15 @@
    // must activate to get nanoVG context
    [_OSWindow os_activateGraphicsContext];
 
-   cls = [[self class] osGraphicsContextClass];
+   // The OS window owns the backend, so let it choose the context class: a
+   // no-backend OS window (UINullOSWindow) returns CGNullContext, avoiding a
+   // real GPU context with no current GL/Metal context. GPU-backed OS windows
+   // do not implement this and we fall back to the app-wide default.
+   cls = [_OSWindow respondsToSelector:@selector( osGraphicsContextClass)]
+         ? [_OSWindow osGraphicsContextClass]
+         : Nil;
+   if( ! cls)
+      cls = [[self class] osGraphicsContextClass];
 
    options = 0;
    if( _styleMask & UIWindowStyleAntiAlias)
@@ -90,7 +129,14 @@
 
    [_offscreenOSWindow os_activateGraphicsContext];
 
-   cls     = [[self class] osGraphicsContextClass];
+   // see -_createGraphicsContext: the offscreen OS window picks the context
+   // class; a no-backend OS window yields CGNullContext.
+   cls = [_offscreenOSWindow respondsToSelector:@selector( osGraphicsContextClass)]
+         ? [_offscreenOSWindow osGraphicsContextClass]
+         : Nil;
+   if( ! cls)
+      cls = [[self class] osGraphicsContextClass];
+
    options = 0;
 
    //

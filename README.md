@@ -1,6 +1,8 @@
 # MulleUIPureWindow
 
-#### 👁️‍🗨️ MulleUIPureWindow - Windows without Views
+Part of [MulleUI](https://github.com/MulleUI) — UIKit-shaped modular GUI libraries for mulle-objc.
+
+#### 🪑 MulleUIPureWindow - Windows without Views
 
 The MulleUIPureWindow is a window with a framebuffer and a drawing context. The drawing context is
 abstract, though it is usually a `CGContext` from [MulleGraphics](//github.com/MulleUI/MulleGraphics),
@@ -29,6 +31,14 @@ drawing.
 | ![Mulle kybernetiK tag](https://img.shields.io/github/tag/MulleUI/MulleUIPureWindow.svg) [![Build Status](https://github.com/MulleUI/MulleUIPureWindow/workflows/CI/badge.svg)](//github.com/MulleUI/MulleUIPureWindow/actions) | [RELEASENOTES](RELEASENOTES.md) | [DeepWiki for MulleUIPureWindow](https://deepwiki.com/MulleUI/MulleUIPureWindow)
 
 
+
+
+## Documentation & Guides
+
+* [API Summary](asset/dox/api/toc)
+* [Coder Guide](asset/howto/coder/mulle-ui-pure-window)
+* [Debugger Guide](asset/howto/debugger/mulle-ui-pure-window)
+* [Verifier Guide](asset/howto/verifier/mulle-ui-pure-window)
 
 
 
@@ -98,7 +108,7 @@ Install the requirements:
 
 | Requirements                                 | Description
 |----------------------------------------------|-----------------------
-| [MulleUIApplication](https://github.com/MulleUI/MulleUIApplication)             | 𝄢 MulleUIApplication provides abstract classes like UIApplication and UIEvent
+| [MulleUIApplication](https://github.com/MulleUI/MulleUIApplication)             | 🛖 MulleUIApplication provides abstract classes like UIApplication and UIEvent
 | [MulleInvocationQueue](https://github.com/MulleFoundation/MulleInvocationQueue)             | 🚶🚶🚶 MulleInvocationQueue runs methods in a separate thread
 | [mulle-objc-list](https://github.com/mulle-objc/mulle-objc-list)             | 📒 Lists mulle-objc runtime information contained in executables.
 

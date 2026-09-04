@@ -73,15 +73,15 @@ while( [window processOneFrame])
 - Prefer this for volatile or demo-style code.
 - Use `renderAndSwapOneFrame` when you need one render tick without the full event step.
 
-## Use UIApplicationRunWindow for single-window apps
+## Use UIApplication's explicit single-window lifecycle
 
-The demo glue (`demo/src/main-backend.inc`, `demo/src/main-context-retained-keep.m`) uses the helper `UIApplicationRunWindow(window)` instead of manually calling `[app run]`:
+The demo glue (`demo/src/main-backend.inc`, `demo/src/main-context-retained-keep.m`) initializes the application before creating the window and then runs that window explicitly:
 
 ```objc
 window = [UIPureWindow windowWithFrame:...];
 [window setFrameCallback:display];
 [window setFrameRateHz:60.0];
-return( UIApplicationRunWindow( window));
+return( [app runWindow:window]);
 ```
 
 - This adds the window to the shared `UIApplication`, starts the event loop, and blocks until the window closes.

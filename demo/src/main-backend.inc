@@ -100,7 +100,7 @@ int   main( int argc, char *argv[])
 #ifdef MULLE_UI_PERF
    [window setFrameDelegate:[MulleUIPerf instance]];
 #endif
-   return( UIApplicationRunWindow( window));
+   return( [app runWindow:window]);
 }
 
 
