@@ -77,5 +77,6 @@ src/UIPureWindow+UIPasteboard.h
 src/UIPureWindow+UIResponder.h
 src/UIPureWindow+UIWindow.h
 src/UIPureWindow.h
+src/reflect/_MulleUIPureWindow-versioncheck.h
 )
 

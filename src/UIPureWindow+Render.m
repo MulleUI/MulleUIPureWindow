@@ -1,5 +1,36 @@
 //
-// Copyright (c) 2021 Nat!, Mulle kybernetiK
+//  UIPureWindow+Render.m
+//  MulleUIPureWindow
+//
+//  Copyright (c) 2025 Nat! - Mulle kybernetiK.
+//  All rights reserved.
+//
+//
+//  Redistribution and use in source and binary forms, with or without
+//  modification, are permitted provided that the following conditions are met:
+//
+//  Redistributions of source code must retain the above copyright notice, this
+//  list of conditions and the following disclaimer.
+//
+//  Redistributions in binary form must reproduce the above copyright notice,
+//  this list of conditions and the following disclaimer in the documentation
+//  and/or other materials provided with the distribution.
+//
+//  Neither the name of Mulle kybernetiK nor the names of its contributors
+//  may be used to endorse or promote products derived from this software
+//  without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+//  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+//  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+//  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+//  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+//  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+//  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+//  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//  POSSIBILITY OF SUCH DAMAGE.
 //
 #import "UIPureWindow+Render.h"
 
@@ -25,62 +56,6 @@
 
 @end
 
-
-// TODO: this is somewhat outdated
-//
-// UIPureWindow frame chain
-//
-//    Creates a queue of CALayers from the UIView hierarchy. Layers are
-//    setup so they draw themselves into the window coordinate space.
-//
-//                                                  UIWindow Delegate Views
-//  .----------------------------------------.      .---.---.
-//  | UIWindow willLayoutWithAbsoluteTime:   |      | B | C |
-//  '----------------------------------------'      '---'---'
-//                       |
-//                       |
-//                       v                          UIView hierarchy tree
-//  .-----------------------------------------.           .---.
-//  | UIView layout                           |           | A |-.
-//  '-----------------------------------------'           '---' |
-//                       |                                |     |
-//                       |                          .---. |     |
-//                       v                          | B |<'     v
-//  .-----------------------------------------.     '---'     .---.
-//  | UIView createRenderQueue:               |               | C |
-//  '-----------------------------------------'               '---'
-//                       |                                  |
-//    From here on the   |                                  |
-//    only hierarchy     |                                  |
-//    is the order       |                                  |
-//    of the layers in   |                                  v
-//    the queue.         |
-//                       v                          CALayer Render Queue
-//  .------------------------------------------.    .---.---.---.---.---.----.
-//  | CGAnimation animateObjects:absoluteTime: |    | A1| B1| B2| C1| C2| C3 |
-//  '------------------------------------------'    '---'---'---'---'---'----'
-//                       |
-//                       |
-//                       v
-//  .-----------------------------------------.
-//  | CGContext renderObjects:                  |
-//  '-----------------------------------------'
-//
-// glitch hunt:
-//
-// a) we sometimes overflow the current frame
-// b) we are doublebuffering
-// c) the glitch occurs when there is already drawing on the screen
-// d) the glitch looks like the buffer is cleared and then not swapped
-//
-// With the parameters, you should be able to render into a different
-// context from the window context, with all the delegate calls intact.
-//
-// A window must not run two renderFrames concurrently!
-// A view calling [(UIWindow *) [self window] context] could get the wrong context
-// though. Maybe need a -renderContext ?
-// Or should
-//
 
 @implementation UIPureWindow( Render)
 

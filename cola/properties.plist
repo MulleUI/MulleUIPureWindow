@@ -1,11 +1,12 @@
 {
    project =
    {
-      description="👁️‍🗨️ MulleUIPureWindow - Windows without Views";
+      description="🪑 MulleUIPureWindow - Windows without Views";
       domain="github";
       language="c";
       dialect="objc";
       name="MulleUIPureWindow";
+      version="0.1.0";
       user="MulleUI";
       repo="MulleUIPureWindow";
       homepage="https://github.com/MulleUI/MulleUICore";
@@ -14,7 +15,7 @@
    dependencies =
    (
       {
-         description="𝄢 MulleUIApplication provides abstract classes like UIApplication and UIEvent";
+         description="🛖 MulleUIApplication provides abstract classes like UIApplication and UIEvent";
          domain="github";
          name="MulleUIApplication";
          repo="MulleUIApplication";

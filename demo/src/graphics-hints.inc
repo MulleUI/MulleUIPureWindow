@@ -90,7 +90,7 @@ static int   UIParseGraphicsHints( UIOSWindowGraphicsHints *hints,
       {
          UIOSWindowGraphicsHints   preset;
 
-         preset = GLFW_DEFAULT_CONTEXT;
+         preset = GLFWGraphicsHintsDefault;
          if( UIContextChanged( hints, &preset))
             UIWarnOptionOverride( s, contextOption, "context");
          UIApplyContextPreset( hints, preset);
@@ -102,7 +102,7 @@ static int   UIParseGraphicsHints( UIOSWindowGraphicsHints *hints,
       {
          UIOSWindowGraphicsHints   preset;
 
-         preset = GLFW_NO_CONTEXT;
+         preset = GLFWGraphicsHintsNone;
          if( UIContextChanged( hints, &preset))
             UIWarnOptionOverride( s, contextOption, "context");
          UIApplyContextPreset( hints, preset);
@@ -114,7 +114,7 @@ static int   UIParseGraphicsHints( UIOSWindowGraphicsHints *hints,
       {
          UIOSWindowGraphicsHints   preset;
 
-         preset = GLFW_GL3_CONTEXT;
+         preset = GLFWGraphicsHintsGL3;
          if( UIContextChanged( hints, &preset))
             UIWarnOptionOverride( s, contextOption, "context");
          UIApplyContextPreset( hints, preset);
@@ -126,7 +126,7 @@ static int   UIParseGraphicsHints( UIOSWindowGraphicsHints *hints,
       {
          UIOSWindowGraphicsHints   preset;
 
-         preset = GLFW_GL3_2_CONTEXT;
+         preset = GLFWGraphicsHintsGL3_2;
          if( UIContextChanged( hints, &preset))
             UIWarnOptionOverride( s, contextOption, "context");
          UIApplyContextPreset( hints, preset);
@@ -138,7 +138,7 @@ static int   UIParseGraphicsHints( UIOSWindowGraphicsHints *hints,
       {
          UIOSWindowGraphicsHints   preset;
 
-         preset = GLFW_GLES2_CONTEXT;
+         preset = GLFWGraphicsHintsGLES2;
          if( UIContextChanged( hints, &preset))
             UIWarnOptionOverride( s, contextOption, "context");
          UIApplyContextPreset( hints, preset);
@@ -150,7 +150,7 @@ static int   UIParseGraphicsHints( UIOSWindowGraphicsHints *hints,
       {
          UIOSWindowGraphicsHints   preset;
 
-         preset = GLFW_GLES3_CONTEXT;
+         preset = GLFWGraphicsHintsGLES3;
          if( UIContextChanged( hints, &preset))
             UIWarnOptionOverride( s, contextOption, "context");
          UIApplyContextPreset( hints, preset);
@@ -162,7 +162,7 @@ static int   UIParseGraphicsHints( UIOSWindowGraphicsHints *hints,
       {
          UIOSWindowGraphicsHints   preset;
 
-         preset = GLFW_GLES3_2_CONTEXT;
+         preset = GLFWGraphicsHintsGLES3_2;
          if( UIContextChanged( hints, &preset))
             UIWarnOptionOverride( s, contextOption, "context");
          UIApplyContextPreset( hints, preset);

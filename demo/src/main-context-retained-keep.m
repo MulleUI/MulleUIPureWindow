@@ -174,7 +174,7 @@ int   main( int argc, char *argv[])
    // if we do this and go from NO to YES, we need to waste the contexts of
    // the window, otherwise activation won't happen.
 
-   return( UIApplicationRunWindow( window));
+   return( [app runWindow:window]);
 }
 
 

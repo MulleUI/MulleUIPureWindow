@@ -87,7 +87,7 @@ int   main( int argc, char *argv[])
          glfwWindow[ i] = [[[GLFWOSWindow alloc] initWithFrame:frame
                                                titleUTF8String:! i ? "Demo" : "Demo2"
                                                      styleMask:GLFWOSWindowStyleMaskDefault //|UIWindowStyleSingleBuffer
-                                                 graphicsHints:GLFW_DEFAULT_CONTEXT
+                                                 graphicsHints:GLFWGraphicsHintsDefault
                                                  sharingWindow:sharingWindow] autorelease];
 
          window[ i] = [[[UIPureWindow alloc] initWithOSWindow:glfwWindow[ i]

@@ -31,6 +31,14 @@ struct UIInputState   _inputState;
 
 @implementation FakeOSWindow
 
+
++ (NSUInteger) effectiveWindowStyleMask:(NSUInteger) styleMask
+                          graphicsHints:(UIOSWindowGraphicsHints) hints
+{
+   return( styleMask);
+}
+
+
 - (instancetype)init
 {
     if (self = [super init]) {
@@ -70,6 +78,11 @@ struct UIInputState   _inputState;
         }
     }
     return self;
+}
+
+- (BOOL) haveGraphicsContext
+{
+   return( YES);
 }
 
 - (NSInteger)shareID
