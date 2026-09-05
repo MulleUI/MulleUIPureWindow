@@ -42,19 +42,22 @@
 #import "import.h"
 
 
-extern UIWindowDisplayBits
+MULLE_UI_PURE_WINDOW_GLOBAL
+UIWindowDisplayBits
    UIPureWindowDefaultRawFrameCallback( UIPureWindow *self,
                                         id <UIGraphicsContext> context,
                                         struct CGFrameInfo *info,
                                         UIWindowDisplayBits displayBits);
 
-extern UIWindowDisplayBits
+MULLE_UI_PURE_WINDOW_GLOBAL
+UIWindowDisplayBits
    UIPureWindowDefaultWillRenderFrameCallback( UIPureWindow *self,
                                                id <UIGraphicsContext> context,
                                                struct CGFrameInfo *info,
                                                UIWindowDisplayBits displayBits);
 
-extern UIWindowDisplayBits
+MULLE_UI_PURE_WINDOW_GLOBAL
+UIWindowDisplayBits
    UIPureWindowDefaultDidRenderFrameCallback( UIPureWindow *self,
                                               id <UIGraphicsContext> context,
                                               struct CGFrameInfo *info,
