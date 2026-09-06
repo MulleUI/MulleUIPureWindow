@@ -249,10 +249,33 @@ The window uses function pointers for maximum performance. All callbacks execute
    NSThread *thread);
 ```
 
-Default callbacks:
-- `UIPureWindowDefaultRawFrameCallback()` - Implements standard frame rendering
-- `UIPureWindowDefaultWillRenderFrameCallback()` - No-op, returns displayBits unchanged
-- `UIPureWindowDefaultDidRenderFrameCallback()` - No-op, returns displayBits unchanged
+Default callbacks (declared in `UIPureWindow+Render.h` with the `MULLE_UI_PURE_WINDOW_GLOBAL` export prefix, which replaces plain `extern` and ensures cross-platform symbol export, e.g. Windows DLLs):
+
+```c
+MULLE_UI_PURE_WINDOW_GLOBAL
+UIWindowDisplayBits
+   UIPureWindowDefaultRawFrameCallback( UIPureWindow *self,
+                                        id <UIGraphicsContext> context,
+                                        struct CGFrameInfo *info,
+                                        UIWindowDisplayBits displayBits);
+// Implements the standard frame rendering pipeline.
+
+MULLE_UI_PURE_WINDOW_GLOBAL
+UIWindowDisplayBits
+   UIPureWindowDefaultWillRenderFrameCallback( UIPureWindow *self,
+                                               id <UIGraphicsContext> context,
+                                               struct CGFrameInfo *info,
+                                               UIWindowDisplayBits displayBits);
+// No-op, returns displayBits unchanged.
+
+MULLE_UI_PURE_WINDOW_GLOBAL
+UIWindowDisplayBits
+   UIPureWindowDefaultDidRenderFrameCallback( UIPureWindow *self,
+                                              id <UIGraphicsContext> context,
+                                              struct CGFrameInfo *info,
+                                              UIWindowDisplayBits returnBits);
+// No-op, returns returnBits unchanged.
+```
 
 **Inspection Functions:**
 ```c
