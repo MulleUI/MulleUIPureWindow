@@ -3,31 +3,31 @@
  *   `mulle-sde reflect` and any edits will be lost.
  *   Suppress generation of this file with:
  *
- *      mulle-sde environment set MULLE_MATCH_TO_C_OBJC_HEADERS_FILE DISABLE
+ *      mulle-sde environment --global set MULLE_MATCH_TO_C_OBJC_HEADERS_FILE DISABLE
  *
  *   To not let mulle-match-to-c generate any header files:
  *
- *      mulle-sde environment set MULLE_MATCH_TO_C_RUN DISABLE
+ *      mulle-sde environment --global set MULLE_MATCH_TO_C_RUN DISABLE
  */
 #ifndef _mulle_ui_pure_window__export_h__
 #define _mulle_ui_pure_window__export_h__
 
 
 #import "MulleObjCDeps+MulleUIPureWindow.h"
-#import "UIPureWindow+FrameInfo.h"
+#import "UIPureWindow.h"
 #import "UIPureWindow+Frame.h"
+#import "UIPureWindow+FrameInfo.h"
 #import "UIPureWindow+InvocationQueue.h"
 #import "UIPureWindow+NSTimer.h"
 #import "UIPureWindow+OneFrame.h"
 #import "UIPureWindow+Render.h"
-#import "UIPureWindow+ThreadRefresh.h"
 #import "UIPureWindow+Thread.h"
+#import "UIPureWindow+ThreadRefresh.h"
 #import "UIPureWindow+UIEvent.h"
 #import "UIPureWindow+UIGraphicsContext.h"
 #import "UIPureWindow+UIPasteboard.h"
 #import "UIPureWindow+UIResponder.h"
 #import "UIPureWindow+UIWindow.h"
-#import "UIPureWindow.h"
 
 
 #endif

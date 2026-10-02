@@ -6,7 +6,7 @@
       language="c";
       dialect="objc";
       name="MulleUIPureWindow";
-      version="0.1.0";
+      version="0.1.1";
       user="MulleUI";
       repo="MulleUIPureWindow";
       homepage="https://github.com/MulleUI/MulleUICore";
