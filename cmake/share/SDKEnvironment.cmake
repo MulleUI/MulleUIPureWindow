@@ -87,7 +87,7 @@ if( NOT __SDK_ENVIRONMENT__CMAKE__)
       set( item_index -1) # supposedly makes local
       list( FIND ${list_name} "${item}" item_index)
       if( ${item_index} EQUAL -1)
-         if( NOT EXISTS "${item}")
+         if( EXISTS "${item}")
             list( APPEND ${list_name} "${item}")
          endif()
       endif()

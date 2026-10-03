@@ -955,7 +955,16 @@ void   UIWindowDisplayFrameStatisticsUpdate( struct UIWindowFrameStatistics *sta
 {
    assert( ! _isRendering || "window is rendering, your change will be discarded unnoticed soon");
 
-   _mulle_atomic_pointer_write( &_needsDisplay, (void *) UIWindowDisplayNeedsDisplay);
+   //
+   // OR the NeedsDisplay bit in; do NOT overwrite the whole mask. This is
+   // reached from -[UIView setNeedsDisplay], and a view may have called
+   // -setNeedsLayout (which sets UIWindowDisplayNeedsLayout) right before.
+   // Overwriting dropped that layout request, so the window rendered the old
+   // geometry/state and the change never became visible. It also matches the
+   // historical behaviour (which wrote ~0, i.e. set every bit) and the
+   // "legacy compatibility" note in UIPureWindow.h.
+   //
+   MulleObjCAtomicPointerSetBit( &_needsDisplay, UIWindowDisplayNeedsDisplay);
 
    UIWindowDisplayBitsLog( "needsDisplay: 0x%tx", (intptr_t) _mulle_atomic_pointer_read( &_needsDisplay));
 }
