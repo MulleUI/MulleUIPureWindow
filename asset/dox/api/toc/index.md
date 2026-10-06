@@ -53,7 +53,7 @@ Windows support MulleUIResourceMap protocol for storing context-specific resourc
 ### 3.1. `UIPureWindow.h` - Main Window Class
 
 Version macro:
-- `#define MULLE_UI_PURE_WINDOW_VERSION  ((0 << 20) | (0 << 8) | 1)`
+- `#define MULLE_UI_PURE_WINDOW_VERSION  ((0UL << 20) | (1 << 8) | 1)`
 
 Name buffer length macro:
 - `#define s_UIPureWindowNonLockingName   64`
@@ -149,7 +149,7 @@ Style masks combine flags:
 
 Display and Refresh (thread-safe):
 ```c
-- (void) setNeedsDisplay;                              // Set UIWindowDisplayNeedsDisplay bit
+- (void) setNeedsDisplay;                              // OR UIWindowDisplayNeedsDisplay bit into the display mask (legacy compatibility)
 - (void) setNeedsDisplayBit:(UIWindowDisplayBits) bit; // Request specific phase
 - (void) setNeedsDisplayBits:(UIWindowDisplayBits) bits; // Set multiple bits
 - (UIWindowDisplayBits) needsDisplay;                  // Query display bits
@@ -893,7 +893,7 @@ Place NSAutoreleasePool between activate and deactivate to properly release temp
 
 2. **Respect thread boundaries**: Methods marked `MULLE_UI_MAIN_THREAD_ONLY` must only be called from main thread. Methods marked `MULLE_UI_PURE_WINDOW_THREAD_ONLY` only from window thread. Methods marked `MULLE_OBJC_THREADSAFE_METHOD` are safe from any thread.
 
-3. **Use atomic display flags**: Always use `setNeedsDisplayBit:` or `setNeedsDisplayBits:` rather than direct ivar access. Use `needsDisplayBitsClearIfSet` for atomic test-and-clear. Note that `setNeedsDisplay` now sets only the `UIWindowDisplayNeedsDisplay` bit, not all bits.
+3. **Use atomic display flags**: Always use `setNeedsDisplayBit:` or `setNeedsDisplayBits:` rather than direct ivar access. Use `needsDisplayBitsClearIfSet` for atomic test-and-clear. Note that `setNeedsDisplay` ORs the `UIWindowDisplayNeedsDisplay` bit into the existing display mask rather than overwriting it, so other pending bits (such as `UIWindowDisplayNeedsLayout`) are preserved.
 
 4. **Check `refresh` return value**: `-refresh` now returns `BOOL`. It returns `NO` when no offscreen framebuffer is available yet (e.g. first frame hasn't been rendered). Only call `swapBuffers` when refresh returns `YES`. If you discard the return value and swap anyway, you'll swap empty content.
 
