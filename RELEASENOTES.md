@@ -1,6 +1,7 @@
 ### 0.1.1
 
 
+
 * setNeedsDisplay now documented to OR the UIWindowDisplayNeedsDisplay bit into the display mask, preserving other pending bits such as UIWindowDisplayNeedsLayout
 * note that -refresh returns BOOL and swapBuffers should only be called when it returns YES
 * correct the `MULLE_UI_PURE_WINDOW_VERSION` example to use `unsigned long` and the proper minor bit shift
